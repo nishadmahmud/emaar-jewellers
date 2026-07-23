@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { KeyRound, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import { toast } from 'sonner';
 
-export default function VerifyPinPage() {
+function VerifyPinContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
@@ -105,5 +105,13 @@ export default function VerifyPinPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function VerifyPinPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-neutral-50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-neutral-400" /></div>}>
+      <VerifyPinContent />
+    </Suspense>
   );
 }
