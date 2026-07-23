@@ -40,23 +40,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-light tracking-widest mb-2">EMAAR</h1>
-          <p className="text-sm tracking-widest text-neutral-400 uppercase">Jewellers</p>
+          <h1 className="text-4xl font-light tracking-widest mb-2 text-black">EMAAR</h1>
+          <p className="text-sm tracking-widest text-neutral-500 uppercase">Jewellers</p>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-2xl shadow-2xl">
-          <h2 className="text-2xl font-medium mb-6 text-center">Sign In</h2>
+        <div className="bg-white border border-neutral-200 p-8 rounded-2xl shadow-xl">
+          <h2 className="text-2xl font-medium mb-6 text-center text-black">Sign In</h2>
           
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1.5" htmlFor="email">
+              <label className="block text-sm font-medium text-neutral-600 mb-1.5" htmlFor="email">
                 Email Address
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
                   <Mail size={18} />
                 </div>
                 <input
@@ -64,7 +64,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-black border border-neutral-800 rounded-lg focus:ring-1 focus:ring-white focus:border-white transition-colors text-white placeholder-neutral-600 outline-none"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-neutral-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-all text-black placeholder-neutral-400 outline-none"
                   placeholder="admin@emaarjewellers.com"
                   required
                 />
@@ -72,11 +72,11 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-1.5" htmlFor="password">
+              <label className="block text-sm font-medium text-neutral-600 mb-1.5" htmlFor="password">
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
                   <Lock size={18} />
                 </div>
                 <input
@@ -84,7 +84,7 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-black border border-neutral-800 rounded-lg focus:ring-1 focus:ring-white focus:border-white transition-colors text-white placeholder-neutral-600 outline-none"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-neutral-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-all text-black placeholder-neutral-400 outline-none"
                   placeholder="••••••••"
                   required
                 />
@@ -94,7 +94,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-white text-black font-medium py-3 rounded-lg hover:bg-neutral-200 transition-colors mt-6 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-black text-white font-medium py-3 rounded-lg hover:bg-neutral-800 transition-colors mt-6 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
               {loading ? "Signing in..." : "Continue"}
@@ -102,7 +102,7 @@ export default function LoginPage() {
           </form>
         </div>
         
-        <p className="text-center text-neutral-600 text-xs mt-8">
+        <p className="text-center text-neutral-500 text-xs mt-8">
           &copy; {new Date().getFullYear()} Emaar Jewellers. All rights reserved.
         </p>
       </div>

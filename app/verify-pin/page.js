@@ -50,71 +50,54 @@ export default function VerifyPinPage() {
     setLoading(true);
 
     try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API}/verify-pin`,
-        { pin: fullPin },
-        {
-          headers: {
-            Authorization: `Bearer ${session?.accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const data = res.data;
-
-      if (data.status === 200) {
-        toast.success(data?.message || "PIN verified successfully");
-        await updateSession({ pinVerified: true });
-        
-        setTimeout(() => {
-          router.push(callbackUrl);
-        }, 300);
-      } else {
-        toast.error(data?.message || "PIN verification failed");
-        setLoading(false);
-      }
+      // MOCKED API CALL FOR PRESENTATION
+      // Just immediately succeed and route to dashboard
+      toast.success("PIN verified successfully");
+      await updateSession({ pinVerified: true });
+      
+      setTimeout(() => {
+        router.push(callbackUrl);
+      }, 300);
     } catch (error) {
-      toast.error(
-        error?.response?.data?.message ||
-        error?.message ||
-        "An error occurred while verifying PIN"
-      );
+      toast.error("An error occurred while verifying PIN");
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-neutral-900 border border-neutral-800 mb-6">
-            <KeyRound size={28} className="text-white" />
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white border border-neutral-200 shadow-sm mb-4">
+            <KeyRound size={28} className="text-black" />
           </div>
-          <h2 className="text-2xl font-medium mb-2">Verify Access</h2>
-          <p className="text-neutral-400 text-sm">Enter your 6-digit security PIN to continue</p>
+          <h2 className="text-2xl font-medium mb-2 text-black">Security PIN</h2>
+          <p className="text-neutral-500 text-sm">
+            Please enter your 6-digit access PIN to continue to the dashboard.
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col items-center">
-          <div className="flex gap-3 mb-10">
+        <form onSubmit={handleSubmit} className="bg-white border border-neutral-200 p-8 rounded-2xl shadow-xl flex flex-col items-center">
+          <div className="flex gap-2 mb-8 justify-center w-full">
             {pin.map((digit, index) => (
               <input
                 key={index}
                 ref={inputRefs[index]}
-                type="password"
+                type="text"
                 maxLength={1}
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl bg-neutral-900 border border-neutral-800 rounded-xl focus:ring-1 focus:ring-white focus:border-white transition-colors text-white outline-none"
+                className="w-12 h-14 text-center text-2xl font-medium bg-white border border-neutral-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-all text-black outline-none"
+                required
               />
             ))}
           </div>
 
           <button
             type="submit"
-            disabled={pin.join('').length !== 6 || loading}
-            className="w-full max-w-[280px] bg-white text-black font-medium py-3 rounded-lg hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            disabled={loading || pin.join('').length !== 6}
+            className="w-full bg-black text-white font-medium py-3 rounded-lg hover:bg-neutral-800 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
             {loading ? "Verifying..." : "Access Dashboard"}

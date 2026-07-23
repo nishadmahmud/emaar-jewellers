@@ -16,11 +16,11 @@ export default function DashboardLayout({ children }) {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white flex">
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 flex">
       {/* Sidebar */}
-      <div className="w-64 border-r border-neutral-800 bg-black flex flex-col hidden md:flex">
-        <div className="h-16 flex items-center px-6 border-b border-neutral-800">
-          <h1 className="text-xl font-light tracking-widest">EMAAR</h1>
+      <div className="w-64 border-r border-neutral-200 bg-white flex flex-col hidden md:flex">
+        <div className="h-16 flex items-center px-6 border-b border-neutral-200">
+          <h1 className="text-xl font-light tracking-widest text-black">EMAAR</h1>
         </div>
 
         <nav className="flex-1 py-6 px-4 space-y-1">
@@ -33,8 +33,8 @@ export default function DashboardLayout({ children }) {
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
                   isActive 
-                    ? 'bg-white text-black font-medium' 
-                    : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                    ? 'bg-black text-white font-medium' 
+                    : 'text-neutral-500 hover:text-black hover:bg-neutral-100'
                 }`}
               >
                 <Icon size={18} />
@@ -44,10 +44,10 @@ export default function DashboardLayout({ children }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-neutral-800">
+        <div className="p-4 border-t border-neutral-200">
           <Link
             href="/login"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors"
           >
             <LogOut size={18} />
             Sign Out
@@ -58,30 +58,30 @@ export default function DashboardLayout({ children }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="h-16 border-b border-neutral-800 bg-black flex items-center justify-between px-4 sm:px-6 lg:px-8">
+        <header className="h-16 border-b border-neutral-200 bg-white flex items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4 flex-1">
             <div className="relative max-w-md w-full hidden sm:block">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search size={16} className="text-neutral-500" />
+                <Search size={16} className="text-neutral-400" />
               </div>
               <input
                 type="text"
                 placeholder="Search transactions, customers..."
-                className="w-full pl-10 pr-4 py-2 bg-neutral-900 border border-neutral-800 rounded-lg text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-neutral-600 transition-colors"
+                className="w-full pl-10 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-black placeholder-neutral-400 focus:outline-none focus:border-neutral-300 transition-colors"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center border border-neutral-800 rounded-lg overflow-hidden">
+            <div className="flex items-center border border-neutral-200 rounded-lg overflow-hidden bg-neutral-50 p-0.5">
               {['TK', 'USD', 'AED'].map((curr) => (
                 <button
                   key={curr}
                   onClick={() => setCurrency(curr)}
-                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                     currency === curr 
-                      ? 'bg-white text-black' 
-                      : 'bg-black text-neutral-400 hover:text-white hover:bg-neutral-900'
+                      ? 'bg-white text-black shadow-sm' 
+                      : 'text-neutral-500 hover:text-black'
                   }`}
                 >
                   {curr}
@@ -89,13 +89,13 @@ export default function DashboardLayout({ children }) {
               ))}
             </div>
 
-            <button className="text-neutral-400 hover:text-white transition-colors relative">
+            <button className="text-neutral-400 hover:text-black transition-colors relative">
               <Bell size={20} />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-white rounded-full"></span>
+              <span className="absolute top-0 right-0 w-2 h-2 bg-black rounded-full border border-white"></span>
             </button>
 
-            <div className="h-8 w-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
-              <span className="text-sm font-medium">AD</span>
+            <div className="h-8 w-8 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center">
+              <span className="text-xs font-medium text-black">AD</span>
             </div>
           </div>
         </header>
