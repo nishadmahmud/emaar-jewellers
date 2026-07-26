@@ -11,11 +11,49 @@ export default function PurchasePage() {
     invoiceRef: 'INV-DB-908',
     itemType: 'Gold Bar (99.99%)',
     grossWeight: '50',
+    grossWeightGram: '583.200',
     netWeight: '50',
+    netWeightGram: '583.200',
     ratePerVori: '124500',
     refiningCharge: '0',
     currency: 'TK'
   });
+
+  const handleGrossWeightVori = (val) => {
+    const vori = parseFloat(val);
+    setFormData({
+      ...formData,
+      grossWeight: val,
+      grossWeightGram: isNaN(vori) ? '' : (vori * 11.664).toFixed(3)
+    });
+  };
+
+  const handleGrossWeightGram = (val) => {
+    const gram = parseFloat(val);
+    setFormData({
+      ...formData,
+      grossWeightGram: val,
+      grossWeight: isNaN(gram) ? '' : (gram / 11.664).toFixed(3)
+    });
+  };
+
+  const handleNetWeightVori = (val) => {
+    const vori = parseFloat(val);
+    setFormData({
+      ...formData,
+      netWeight: val,
+      netWeightGram: isNaN(vori) ? '' : (vori * 11.664).toFixed(3)
+    });
+  };
+
+  const handleNetWeightGram = (val) => {
+    const gram = parseFloat(val);
+    setFormData({
+      ...formData,
+      netWeightGram: val,
+      netWeight: isNaN(gram) ? '' : (gram / 11.664).toFixed(3)
+    });
+  };
 
   // Calculate totals
   const netWeightNum = parseFloat(formData.netWeight) || 0;
@@ -35,7 +73,9 @@ export default function PurchasePage() {
         ...formData,
         invoiceRef: `INV-DB-${Math.floor(Math.random() * 1000)}`,
         grossWeight: '',
-        netWeight: ''
+        grossWeightGram: '',
+        netWeight: '',
+        netWeightGram: ''
       });
     }, 1000);
   };
@@ -104,8 +144,8 @@ export default function PurchasePage() {
                 <Scale size={18} />
                 <h3 className="font-medium">Stock Details</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="md:col-span-3">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                <div className="md:col-span-5">
                   <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Stock Category</label>
                   <div className="flex gap-2">
                     {['Gold Bar (99.99%)', 'Scrap Gold', 'Ready Ornaments', 'Chain Buy'].map((type) => (
@@ -121,24 +161,46 @@ export default function PurchasePage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Gross Weight (Vori)</label>
+                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Gross (Vori)</label>
                   <input
                     type="number"
                     step="0.001"
                     required
                     value={formData.grossWeight}
-                    onChange={(e) => setFormData({...formData, grossWeight: e.target.value})}
+                    onChange={(e) => handleGrossWeightVori(e.target.value)}
                     className="w-full px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Net Pure Weight (Vori)</label>
+                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Gross (Gram)</label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    required
+                    value={formData.grossWeightGram}
+                    onChange={(e) => handleGrossWeightGram(e.target.value)}
+                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Net (Vori)</label>
                   <input
                     type="number"
                     step="0.001"
                     required
                     value={formData.netWeight}
-                    onChange={(e) => setFormData({...formData, netWeight: e.target.value})}
+                    onChange={(e) => handleNetWeightVori(e.target.value)}
+                    className="w-full px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Net (Gram)</label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    required
+                    value={formData.netWeightGram}
+                    onChange={(e) => handleNetWeightGram(e.target.value)}
                     className="w-full px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm"
                   />
                 </div>

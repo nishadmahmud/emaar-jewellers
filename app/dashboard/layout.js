@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, ArrowDownToLine, LogOut, Search, Bell } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, ArrowDownToLine, LogOut, Search, FileText } from 'lucide-react';
 import { useState } from 'react';
 
 export default function DashboardLayout({ children }) {
@@ -13,6 +13,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Sell', href: '/dashboard/sell', icon: ShoppingCart },
     { name: 'Purchase', href: '/dashboard/purchase', icon: ArrowDownToLine },
+    { name: 'Balance Sheet', href: '/dashboard/balance-sheet', icon: FileText },
   ];
 
   return (
@@ -88,11 +89,6 @@ export default function DashboardLayout({ children }) {
                 </button>
               ))}
             </div>
-
-            <button className="text-neutral-400 hover:text-black transition-colors relative">
-              <Bell size={20} />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-black rounded-full border border-white"></span>
-            </button>
 
             <div className="h-8 w-8 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center">
               <span className="text-xs font-medium text-black">AD</span>

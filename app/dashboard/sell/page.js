@@ -12,12 +12,31 @@ export default function SellPage() {
     itemType: 'Ring',
     purity: '22K',
     goldVori: '1',
+    goldGram: '11.664',
     ratePerVori: '115000',
     makingCharge: '2500',
     discount: '0',
     paymentMethod: 'Cash',
     currency: 'TK'
   });
+
+  const handleVoriChange = (val) => {
+    const vori = parseFloat(val);
+    setFormData({
+      ...formData,
+      goldVori: val,
+      goldGram: isNaN(vori) ? '' : (vori * 11.664).toFixed(3)
+    });
+  };
+
+  const handleGramChange = (val) => {
+    const gram = parseFloat(val);
+    setFormData({
+      ...formData,
+      goldGram: val,
+      goldVori: isNaN(gram) ? '' : (gram / 11.664).toFixed(3)
+    });
+  };
 
   // Calculate totals
   const goldValue = (parseFloat(formData.goldVori) || 0) * (parseFloat(formData.ratePerVori) || 0);
@@ -39,6 +58,7 @@ export default function SellPage() {
         customerName: '',
         phone: '',
         goldVori: '1',
+        goldGram: '11.664',
         discount: '0'
       });
     }, 1000);
@@ -113,7 +133,7 @@ export default function SellPage() {
                 <Scale size={18} />
                 <h3 className="font-medium">Item & Weight</h3>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Item Type</label>
                   <select
@@ -142,13 +162,24 @@ export default function SellPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Weight (Vori)</label>
+                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Wt (Vori)</label>
                   <input
                     type="number"
                     step="0.001"
                     required
                     value={formData.goldVori}
-                    onChange={(e) => setFormData({...formData, goldVori: e.target.value})}
+                    onChange={(e) => handleVoriChange(e.target.value)}
+                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Wt (Gram)</label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    required
+                    value={formData.goldGram}
+                    onChange={(e) => handleGramChange(e.target.value)}
                     className="w-full px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
                   />
                 </div>
