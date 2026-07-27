@@ -21,36 +21,50 @@ const BuyTable = () => {
     { name: '', gram: null, tola: null, unit: 0, tk: null, avg: null },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden w-full flex flex-col h-full">
-      <div className="bg-blue-600 text-white text-center font-bold text-xs py-2 tracking-wider">BUY</div>
-      <div className="grid grid-cols-6 bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider border-b border-neutral-200">
-        <div className="px-3 py-2">Name</div>
-        <div className="px-3 py-2 text-right">Gram</div>
-        <div className="px-3 py-2 text-right">Tola</div>
-        <div className="px-3 py-2 text-right">Unit</div>
-        <div className="px-3 py-2 text-right">TK</div>
-        <div className="px-3 py-2 text-right">Avg</div>
-      </div>
-      <div className="flex-1">
-        {data.map((row, i) => (
-          <div key={i} className="grid grid-cols-6 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors text-xs items-center min-h-[36px]">
-            <div className="px-3 py-1.5 font-medium text-neutral-700">{row.name}</div>
-            <div className="px-3 py-1.5 text-right font-medium text-orange-600">{formatNumber(row.gram)}</div>
-            <div className="px-3 py-1.5 text-right font-medium text-orange-600">{formatNumber(row.tola)}</div>
-            <div className="px-3 py-1.5 text-right text-neutral-600">{formatNumber(row.unit)}</div>
-            <div className="px-3 py-1.5 text-right font-semibold text-neutral-800">{formatNumber(row.tk, 2)}</div>
-            <div className="px-3 py-1.5 text-right text-neutral-500">{formatNumber(row.avg)}</div>
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-6 bg-neutral-50 border-t border-neutral-200 text-xs items-center min-h-[40px]">
-        <div className="px-3 py-2 font-bold text-neutral-800">Total</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">2920</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800"></div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800"></div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">659,505.36</div>
-        <div className="px-3 py-2 text-right font-bold text-orange-600">225.858</div>
-      </div>
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
+      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">BUY</div>
+      <table className="w-full h-full text-left border-collapse text-xs flex-1">
+        <thead>
+          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
+            <th className="px-3 py-2 border border-neutral-200">Name</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Gram</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Tola</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, i) => (
+            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
+              <td className="px-3 py-1.5 font-medium text-neutral-700 border border-neutral-200">{row.name}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-orange-600 border border-neutral-200">{formatNumber(row.gram)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-orange-600 border border-neutral-200">{formatNumber(row.tola)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk, 2)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-neutral-500 border border-neutral-200">{formatNumber(row.avg)}</td>
+            </tr>
+          ))}
+          <tr className="h-full">
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
+            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">2920</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200"></td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200"></td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">659,505.36</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-orange-600 border border-neutral-200">225.858</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 };
@@ -64,33 +78,46 @@ const ChainBuyTable = () => {
     { name: 'Ans22', tola: 170, unit: 197.864, tk: 33636.818, avg: null },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden w-full flex flex-col h-full">
-      <div className="bg-blue-600 text-white text-center font-bold text-xs py-2 tracking-wider">CHAIN BUY</div>
-      <div className="grid grid-cols-5 bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider border-b border-neutral-200">
-        <div className="px-3 py-2">Name</div>
-        <div className="px-3 py-2 text-right">Tola</div>
-        <div className="px-3 py-2 text-right">Unit</div>
-        <div className="px-3 py-2 text-right">TK</div>
-        <div className="px-3 py-2 text-right">Avg</div>
-      </div>
-      <div className="flex-1">
-        {data.map((row, i) => (
-          <div key={i} className="grid grid-cols-5 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors text-xs items-center min-h-[36px]">
-            <div className="px-3 py-1.5 font-medium text-neutral-700">{row.name}</div>
-            <div className="px-3 py-1.5 text-right font-medium text-orange-600">{formatNumber(row.tola)}</div>
-            <div className="px-3 py-1.5 text-right text-neutral-600">{formatNumber(row.unit)}</div>
-            <div className="px-3 py-1.5 text-right font-semibold text-neutral-800">{formatNumber(row.tk, 2)}</div>
-            <div className="px-3 py-1.5 text-right text-neutral-500">{formatNumber(row.avg)}</div>
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-5 bg-neutral-50 border-t border-neutral-200 text-xs items-center min-h-[40px]">
-        <div className="px-3 py-2 font-bold text-neutral-800">Total</div>
-        <div className="px-3 py-2 text-right font-bold text-orange-600">1,755.144</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800"></div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">346,735.28</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">197.554</div>
-      </div>
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
+      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">CHAIN BUY</div>
+      <table className="w-full h-full text-left border-collapse text-xs flex-1">
+        <thead>
+          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
+            <th className="px-3 py-2 border border-neutral-200">Name</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Tola</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, i) => (
+            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
+              <td className="px-3 py-1.5 font-medium text-neutral-700 border border-neutral-200">{row.name}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-orange-600 border border-neutral-200">{formatNumber(row.tola)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk, 2)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-neutral-500 border border-neutral-200">{formatNumber(row.avg)}</td>
+            </tr>
+          ))}
+          <tr className="h-full">
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
+            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-orange-600 border border-neutral-200">1,755.144</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200"></td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">346,735.28</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">197.554</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 };
@@ -106,36 +133,50 @@ const FwdBuyTable = () => {
     { rate: 1590, name: 'SKNDR', tola: 200, unit: 5093, tk: 1018600, avg: 20 },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden w-full flex flex-col h-full">
-      <div className="bg-blue-600 text-white text-center font-bold text-xs py-2 tracking-wider">FWD BUY</div>
-      <div className="grid grid-cols-6 bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider border-b border-neutral-200">
-        <div className="px-3 py-2 text-right">Rate</div>
-        <div className="px-3 py-2">Name</div>
-        <div className="px-3 py-2 text-right">Tola</div>
-        <div className="px-3 py-2 text-right">Unit</div>
-        <div className="px-3 py-2 text-right">TK</div>
-        <div className="px-3 py-2 text-right">Avg</div>
-      </div>
-      <div className="flex-1">
-        {data.map((row, i) => (
-          <div key={i} className="grid grid-cols-6 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors text-xs items-center min-h-[36px]">
-            <div className="px-3 py-1.5 text-right font-medium text-neutral-700">{formatNumber(row.rate, 1)}</div>
-            <div className="px-3 py-1.5 font-medium text-blue-700">{row.name}</div>
-            <div className="px-3 py-1.5 text-right font-medium text-pink-600">{formatNumber(row.tola)}</div>
-            <div className="px-3 py-1.5 text-right text-red-500 font-medium">{formatNumber(row.unit)}</div>
-            <div className="px-3 py-1.5 text-right font-semibold text-blue-700">{formatNumber(row.tk, 0)}</div>
-            <div className="px-3 py-1.5 text-right text-orange-600">{formatNumber(row.avg)}</div>
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-6 bg-neutral-50 border-t border-neutral-200 text-xs items-center min-h-[40px]">
-        <div className="px-3 py-2"></div>
-        <div className="px-3 py-2 font-bold text-neutral-800">Total</div>
-        <div className="px-3 py-2 text-right font-bold text-pink-600">12,450</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">Total</div>
-        <div className="px-3 py-2 text-right font-bold text-blue-700">1,470,464.00</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">3,330.961</div>
-      </div>
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
+      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">FWD BUY</div>
+      <table className="w-full h-full text-left border-collapse text-xs flex-1">
+        <thead>
+          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
+            <th className="px-3 py-2 border border-neutral-200 text-right">Rate</th>
+            <th className="px-3 py-2 border border-neutral-200">Name</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Tola</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, i) => (
+            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
+              <td className="px-3 py-1.5 text-right font-mono font-medium text-neutral-700 border border-neutral-200">{formatNumber(row.rate, 1)}</td>
+              <td className="px-3 py-1.5 font-medium text-blue-700 border border-neutral-200">{row.name}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-medium text-pink-600 border border-neutral-200">{formatNumber(row.tola)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-red-500 font-medium border border-neutral-200">{formatNumber(row.unit)}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-semibold text-blue-700 border border-neutral-200">{formatNumber(row.tk, 0)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-orange-600 border border-neutral-200">{formatNumber(row.avg)}</td>
+            </tr>
+          ))}
+          <tr className="h-full">
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
+            <td className="px-3 py-2 border border-neutral-200"></td>
+            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-pink-600 border border-neutral-200">12,450</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">Total</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-blue-700 border border-neutral-200">1,470,464.00</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">3,330.961</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 };
@@ -153,30 +194,42 @@ const SellTable = () => {
     { name: 'Kis22', tola: 1419.5, unit: 193.568, tk: 19356.818 },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden w-full flex flex-col h-full">
-      <div className="bg-red-600 text-white text-center font-bold text-xs py-2 tracking-wider">SELL</div>
-      <div className="grid grid-cols-4 bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider border-b border-neutral-200">
-        <div className="px-3 py-2">Name</div>
-        <div className="px-3 py-2 text-right">Tola</div>
-        <div className="px-3 py-2 text-right">Unit</div>
-        <div className="px-3 py-2 text-right">TK</div>
-      </div>
-      <div className="flex-1">
-        {data.map((row, i) => (
-          <div key={i} className="grid grid-cols-4 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors text-xs items-center min-h-[36px]">
-            <div className="px-3 py-1.5 font-medium text-red-700">{row.name}</div>
-            <div className="px-3 py-1.5 text-right font-medium text-orange-600">{formatNumber(row.tola)}</div>
-            <div className="px-3 py-1.5 text-right text-neutral-600">{formatNumber(row.unit)}</div>
-            <div className="px-3 py-1.5 text-right font-semibold text-neutral-800">{formatNumber(row.tk, 2)}</div>
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-4 bg-neutral-50 border-t border-neutral-200 text-xs items-center min-h-[40px]">
-        <div className="px-3 py-2 font-bold text-neutral-800">Total</div>
-        <div className="px-3 py-2 text-right font-bold text-orange-600">150</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">29,345.455</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">195.636</div>
-      </div>
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
+      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">SELL</div>
+      <table className="w-full h-full text-left border-collapse text-xs flex-1">
+        <thead>
+          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
+            <th className="px-3 py-2 border border-neutral-200">Name</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Tola</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, i) => (
+            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
+              <td className="px-3 py-1.5 font-medium text-red-700 border border-neutral-200">{row.name}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-medium text-orange-600 border border-neutral-200">{formatNumber(row.tola)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk, 2)}</td>
+            </tr>
+          ))}
+          <tr className="h-full">
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
+            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-orange-600 border border-neutral-200">150</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">29,345.455</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">195.636</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 };
@@ -192,33 +245,46 @@ const ChainSellTable = () => {
     { name: 'Bnk22', tola: 1450, unit: 666.033, tk: 131692.89, avg: 197.727 },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden w-full flex flex-col h-full">
-      <div className="bg-red-600 text-white text-center font-bold text-xs py-2 tracking-wider">CHAIN SELL</div>
-      <div className="grid grid-cols-5 bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider border-b border-neutral-200">
-        <div className="px-3 py-2">Name</div>
-        <div className="px-3 py-2 text-right">Tola</div>
-        <div className="px-3 py-2 text-right">Unit</div>
-        <div className="px-3 py-2 text-right">TK</div>
-        <div className="px-3 py-2 text-right">Avg</div>
-      </div>
-      <div className="flex-1">
-        {data.map((row, i) => (
-          <div key={i} className="grid grid-cols-5 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors text-xs items-center min-h-[36px]">
-            <div className="px-3 py-1.5 font-medium text-red-700">{row.name}</div>
-            <div className="px-3 py-1.5 text-right font-medium text-orange-600">{formatNumber(row.tola)}</div>
-            <div className="px-3 py-1.5 text-right text-neutral-600">{formatNumber(row.unit)}</div>
-            <div className="px-3 py-1.5 text-right font-semibold text-neutral-800">{formatNumber(row.tk, 2)}</div>
-            <div className="px-3 py-1.5 text-right text-neutral-500">{formatNumber(row.avg)}</div>
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-5 bg-neutral-50 border-t border-neutral-200 text-xs items-center min-h-[40px]">
-        <div className="px-3 py-2 font-bold text-neutral-800">Total</div>
-        <div className="px-3 py-2 text-right font-bold text-orange-600">1,177.46</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800"></div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">230,703.14</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">195.933</div>
-      </div>
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
+      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">CHAIN SELL</div>
+      <table className="w-full h-full text-left border-collapse text-xs flex-1">
+        <thead>
+          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
+            <th className="px-3 py-2 border border-neutral-200">Name</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Tola</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, i) => (
+            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
+              <td className="px-3 py-1.5 font-medium text-red-700 border border-neutral-200">{row.name}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-medium text-orange-600 border border-neutral-200">{formatNumber(row.tola)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk, 2)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-neutral-500 border border-neutral-200">{formatNumber(row.avg)}</td>
+            </tr>
+          ))}
+          <tr className="h-full">
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
+            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-orange-600 border border-neutral-200">1,177.46</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200"></td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">230,703.14</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">195.933</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 };
@@ -232,24 +298,34 @@ const TokenTable = () => {
     { sl: 5, name: 'EMR', note: '', amount: 67.067 },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden w-full flex flex-col h-full">
-      <div className="bg-neutral-800 text-white text-center font-bold text-xs py-2 tracking-wider">TOKEN</div>
-      <div className="grid grid-cols-4 bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider border-b border-neutral-200">
-        <div className="px-3 py-2 text-center">SL</div>
-        <div className="px-3 py-2">Name</div>
-        <div className="px-3 py-2">Note</div>
-        <div className="px-3 py-2 text-right">Amount</div>
-      </div>
-      <div className="flex-1">
-        {data.map((row, i) => (
-          <div key={i} className="grid grid-cols-4 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors text-xs items-center min-h-[36px]">
-            <div className="px-3 py-1.5 text-center text-neutral-400">{row.sl}</div>
-            <div className="px-3 py-1.5 font-medium text-neutral-700">{row.name}</div>
-            <div className="px-3 py-1.5 text-neutral-400">{row.note}</div>
-            <div className="px-3 py-1.5 text-right font-semibold text-neutral-800">{formatNumber(row.amount)}</div>
-          </div>
-        ))}
-      </div>
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
+      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">TOKEN</div>
+      <table className="w-full h-full text-left border-collapse text-xs flex-1">
+        <thead>
+          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
+            <th className="px-3 py-2 border border-neutral-200 text-center">SL</th>
+            <th className="px-3 py-2 border border-neutral-200">Name</th>
+            <th className="px-3 py-2 border border-neutral-200">Note</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, i) => (
+            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
+              <td className="px-3 py-1.5 text-center font-mono text-neutral-400 border border-neutral-200">{row.sl}</td>
+              <td className="px-3 py-1.5 font-medium text-neutral-700 border border-neutral-200">{row.name}</td>
+              <td className="px-3 py-1.5 text-neutral-400 border border-neutral-200">{row.note}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.amount)}</td>
+            </tr>
+          ))}
+          <tr className="h-full">
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 };
@@ -264,33 +340,46 @@ const DhBuyTable = () => {
     { name: 'Kis22', dh: 2372, unit: 30, tk: 71160, avg: null },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden w-full flex flex-col h-full">
-      <div className="bg-green-600 text-white text-center font-bold text-xs py-2 tracking-wider">DH BUY</div>
-      <div className="grid grid-cols-5 bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider border-b border-neutral-200">
-        <div className="px-3 py-2">Name</div>
-        <div className="px-3 py-2 text-right">DH</div>
-        <div className="px-3 py-2 text-right">Unit</div>
-        <div className="px-3 py-2 text-right">TK</div>
-        <div className="px-3 py-2 text-right">Avg</div>
-      </div>
-      <div className="flex-1">
-        {data.map((row, i) => (
-          <div key={i} className="grid grid-cols-5 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors text-xs items-center min-h-[36px]">
-            <div className="px-3 py-1.5 font-medium text-neutral-700">{row.name}</div>
-            <div className="px-3 py-1.5 text-right font-medium text-green-700">{formatNumber(row.dh)}</div>
-            <div className="px-3 py-1.5 text-right text-neutral-600">{formatNumber(row.unit)}</div>
-            <div className="px-3 py-1.5 text-right font-semibold text-neutral-800">{formatNumber(row.tk)}</div>
-            <div className="px-3 py-1.5 text-right text-neutral-500">{formatNumber(row.avg)}</div>
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-5 bg-neutral-50 border-t border-neutral-200 text-xs items-center min-h-[40px]">
-        <div className="px-3 py-2 font-bold text-neutral-800">Total</div>
-        <div className="px-3 py-2 text-right font-bold text-green-700">22,153.383</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">Total</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">664,607.15</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">30.000</div>
-      </div>
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
+      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">DH BUY</div>
+      <table className="w-full h-full text-left border-collapse text-xs flex-1">
+        <thead>
+          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
+            <th className="px-3 py-2 border border-neutral-200">Name</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">DH</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, i) => (
+            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
+              <td className="px-3 py-1.5 font-medium text-neutral-700 border border-neutral-200">{row.name}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-medium text-green-700 border border-neutral-200">{formatNumber(row.dh)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-neutral-500 border border-neutral-200">{formatNumber(row.avg)}</td>
+            </tr>
+          ))}
+          <tr className="h-full">
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
+            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-green-700 border border-neutral-200">22,153.383</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">Total</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">664,607.15</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">30.000</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 };
@@ -304,33 +393,46 @@ const DhSellTable = () => {
     { name: 'Nmn', dh: 579.388, unit: 34.35, tk: 19901.97, avg: null },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden w-full flex flex-col h-full">
-      <div className="bg-red-600 text-white text-center font-bold text-xs py-2 tracking-wider">DH SELL</div>
-      <div className="grid grid-cols-5 bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider border-b border-neutral-200">
-        <div className="px-3 py-2">Name</div>
-        <div className="px-3 py-2 text-right">DH</div>
-        <div className="px-3 py-2 text-right">Unit</div>
-        <div className="px-3 py-2 text-right">TK</div>
-        <div className="px-3 py-2 text-right">Avg</div>
-      </div>
-      <div className="flex-1">
-        {data.map((row, i) => (
-          <div key={i} className="grid grid-cols-5 border-b border-neutral-100 last:border-0 hover:bg-neutral-50 transition-colors text-xs items-center min-h-[36px]">
-            <div className="px-3 py-1.5 font-medium text-neutral-700">{row.name}</div>
-            <div className="px-3 py-1.5 text-right font-medium text-red-600">{formatNumber(row.dh)}</div>
-            <div className="px-3 py-1.5 text-right text-neutral-600">{formatNumber(row.unit)}</div>
-            <div className="px-3 py-1.5 text-right font-semibold text-neutral-800">{formatNumber(row.tk)}</div>
-            <div className="px-3 py-1.5 text-right text-neutral-500">{formatNumber(row.avg)}</div>
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-5 bg-neutral-50 border-t border-neutral-200 text-xs items-center min-h-[40px]">
-        <div className="px-3 py-2 font-bold text-neutral-800">Total</div>
-        <div className="px-3 py-2 text-right font-bold text-red-600">13,438.821</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">Total</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">413,684.96</div>
-        <div className="px-3 py-2 text-right font-bold text-neutral-800">30.783</div>
-      </div>
+    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
+      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">DH SELL</div>
+      <table className="w-full h-full text-left border-collapse text-xs flex-1">
+        <thead>
+          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
+            <th className="px-3 py-2 border border-neutral-200">Name</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">DH</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
+            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((row, i) => (
+            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
+              <td className="px-3 py-1.5 font-medium text-neutral-700 border border-neutral-200">{row.name}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-medium text-red-600 border border-neutral-200">{formatNumber(row.dh)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
+              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk)}</td>
+              <td className="px-3 py-1.5 text-right font-mono text-neutral-500 border border-neutral-200">{formatNumber(row.avg)}</td>
+            </tr>
+          ))}
+          <tr className="h-full">
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+            <td className="border border-neutral-200"></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
+            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-red-600 border border-neutral-200">13,438.821</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">Total</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">413,684.96</td>
+            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">30.783</td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 };

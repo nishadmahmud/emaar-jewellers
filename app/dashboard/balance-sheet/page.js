@@ -67,68 +67,71 @@ export default function BalanceSheetPage() {
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-        {/* Table Header */}
-        <div className="grid grid-cols-7 bg-neutral-100 border-b border-neutral-200 text-sm font-semibold uppercase tracking-wider text-neutral-600">
-          <div className="px-6 py-4 border-r border-neutral-200">Name</div>
-          <div className="px-6 py-4 border-r border-neutral-200 text-right">Qty</div>
-          <div className="px-6 py-4 border-r border-neutral-200 text-right">Unit</div>
-          <div className="px-6 py-4 border-r border-neutral-200 text-right text-blue-700">CDT</div>
-          <div className="px-6 py-4 border-r border-neutral-200 text-right text-red-700">DBT</div>
-          <div className="px-6 py-4 border-r border-neutral-200 text-right text-blue-700">EXP</div>
-          <div className="px-6 py-4 text-right text-blue-700">Balance</div>
-        </div>
-
-        {/* Table Body */}
-        <div className="divide-y divide-neutral-100 flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-          {mockData.map((row, index) => (
-            <div 
-              key={index} 
-              className={`grid grid-cols-7 text-sm hover:bg-neutral-50 transition-colors ${
-                row.highlight ? row.highlight : row.isShaded ? 'bg-neutral-50/50' : 'bg-white'
-              }`}
-            >
-              <div className="px-6 py-3 border-r border-neutral-200 font-medium text-neutral-800 flex items-center">
-                {row.name}
-              </div>
-              <div className="px-6 py-3 border-r border-neutral-200 font-mono text-right flex items-center justify-end text-neutral-700">
-                {formatNumber(row.qty)}
-              </div>
-              <div className="px-6 py-3 border-r border-neutral-200 font-mono text-right flex items-center justify-end text-neutral-700">
-                {formatNumber(row.unit)}
-              </div>
-              <div className="px-6 py-3 border-r border-neutral-200 font-mono text-right flex items-center justify-end text-blue-600 font-medium">
-                {formatNumber(row.cdt)}
-              </div>
-              <div className="px-6 py-3 border-r border-neutral-200 font-mono text-right flex items-center justify-end text-red-600 font-medium">
-                {row.dbt === 0 ? '0' : formatNumber(row.dbt)}
-              </div>
-              <div className="px-6 py-3 border-r border-neutral-200 font-mono text-right flex items-center justify-end text-neutral-800 font-medium">
-                {formatNumber(row.exp)}
-              </div>
-              <div className="px-6 py-3 font-mono text-right flex items-center justify-end text-neutral-800 font-medium">
-                {formatNumber(row.balance)}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Table Footer / Summary */}
-        <div className="grid grid-cols-7 bg-neutral-900 border-t-2 border-neutral-900 text-sm font-semibold text-white">
-          <div className="px-6 py-4 border-r border-neutral-700 col-span-3 text-right tracking-wider uppercase">
-            Total
-          </div>
-          <div className="px-6 py-4 border-r border-neutral-700 text-right font-mono text-blue-300">
-            {formatNumber(totals.cdt)}
-          </div>
-          <div className="px-6 py-4 border-r border-neutral-700 text-right font-mono text-red-400">
-            {formatNumber(totals.dbt)}
-          </div>
-          <div className="px-6 py-4 border-r border-neutral-700 text-right font-mono text-white">
-            {formatNumber(totals.exp)}
-          </div>
-          <div className="px-6 py-4 text-right font-mono text-white">
-            {formatNumber(totals.balance)}
-          </div>
+        <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+          <table className="w-full text-left border-collapse text-sm">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-neutral-50 text-sm font-semibold uppercase tracking-wider text-neutral-600 border-b border-neutral-200">
+                <th className="px-6 py-3 border border-neutral-200">Name</th>
+                <th className="px-6 py-3 border border-neutral-200 text-right">Qty</th>
+                <th className="px-6 py-3 border border-neutral-200 text-right">Unit</th>
+                <th className="px-6 py-3 border border-neutral-200 text-right text-blue-700">CDT</th>
+                <th className="px-6 py-3 border border-neutral-200 text-right text-red-700">DBT</th>
+                <th className="px-6 py-3 border border-neutral-200 text-right text-blue-700">EXP</th>
+                <th className="px-6 py-3 border border-neutral-200 text-right text-blue-700">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mockData.map((row, index) => (
+                <tr 
+                  key={index} 
+                  className={`hover:bg-neutral-50/80 transition-colors ${
+                    row.highlight ? row.highlight : row.isShaded ? 'bg-neutral-50' : 'bg-white'
+                  }`}
+                >
+                  <td className="px-6 py-2.5 border border-neutral-200 font-medium text-neutral-800">
+                    {row.name}
+                  </td>
+                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-neutral-700">
+                    {formatNumber(row.qty)}
+                  </td>
+                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-neutral-700">
+                    {formatNumber(row.unit)}
+                  </td>
+                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-blue-600 font-medium">
+                    {formatNumber(row.cdt)}
+                  </td>
+                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-red-600 font-medium">
+                    {row.dbt === 0 ? '0' : formatNumber(row.dbt)}
+                  </td>
+                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-neutral-800 font-medium">
+                    {formatNumber(row.exp)}
+                  </td>
+                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-neutral-800 font-medium">
+                    {formatNumber(row.balance)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="sticky bottom-0 z-10">
+              <tr className="bg-neutral-100 border-t-2 border-neutral-400 text-sm font-semibold">
+                <td className="px-6 py-4 border border-neutral-200 text-right tracking-wider uppercase text-neutral-800" colSpan={3}>
+                  Total
+                </td>
+                <td className="px-6 py-4 border border-neutral-200 text-right font-mono text-blue-700">
+                  {formatNumber(totals.cdt)}
+                </td>
+                <td className="px-6 py-4 border border-neutral-200 text-right font-mono text-red-600">
+                  {formatNumber(totals.dbt)}
+                </td>
+                <td className="px-6 py-4 border border-neutral-200 text-right font-mono text-neutral-800">
+                  {formatNumber(totals.exp)}
+                </td>
+                <td className="px-6 py-4 border border-neutral-200 text-right font-mono text-neutral-800">
+                  {formatNumber(totals.balance)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
     </div>
