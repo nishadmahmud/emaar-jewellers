@@ -6,12 +6,15 @@ export const middleware = async (req) => {
   const token = response?.accessToken;
   const isPinVerified = response?.pinVerified;
 
+  console.log(`[Middleware] Path: ${req.nextUrl.pathname}, Token: ${!!token}, PinVerified: ${isPinVerified}`);
+
   const path = req.nextUrl.pathname;
   const isStaticAsset = /\.[^/]+$/.test(path);
   const isPublic = path === "/login" || path === "/verify-pin" || isStaticAsset;
 
   // 1. No token -> go to login
   if (!token && !isPublic) {
+    console.log(`[Middleware] No token found! Redirecting to login. Path: ${path}`);
     const url = req.nextUrl.clone();
     const callbackUrl = encodeURIComponent(url.pathname);
     url.pathname = "/login";

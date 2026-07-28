@@ -1,23 +1,112 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowDownToLine, Loader2, Store, Scale, FileText, Download } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowDownToLine, Loader2, Store, Scale, FileText, Download, Search, CreditCard, Banknote, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSession } from 'next-auth/react';
+import axios from 'axios';
 
 export default function PurchasePage() {
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const API_URL = process.env.NEXT_PUBLIC_API;
+
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     vendorName: 'SKNDR (Dubai)',
-    invoiceRef: 'INV-DB-908',
-    itemType: 'Gold Bar (99.99%)',
+    productId: null,
+    productName: '',
     grossWeight: '50',
     grossWeightGram: '583.200',
     netWeight: '50',
     netWeightGram: '583.200',
     ratePerVori: '124500',
-    refiningCharge: '0',
+    paymentMethodId: null,
+    paymentMethodName: 'Cash',
     currency: 'TK'
   });
+
+  // --- Payment Methods API ---
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  useEffect(() => {
+    if (token) {
+      axios.get(`${API_URL}/payment-type-list`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then(res => {
+        if (res.data?.data) {
+          setPaymentMethods(res.data.data);
+          const cashMethod = res.data.data.find(m => m.type_name?.toLowerCase() === 'cash');
+          if (cashMethod) {
+            setFormData(prev => ({ ...prev, paymentMethodId: cashMethod.id, paymentMethodName: cashMethod.type_name }));
+          } else if (res.data.data.length > 0) {
+            setFormData(prev => ({ ...prev, paymentMethodId: res.data.data[0].id, paymentMethodName: res.data.data[0].type_name }));
+          }
+        }
+      })
+      .catch(err => console.error("Failed to fetch payment methods", err));
+    }
+  }, [token]);
+
+
+  // --- Product Search ---
+  const [productSearch, setProductSearch] = useState('');
+  const [productList, setProductList] = useState([]);
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
+  const [isProductSearching, setIsProductSearching] = useState(false);
+  const productDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (productSearch && token && isProductDropdownOpen) {
+        setIsProductSearching(true);
+        axios.post(`${API_URL}/search-product-v1?page=1&limit=20`, 
+          { keyword: productSearch }, 
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        .then(res => {
+          setProductList(res.data?.data?.data || []);
+        })
+        .catch(err => console.error("Product search error", err))
+        .finally(() => setIsProductSearching(false));
+      } else if (!productSearch && token && isProductDropdownOpen) {
+        // Fetch default products if search is empty
+        setIsProductSearching(true);
+        axios.get(`${API_URL}/product?page=1&limit=20`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => {
+          setProductList(res.data?.data?.data || []);
+        })
+        .catch(err => console.error("Product fetch error", err))
+        .finally(() => setIsProductSearching(false));
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [productSearch, token, isProductDropdownOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (productDropdownRef.current && !productDropdownRef.current.contains(event.target)) {
+        setIsProductDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectProduct = (product) => {
+    setFormData(prev => ({
+      ...prev,
+      productId: product.id,
+      productName: product.name,
+      ratePerVori: product.purchase_price || product.retails_price || product.sell_price || prev.ratePerVori
+    }));
+    setProductSearch(product.name);
+    setIsProductDropdownOpen(false);
+  };
+
 
   const handleGrossWeightVori = (val) => {
     const vori = parseFloat(val);
@@ -59,8 +148,7 @@ export default function PurchasePage() {
   const netWeightNum = parseFloat(formData.netWeight) || 0;
   const rateNum = parseFloat(formData.ratePerVori) || 0;
   const goldValue = netWeightNum * rateNum;
-  const refiningTotal = parseFloat(formData.refiningCharge) || 0;
-  const grandTotal = goldValue - refiningTotal;
+  const grandTotal = goldValue;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -71,12 +159,14 @@ export default function PurchasePage() {
       toast.success(`Successfully recorded purchase of ${formData.netWeight} Vori from ${formData.vendorName}!`);
       setFormData({
         ...formData,
-        invoiceRef: `INV-DB-${Math.floor(Math.random() * 1000)}`,
+        productId: null,
+        productName: '',
         grossWeight: '',
         grossWeightGram: '',
         netWeight: '',
         netWeightGram: ''
       });
+      setProductSearch('');
     }, 1000);
   };
 
@@ -86,6 +176,12 @@ export default function PurchasePage() {
       case 'AED': return 'د.إ';
       default: return '৳';
     }
+  };
+
+  const getPaymentIcon = (name) => {
+    const n = name?.toLowerCase() || '';
+    if (n.includes('card') || n.includes('visa') || n.includes('master')) return <CreditCard size={16} />;
+    return <Banknote size={16} />;
   };
 
   return (
@@ -112,7 +208,7 @@ export default function PurchasePage() {
                 <h3 className="font-medium">Vendor Details</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Vendor Name</label>
                   <select
                     value={formData.vendorName}
@@ -125,41 +221,80 @@ export default function PurchasePage() {
                     <option>Local Scrap Dealer</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Vendor Invoice Ref</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.invoiceRef}
-                    onChange={(e) => setFormData({...formData, invoiceRef: e.target.value})}
-                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-all outline-none text-sm font-mono"
-                  />
-                </div>
               </div>
             </div>
 
             {/* Stock Details */}
-            <div className="bg-white border border-neutral-200 p-6 rounded-xl shadow-sm">
-              <div className="flex items-center gap-2 mb-4 text-neutral-800">
-                <Scale size={18} />
-                <h3 className="font-medium">Stock Details</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
-                <div className="md:col-span-5">
-                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Stock Category</label>
-                  <div className="flex gap-2">
-                    {['Gold Bar (99.99%)', 'Scrap Gold', 'Ready Ornaments', 'Chain Buy'].map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setFormData({...formData, itemType: type})}
-                        className={`flex-1 py-2 text-xs font-medium border rounded-lg transition-colors ${formData.itemType === type ? 'border-black bg-black text-white' : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100'}`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
+            <div className="bg-white border border-neutral-200 p-6 rounded-xl shadow-sm relative" ref={productDropdownRef}>
+              <div className="flex items-center justify-between mb-4 text-neutral-800">
+                <div className="flex items-center gap-2">
+                  <Scale size={18} />
+                  <h3 className="font-medium">Stock Details</h3>
                 </div>
+                {formData.productName && (
+                  <button type="button" onClick={() => {
+                    setFormData(prev => ({...prev, productId: null, productName: ''}));
+                    setProductSearch('');
+                  }} className="text-xs text-red-500 hover:underline">
+                    Clear Item
+                  </button>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="col-span-1 md:col-span-4">
+                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Search Product</label>
+                  <div className="relative">
+                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search size={14} className="text-neutral-400" />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={productSearch}
+                      onChange={(e) => {
+                        setProductSearch(e.target.value);
+                        setIsProductDropdownOpen(true);
+                        if(formData.productId) {
+                          setFormData(prev => ({...prev, productId: null, productName: ''}));
+                        }
+                      }}
+                      onFocus={() => setIsProductDropdownOpen(true)}
+                      className="w-full pl-9 pr-10 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                      placeholder="Select or search product..."
+                    />
+                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                       {isProductSearching ? <Loader2 size={14} className="text-neutral-400 animate-spin" /> : <ChevronDown size={14} className="text-neutral-400" />}
+                    </div>
+                  </div>
+
+                  {/* Product Dropdown Menu */}
+                  {isProductDropdownOpen && (
+                    <div className="absolute z-10 mt-1 w-[calc(100%-3rem)] bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {productList.length > 0 ? (
+                        <ul>
+                          {productList.map((product) => (
+                            <li 
+                              key={product.id} 
+                              onClick={() => selectProduct(product)}
+                              className="px-4 py-3 hover:bg-neutral-50 cursor-pointer border-b border-neutral-100 last:border-0"
+                            >
+                              <div className="font-medium text-sm text-neutral-900">{product.name}</div>
+                              {product.sku && <div className="text-xs text-neutral-500">SKU: {product.sku}</div>}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="p-4 text-sm text-neutral-500 text-center">
+                           {productSearch ? 'No products found.' : 'Loading products...'}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                 <div>
                   <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Gross (Vori)</label>
                   <input
@@ -244,21 +379,6 @@ export default function PurchasePage() {
                 <span className="font-medium">{getCurrencySymbol()}{goldValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
               </div>
               
-              <div className="pt-2">
-                <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Refining / Other Charges (-)</label>
-                <div className="flex items-center">
-                  <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3 py-2 rounded-l-lg text-neutral-500 text-sm">
-                    {getCurrencySymbol()}
-                  </span>
-                  <input
-                    type="number"
-                    value={formData.refiningCharge}
-                    onChange={(e) => setFormData({...formData, refiningCharge: e.target.value})}
-                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-r-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm text-red-600"
-                  />
-                </div>
-              </div>
-
               <div className="pt-4 mt-4 border-t border-neutral-200">
                 <div className="flex justify-between items-end mb-1">
                   <span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">Net Payable</span>
@@ -269,6 +389,27 @@ export default function PurchasePage() {
             </div>
 
             <div className="p-6 bg-neutral-50 border-t border-neutral-100">
+              {paymentMethods.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {paymentMethods.map(method => (
+                    <button 
+                      key={method.id}
+                      type="button"
+                      onClick={() => setFormData({...formData, paymentMethodId: method.id, paymentMethodName: method.type_name})}
+                      className={`flex items-center justify-center gap-2 py-2 border rounded-lg text-sm transition-colors ${formData.paymentMethodId === method.id ? 'border-black bg-black text-white' : 'border-neutral-200 bg-white hover:bg-neutral-50'}`}
+                    >
+                      {getPaymentIcon(method.type_name)} {method.type_name}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                   <button type="button" className="flex items-center justify-center gap-2 py-2 border border-black bg-black text-white rounded-lg text-sm">
+                      <Banknote size={16} /> Cash
+                    </button>
+                </div>
+              )}
+
               <div className="flex gap-2 mb-4">
                 {['TK', 'USD', 'AED'].map((curr) => (
                   <button
@@ -285,7 +426,7 @@ export default function PurchasePage() {
               <button
                 type="submit"
                 form="purchase-form"
-                disabled={loading}
+                disabled={loading || !formData.productName}
                 className="w-full bg-black text-white font-medium py-3 rounded-lg hover:bg-neutral-800 transition-all flex items-center justify-center disabled:opacity-50 shadow-md hover:shadow-lg transform active:scale-[0.98]"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowDownToLine className="w-5 h-5 mr-2" />}

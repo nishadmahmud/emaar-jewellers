@@ -18,14 +18,47 @@ export const authOption = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // ALWAYS ACCEPT ANY CREDENTIALS FOR PRESENTATION
-        return {
-          id: "1",
-          name: "Emaar Admin",
-          email: credentials?.email || "admin@emaarjewellers.com",
-          accessToken: "dummy-presentation-token",
-          pinVerified: false,
-        };
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Missing email or password");
+        }
+
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API || "https://www.outletexpense.xyz/api";
+          const res = await fetch(`${apiUrl}/user-login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          });
+
+          const text = await res.text();
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            console.error("API returned non-JSON:", text.substring(0, 200));
+            throw new Error("API did not return JSON. Check server logs.");
+          }
+
+          if (!res.ok) {
+            throw new Error(data.message || data.error || "Invalid credentials");
+          }
+
+          // Return user object formatted for NextAuth based on backend response
+          return {
+            id: data.user?.id || data.id || "1",
+            name: data.user?.name || data.name || "User",
+            email: data.user?.email || data.email || credentials.email,
+            accessToken: data.authorisation?.token || data.token || data.access_token || data.jwt || null,
+            pinVerified: false,
+          };
+        } catch (error) {
+          throw new Error(error.message || "Failed to authenticate");
+        }
       },
     }),
   ],

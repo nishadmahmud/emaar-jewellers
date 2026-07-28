@@ -50,16 +50,36 @@ function VerifyPinContent() {
     setLoading(true);
 
     try {
-      // MOCKED API CALL FOR PRESENTATION
-      // Just immediately succeed and route to dashboard
-      toast.success("PIN verified successfully");
-      await updateSession({ pinVerified: true });
-      
-      setTimeout(() => {
-        router.push(callbackUrl);
-      }, 300);
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API}/verify-pin`,
+        { pin: fullPin },
+        {
+          headers: {
+            Authorization: `Bearer ${session?.accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = res.data;
+
+      if (data.status === 200) {
+        toast.success(data?.message || "PIN verified successfully");
+        await updateSession({ pinVerified: true });
+        
+        setTimeout(() => {
+          router.push(callbackUrl);
+        }, 300);
+      } else {
+        toast.error(data?.message || "PIN verification failed");
+        setLoading(false);
+      }
     } catch (error) {
-      toast.error("An error occurred while verifying PIN");
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        "An error occurred while verifying PIN"
+      );
       setLoading(false);
     }
   };

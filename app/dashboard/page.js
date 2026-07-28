@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Calendar, Users, TrendingUp, TrendingDown, Gem, Wallet, Store } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, Users, TrendingUp, TrendingDown, Gem, Wallet, Store, Loader2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import axios from 'axios';
+import useSWR from 'swr';
 
 const formatNumber = (num, decimals = 3) => {
   if (num === null || num === undefined) return '';
@@ -17,54 +20,54 @@ const BuyTable = () => {
   const data = [
     { name: 'ST', gram: 2920, tola: 225.858, unit: null, tk: 659505.36, avg: null },
     { name: 'ST', gram: null, tola: 204.284, unit: 0.000, tk: null, avg: null },
-    { name: '', gram: null, tola: null, unit: 0, tk: null, avg: null },
-    { name: '', gram: null, tola: null, unit: 0, tk: null, avg: null },
+    { name: '-', gram: null, tola: null, unit: 0, tk: null, avg: null },
+    { name: '-', gram: null, tola: null, unit: 0, tk: null, avg: null },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
-      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">BUY</div>
-      <table className="w-full h-full text-left border-collapse text-xs flex-1">
-        <thead>
-          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
-            <th className="px-3 py-2 border border-neutral-200">Name</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Gram</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Tola</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => (
-            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
-              <td className="px-3 py-1.5 font-medium text-neutral-700 border border-neutral-200">{row.name}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-orange-600 border border-neutral-200">{formatNumber(row.gram)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-orange-600 border border-neutral-200">{formatNumber(row.tola)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk, 2)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-neutral-500 border border-neutral-200">{formatNumber(row.avg)}</td>
+    <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden w-full flex flex-col h-full">
+      <div className="flex justify-between items-start p-6 border-b border-neutral-100">
+        <div>
+          <h3 className="text-lg font-bold text-neutral-900">BUY</h3>
+          <p className="text-sm text-neutral-500">Latest buy transactions</p>
+        </div>
+        <a href="#" className="text-sm font-medium text-blue-600 hover:underline">View All</a>
+      </div>
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="bg-neutral-50/50 text-neutral-500 font-bold">
+            <tr>
+              <th className="py-4 px-6 border-b border-neutral-100 font-bold">Name</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Gram</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Tola</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Unit</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">TK</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Avg</th>
             </tr>
-          ))}
-          <tr className="h-full">
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
-            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">2920</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200"></td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200"></td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">659,505.36</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-orange-600 border border-neutral-200">225.858</td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-neutral-100">
+            {data.map((row, i) => (
+              <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                <td className="py-4 px-6 font-medium text-neutral-900">{row.name}</td>
+                <td className="py-4 px-6 text-right font-medium text-neutral-700">{formatNumber(row.gram)}</td>
+                <td className="py-4 px-6 text-right font-medium text-neutral-700">{formatNumber(row.tola)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.unit)}</td>
+                <td className="py-4 px-6 text-right font-bold text-neutral-900">{formatNumber(row.tk, 2)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.avg)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-neutral-50/50">
+            <tr>
+              <td className="py-4 px-6 font-bold text-neutral-900">Total</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">2,920</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900"></td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900"></td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">659,505.36</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">225.858</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 };
@@ -78,46 +81,47 @@ const ChainBuyTable = () => {
     { name: 'Ans22', tola: 170, unit: 197.864, tk: 33636.818, avg: null },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
-      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">CHAIN BUY</div>
-      <table className="w-full h-full text-left border-collapse text-xs flex-1">
-        <thead>
-          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
-            <th className="px-3 py-2 border border-neutral-200">Name</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Tola</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => (
-            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
-              <td className="px-3 py-1.5 font-medium text-neutral-700 border border-neutral-200">{row.name}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-orange-600 border border-neutral-200">{formatNumber(row.tola)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk, 2)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-neutral-500 border border-neutral-200">{formatNumber(row.avg)}</td>
+    <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden w-full flex flex-col h-full">
+      <div className="flex justify-between items-start p-6 border-b border-neutral-100">
+        <div>
+          <h3 className="text-lg font-bold text-neutral-900">CHAIN BUY</h3>
+          <p className="text-sm text-neutral-500">Latest chain buy transactions</p>
+        </div>
+        <a href="#" className="text-sm font-medium text-blue-600 hover:underline">View All</a>
+      </div>
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="bg-neutral-50/50 text-neutral-500 font-bold">
+            <tr>
+              <th className="py-4 px-6 border-b border-neutral-100 font-bold">Name</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Tola</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Unit</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">TK</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Avg</th>
             </tr>
-          ))}
-          <tr className="h-full">
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
-            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-orange-600 border border-neutral-200">1,755.144</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200"></td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">346,735.28</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">197.554</td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-neutral-100">
+            {data.map((row, i) => (
+              <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                <td className="py-4 px-6 font-medium text-neutral-900">{row.name}</td>
+                <td className="py-4 px-6 text-right font-medium text-neutral-700">{formatNumber(row.tola)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.unit)}</td>
+                <td className="py-4 px-6 text-right font-bold text-neutral-900">{formatNumber(row.tk, 2)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.avg)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-neutral-50/50">
+            <tr>
+              <td className="py-4 px-6 font-bold text-neutral-900">Total</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">1,755.144</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900"></td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">346,735.28</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">197.554</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 };
@@ -133,50 +137,50 @@ const FwdBuyTable = () => {
     { rate: 1590, name: 'SKNDR', tola: 200, unit: 5093, tk: 1018600, avg: 20 },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
-      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">FWD BUY</div>
-      <table className="w-full h-full text-left border-collapse text-xs flex-1">
-        <thead>
-          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
-            <th className="px-3 py-2 border border-neutral-200 text-right">Rate</th>
-            <th className="px-3 py-2 border border-neutral-200">Name</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Tola</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => (
-            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
-              <td className="px-3 py-1.5 text-right font-mono font-medium text-neutral-700 border border-neutral-200">{formatNumber(row.rate, 1)}</td>
-              <td className="px-3 py-1.5 font-medium text-blue-700 border border-neutral-200">{row.name}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-medium text-pink-600 border border-neutral-200">{formatNumber(row.tola)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-red-500 font-medium border border-neutral-200">{formatNumber(row.unit)}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-semibold text-blue-700 border border-neutral-200">{formatNumber(row.tk, 0)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-orange-600 border border-neutral-200">{formatNumber(row.avg)}</td>
+    <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden w-full flex flex-col h-full">
+      <div className="flex justify-between items-start p-6 border-b border-neutral-100">
+        <div>
+          <h3 className="text-lg font-bold text-neutral-900">FWD BUY</h3>
+          <p className="text-sm text-neutral-500">Latest forward buy transactions</p>
+        </div>
+        <a href="#" className="text-sm font-medium text-blue-600 hover:underline">View All</a>
+      </div>
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="bg-neutral-50/50 text-neutral-500 font-bold">
+            <tr>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Rate</th>
+              <th className="py-4 px-6 border-b border-neutral-100 font-bold">Name</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Tola</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Unit</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">TK</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Avg</th>
             </tr>
-          ))}
-          <tr className="h-full">
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
-            <td className="px-3 py-2 border border-neutral-200"></td>
-            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-pink-600 border border-neutral-200">12,450</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">Total</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-blue-700 border border-neutral-200">1,470,464.00</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">3,330.961</td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-neutral-100">
+            {data.map((row, i) => (
+              <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                <td className="py-4 px-6 text-right font-medium text-neutral-700">{formatNumber(row.rate, 1)}</td>
+                <td className="py-4 px-6 font-medium text-neutral-900">{row.name}</td>
+                <td className="py-4 px-6 text-right font-medium text-neutral-700">{formatNumber(row.tola)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.unit)}</td>
+                <td className="py-4 px-6 text-right font-bold text-neutral-900">{formatNumber(row.tk, 0)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.avg)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-neutral-50/50">
+            <tr>
+              <td className="py-4 px-6 border-b border-neutral-100"></td>
+              <td className="py-4 px-6 font-bold text-neutral-900">Total</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">12,450</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">Total</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">1,470,464.00</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">3,330.961</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 };
@@ -194,42 +198,44 @@ const SellTable = () => {
     { name: 'Kis22', tola: 1419.5, unit: 193.568, tk: 19356.818 },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
-      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">SELL</div>
-      <table className="w-full h-full text-left border-collapse text-xs flex-1">
-        <thead>
-          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
-            <th className="px-3 py-2 border border-neutral-200">Name</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Tola</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => (
-            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
-              <td className="px-3 py-1.5 font-medium text-red-700 border border-neutral-200">{row.name}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-medium text-orange-600 border border-neutral-200">{formatNumber(row.tola)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk, 2)}</td>
+    <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden w-full flex flex-col h-full">
+      <div className="flex justify-between items-start p-6 border-b border-neutral-100">
+        <div>
+          <h3 className="text-lg font-bold text-neutral-900">SELL</h3>
+          <p className="text-sm text-neutral-500">Latest sell transactions</p>
+        </div>
+        <a href="#" className="text-sm font-medium text-blue-600 hover:underline">View All</a>
+      </div>
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="bg-neutral-50/50 text-neutral-500 font-bold">
+            <tr>
+              <th className="py-4 px-6 border-b border-neutral-100 font-bold">Name</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Tola</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Unit</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">TK</th>
             </tr>
-          ))}
-          <tr className="h-full">
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
-            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-orange-600 border border-neutral-200">150</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">29,345.455</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">195.636</td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-neutral-100">
+            {data.map((row, i) => (
+              <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                <td className="py-4 px-6 font-medium text-neutral-900">{row.name}</td>
+                <td className="py-4 px-6 text-right font-medium text-neutral-700">{formatNumber(row.tola)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.unit)}</td>
+                <td className="py-4 px-6 text-right font-bold text-neutral-900">{formatNumber(row.tk, 2)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-neutral-50/50">
+            <tr>
+              <td className="py-4 px-6 font-bold text-neutral-900">Total</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">150</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">29,345.455</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">195.636</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 };
@@ -245,87 +251,90 @@ const ChainSellTable = () => {
     { name: 'Bnk22', tola: 1450, unit: 666.033, tk: 131692.89, avg: 197.727 },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
-      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">CHAIN SELL</div>
-      <table className="w-full h-full text-left border-collapse text-xs flex-1">
-        <thead>
-          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
-            <th className="px-3 py-2 border border-neutral-200">Name</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Tola</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => (
-            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
-              <td className="px-3 py-1.5 font-medium text-red-700 border border-neutral-200">{row.name}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-medium text-orange-600 border border-neutral-200">{formatNumber(row.tola)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk, 2)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-neutral-500 border border-neutral-200">{formatNumber(row.avg)}</td>
+    <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden w-full flex flex-col h-full">
+      <div className="flex justify-between items-start p-6 border-b border-neutral-100">
+        <div>
+          <h3 className="text-lg font-bold text-neutral-900">CHAIN SELL</h3>
+          <p className="text-sm text-neutral-500">Latest chain sell transactions</p>
+        </div>
+        <a href="#" className="text-sm font-medium text-blue-600 hover:underline">View All</a>
+      </div>
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="bg-neutral-50/50 text-neutral-500 font-bold">
+            <tr>
+              <th className="py-4 px-6 border-b border-neutral-100 font-bold">Name</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Tola</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Unit</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">TK</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Avg</th>
             </tr>
-          ))}
-          <tr className="h-full">
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
-            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-orange-600 border border-neutral-200">1,177.46</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200"></td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">230,703.14</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">195.933</td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-neutral-100">
+            {data.map((row, i) => (
+              <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                <td className="py-4 px-6 font-medium text-neutral-900">{row.name}</td>
+                <td className="py-4 px-6 text-right font-medium text-neutral-700">{formatNumber(row.tola)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.unit)}</td>
+                <td className="py-4 px-6 text-right font-bold text-neutral-900">{formatNumber(row.tk, 2)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.avg)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-neutral-50/50">
+            <tr>
+              <td className="py-4 px-6 font-bold text-neutral-900">Total</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">1,177.46</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900"></td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">230,703.14</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">195.933</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 };
 
 const TokenTable = () => {
   const data = [
-    { sl: 1, name: 'EMR', note: '', amount: 65.056 },
-    { sl: 2, name: 'Bkb', note: '', amount: null },
-    { sl: 3, name: 'EMR', note: '', amount: 64.21 },
-    { sl: 4, name: 'EMR', note: '', amount: 65.157 },
-    { sl: 5, name: 'EMR', note: '', amount: 67.067 },
+    { sl: 1, name: 'EMR', note: '-', amount: 65.056 },
+    { sl: 2, name: 'Bkb', note: '-', amount: null },
+    { sl: 3, name: 'EMR', note: '-', amount: 64.21 },
+    { sl: 4, name: 'EMR', note: '-', amount: 65.157 },
+    { sl: 5, name: 'EMR', note: '-', amount: 67.067 },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
-      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">TOKEN</div>
-      <table className="w-full h-full text-left border-collapse text-xs flex-1">
-        <thead>
-          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
-            <th className="px-3 py-2 border border-neutral-200 text-center">SL</th>
-            <th className="px-3 py-2 border border-neutral-200">Name</th>
-            <th className="px-3 py-2 border border-neutral-200">Note</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => (
-            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
-              <td className="px-3 py-1.5 text-center font-mono text-neutral-400 border border-neutral-200">{row.sl}</td>
-              <td className="px-3 py-1.5 font-medium text-neutral-700 border border-neutral-200">{row.name}</td>
-              <td className="px-3 py-1.5 text-neutral-400 border border-neutral-200">{row.note}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.amount)}</td>
+    <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden w-full flex flex-col h-full">
+      <div className="flex justify-between items-start p-6 border-b border-neutral-100">
+        <div>
+          <h3 className="text-lg font-bold text-neutral-900">TOKEN</h3>
+          <p className="text-sm text-neutral-500">Latest token distributions</p>
+        </div>
+        <a href="#" className="text-sm font-medium text-blue-600 hover:underline">View All</a>
+      </div>
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="bg-neutral-50/50 text-neutral-500 font-bold">
+            <tr>
+              <th className="py-4 px-6 border-b border-neutral-100 text-center font-bold">SL</th>
+              <th className="py-4 px-6 border-b border-neutral-100 font-bold">Name</th>
+              <th className="py-4 px-6 border-b border-neutral-100 font-bold">Note</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Amount</th>
             </tr>
-          ))}
-          <tr className="h-full">
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-          </tr>
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-neutral-100">
+            {data.map((row, i) => (
+              <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                <td className="py-4 px-6 text-center text-neutral-500">{row.sl}</td>
+                <td className="py-4 px-6 font-medium text-neutral-900">{row.name}</td>
+                <td className="py-4 px-6 text-neutral-500">{row.note}</td>
+                <td className="py-4 px-6 text-right font-bold text-neutral-900">{formatNumber(row.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
@@ -340,46 +349,47 @@ const DhBuyTable = () => {
     { name: 'Kis22', dh: 2372, unit: 30, tk: 71160, avg: null },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
-      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">DH BUY</div>
-      <table className="w-full h-full text-left border-collapse text-xs flex-1">
-        <thead>
-          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
-            <th className="px-3 py-2 border border-neutral-200">Name</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">DH</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => (
-            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
-              <td className="px-3 py-1.5 font-medium text-neutral-700 border border-neutral-200">{row.name}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-medium text-green-700 border border-neutral-200">{formatNumber(row.dh)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-neutral-500 border border-neutral-200">{formatNumber(row.avg)}</td>
+    <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden w-full flex flex-col h-full">
+      <div className="flex justify-between items-start p-6 border-b border-neutral-100">
+        <div>
+          <h3 className="text-lg font-bold text-neutral-900">DH BUY</h3>
+          <p className="text-sm text-neutral-500">Latest DH buy transactions</p>
+        </div>
+        <a href="#" className="text-sm font-medium text-blue-600 hover:underline">View All</a>
+      </div>
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="bg-neutral-50/50 text-neutral-500 font-bold">
+            <tr>
+              <th className="py-4 px-6 border-b border-neutral-100 font-bold">Name</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">DH</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Unit</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">TK</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Avg</th>
             </tr>
-          ))}
-          <tr className="h-full">
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
-            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-green-700 border border-neutral-200">22,153.383</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">Total</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">664,607.15</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">30.000</td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-neutral-100">
+            {data.map((row, i) => (
+              <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                <td className="py-4 px-6 font-medium text-neutral-900">{row.name}</td>
+                <td className="py-4 px-6 text-right font-medium text-neutral-700">{formatNumber(row.dh)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.unit)}</td>
+                <td className="py-4 px-6 text-right font-bold text-neutral-900">{formatNumber(row.tk)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.avg)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-neutral-50/50">
+            <tr>
+              <td className="py-4 px-6 font-bold text-neutral-900">Total</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">22,153.383</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">Total</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">664,607.15</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">30.000</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 };
@@ -393,53 +403,66 @@ const DhSellTable = () => {
     { name: 'Nmn', dh: 579.388, unit: 34.35, tk: 19901.97, avg: null },
   ];
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-x-auto w-full flex flex-col h-full">
-      <div className="bg-neutral-50 text-neutral-800 text-center font-bold text-xs py-2 tracking-wider border-b border-neutral-200">DH SELL</div>
-      <table className="w-full h-full text-left border-collapse text-xs flex-1">
-        <thead>
-          <tr className="bg-neutral-50 text-[10px] font-bold text-neutral-500 uppercase tracking-wider h-[1px]">
-            <th className="px-3 py-2 border border-neutral-200">Name</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">DH</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Unit</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">TK</th>
-            <th className="px-3 py-2 border border-neutral-200 text-right">Avg</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => (
-            <tr key={i} className="hover:bg-neutral-50/80 transition-colors h-[1px]">
-              <td className="px-3 py-1.5 font-medium text-neutral-700 border border-neutral-200">{row.name}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-medium text-red-600 border border-neutral-200">{formatNumber(row.dh)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-neutral-600 border border-neutral-200">{formatNumber(row.unit)}</td>
-              <td className="px-3 py-1.5 text-right font-mono font-semibold text-neutral-800 border border-neutral-200">{formatNumber(row.tk)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-neutral-500 border border-neutral-200">{formatNumber(row.avg)}</td>
+    <div className="bg-white rounded-2xl shadow-sm border border-neutral-100 overflow-hidden w-full flex flex-col h-full">
+      <div className="flex justify-between items-start p-6 border-b border-neutral-100">
+        <div>
+          <h3 className="text-lg font-bold text-neutral-900">DH SELL</h3>
+          <p className="text-sm text-neutral-500">Latest DH sell transactions</p>
+        </div>
+        <a href="#" className="text-sm font-medium text-blue-600 hover:underline">View All</a>
+      </div>
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="bg-neutral-50/50 text-neutral-500 font-bold">
+            <tr>
+              <th className="py-4 px-6 border-b border-neutral-100 font-bold">Name</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">DH</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Unit</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">TK</th>
+              <th className="py-4 px-6 border-b border-neutral-100 text-right font-bold">Avg</th>
             </tr>
-          ))}
-          <tr className="h-full">
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-            <td className="border border-neutral-200"></td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr className="bg-neutral-100 border-t-2 border-neutral-300 h-[1px]">
-            <td className="px-3 py-2 font-bold text-neutral-800 border border-neutral-200">Total</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-red-600 border border-neutral-200">13,438.821</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">Total</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">413,684.96</td>
-            <td className="px-3 py-2 text-right font-mono font-bold text-neutral-800 border border-neutral-200">30.783</td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-neutral-100">
+            {data.map((row, i) => (
+              <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                <td className="py-4 px-6 font-medium text-neutral-900">{row.name}</td>
+                <td className="py-4 px-6 text-right font-medium text-neutral-700">{formatNumber(row.dh)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.unit)}</td>
+                <td className="py-4 px-6 text-right font-bold text-neutral-900">{formatNumber(row.tk)}</td>
+                <td className="py-4 px-6 text-right text-neutral-500">{formatNumber(row.avg)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-neutral-50/50">
+            <tr>
+              <td className="py-4 px-6 font-bold text-neutral-900">Total</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">13,438.821</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">Total</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">413,684.96</td>
+              <td className="py-4 px-6 text-right font-bold text-neutral-900">30.783</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 };
 
 
 export default function DashboardPage() {
-  const [currentDate, setCurrentDate] = useState('2026-05-01');
+  const { data: session } = useSession();
+  const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
+  const fetcher = (url) => axios.get(url, { headers: { Authorization: `Bearer ${session?.accessToken}` } }).then(res => res.data);
+
+  const { data: dashboardData, isLoading: loading } = useSWR(
+    session?.accessToken ? `${process.env.NEXT_PUBLIC_API}/web-dashboard?interval=daily` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 10000,
+      keepPreviousData: true,
+    }
+  );
 
   return (
     <div className="space-y-6 text-black">
@@ -467,87 +490,72 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Top 2 Big Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xl:gap-6">
-        {/* Total Account Balance */}
-        <div className="bg-white border border-neutral-200 p-6 rounded-xl shadow-sm flex justify-between relative overflow-hidden">
-          <div className="z-10 relative">
-            <h3 className="text-neutral-400 text-sm mb-2">Total Account Balance</h3>
-            <p className="text-3xl font-bold text-black flex items-center gap-1">৳ 14,70,464.00</p>
-            <p className="text-xs text-neutral-400 mt-2">Includes forward buys and pending credits</p>
-          </div>
-          <div className="absolute right-[-5%] top-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
-            <Wallet size={140} strokeWidth={1.5} />
-          </div>
+      {loading ? (
+        <div className="w-full flex items-center justify-center h-32 border border-neutral-200 rounded-xl bg-white shadow-sm">
+          <Loader2 className="w-8 h-8 animate-spin text-neutral-400" />
         </div>
-
-        {/* Total Gold Stock */}
-        <div className="bg-black text-white p-6 rounded-xl shadow-sm flex justify-between relative overflow-hidden">
-          <div className="z-10 relative">
-            <h3 className="text-neutral-400 text-sm mb-2">Total Gold Stock</h3>
-            <p className="text-3xl font-bold flex items-baseline gap-2">577.684 <span className="text-lg font-normal text-neutral-400">Tola</span></p>
-            <p className="text-xs text-neutral-400 mt-2">Total Unit: 3,497.684 | Chain Buy: 1,755.144</p>
-          </div>
-          <div className="absolute right-[-5%] top-1/2 -translate-y-1/2 opacity-10 pointer-events-none">
-            <Gem size={140} strokeWidth={1.5} />
-          </div>
-        </div>
-      </div>
-
-      {/* 4 Small Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 xl:gap-6">
-        <div className="bg-white border border-neutral-200 p-4 rounded-xl shadow-sm flex flex-col justify-between h-[120px]">
-          <div className="flex justify-between items-start">
-            <div className="p-1.5 bg-neutral-100 rounded-lg text-black">
-              <Users size={16} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 xl:gap-6">
+          {/* Card 1: Total Account Balance */}
+          <div className="bg-white border border-neutral-200 p-5 rounded-xl shadow-sm flex justify-between relative overflow-hidden h-[130px]">
+            <div className="z-10 relative flex flex-col justify-between">
+              <h3 className="text-neutral-400 text-xs font-medium uppercase tracking-wider">Total Account Balance</h3>
+              <div>
+                <p className="text-2xl font-bold text-black flex items-center gap-1">৳ {formatNumber(dashboardData?.balance || 0, 2)}</p>
+                {dashboardData?.balance_percentage && (
+                  <p className="text-xs text-green-600 mt-1 font-medium">{dashboardData.balance_percentage} {dashboardData.balance_report}</p>
+                )}
+              </div>
             </div>
-            <span className="text-[10px] font-bold px-2 py-1 bg-black text-white rounded-full">+12%</span>
-          </div>
-          <div>
-            <p className="text-xl font-medium text-black">1,248</p>
-            <h3 className="text-neutral-400 text-xs mt-0.5">Total Customers</h3>
-          </div>
-        </div>
-        
-        <div className="bg-white border border-neutral-200 p-4 rounded-xl shadow-sm flex flex-col justify-between h-[120px]">
-          <div className="flex justify-between items-start">
-            <div className="p-1.5 bg-neutral-100 rounded-lg text-black">
-              <TrendingUp size={16} />
+            <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
+              <Wallet size={110} strokeWidth={1.5} />
             </div>
-            <span className="text-[10px] font-bold px-2 py-1 bg-black text-white rounded-full">+8.2%</span>
           </div>
-          <div>
-            <p className="text-xl font-medium text-black">৳ 36,41,436.86</p>
-            <h3 className="text-neutral-400 text-xs mt-0.5">Total Sell (CDT)</h3>
-          </div>
-        </div>
 
-        <div className="bg-white border border-neutral-200 p-4 rounded-xl shadow-sm flex flex-col justify-between h-[120px]">
-          <div className="flex justify-between items-start">
-            <div className="p-1.5 bg-neutral-100 rounded-lg text-black">
-              <TrendingDown size={16} />
+          {/* Card 2: Total Stock Value */}
+          <div className="bg-black border border-black p-5 rounded-xl shadow-sm flex justify-between relative overflow-hidden h-[130px]">
+            <div className="z-10 relative flex flex-col justify-between">
+              <h3 className="text-neutral-400 text-xs font-medium uppercase tracking-wider">Total Stock Value</h3>
+              <div>
+                <p className="text-2xl font-bold text-white flex items-center gap-1">৳ {formatNumber(dashboardData?.total_accessories_stock_value || 0, 2)}</p>
+                <p className="text-xs text-neutral-400 mt-1 font-medium">From Accessories Stock</p>
+              </div>
             </div>
-            <span className="text-[10px] font-bold px-2 py-1 bg-neutral-100 text-neutral-500 rounded-full">-2.4%</span>
+            <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 opacity-10 pointer-events-none">
+              <Gem size={110} strokeWidth={1.5} />
+            </div>
           </div>
-          <div>
-            <p className="text-xl font-medium text-black">৳ 10,57,62.75</p>
-            <h3 className="text-neutral-400 text-xs mt-0.5">Total Purchase (DBT)</h3>
-          </div>
-        </div>
 
-        <div className="bg-white border border-neutral-200 p-4 rounded-xl shadow-sm flex flex-col justify-between h-[120px]">
-          <div className="flex justify-between items-start">
-            <div className="p-1.5 bg-neutral-100 rounded-lg text-black">
-              <Store size={16} />
+          {/* Card 3: Total Sell */}
+          <div className="bg-white border border-neutral-200 p-5 rounded-xl shadow-sm flex justify-between relative overflow-hidden h-[130px]">
+            <div className="z-10 relative flex flex-col justify-between">
+              <h3 className="text-neutral-400 text-xs font-medium uppercase tracking-wider">Total Sell (CDT)</h3>
+              <div>
+                <p className="text-2xl font-bold text-black flex items-center gap-1">৳ {formatNumber(dashboardData?.sales || 0, 2)}</p>
+                {dashboardData?.sales_change && (
+                  <p className="text-xs text-green-600 mt-1 font-medium">{dashboardData.sales_change} {dashboardData.sales_report}</p>
+                )}
+              </div>
             </div>
-            <span className="text-[10px] font-bold px-2 py-1 bg-black text-white rounded-full">+1</span>
+            <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
+              <TrendingUp size={110} strokeWidth={1.5} />
+            </div>
           </div>
-          <div>
-            <p className="text-xl font-medium text-black">42</p>
-            <h3 className="text-neutral-400 text-xs mt-0.5">Total Vendors</h3>
+
+          {/* Card 4: Total Purchase */}
+          <div className="bg-white border border-neutral-200 p-5 rounded-xl shadow-sm flex justify-between relative overflow-hidden h-[130px]">
+            <div className="z-10 relative flex flex-col justify-between">
+              <h3 className="text-neutral-400 text-xs font-medium uppercase tracking-wider">Total Purchase (DBT)</h3>
+              <div>
+                <p className="text-2xl font-bold text-black flex items-center gap-1">৳ {formatNumber(dashboardData?.purchase || 0, 2)}</p>
+              </div>
+            </div>
+            <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
+              <TrendingDown size={110} strokeWidth={1.5} />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Multi-Table Grid Layout */}
       <div className="space-y-8">

@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, ArrowDownToLine, LogOut, Search, FileText } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, ArrowDownToLine, LogOut, Search, FileText, Package, PackagePlus } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 import { useState } from 'react';
 
 export default function DashboardLayout({ children }) {
@@ -11,20 +12,22 @@ export default function DashboardLayout({ children }) {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Products', href: '/dashboard/product-list', icon: Package },
+    { name: 'Add Product', href: '/dashboard/add-product', icon: PackagePlus },
     { name: 'Sell', href: '/dashboard/sell', icon: ShoppingCart },
     { name: 'Purchase', href: '/dashboard/purchase', icon: ArrowDownToLine },
     { name: 'Balance Sheet', href: '/dashboard/balance-sheet', icon: FileText },
   ];
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 flex">
+    <div className="h-screen overflow-hidden bg-neutral-50 text-neutral-900 flex">
       {/* Sidebar */}
-      <div className="w-64 border-r border-neutral-200 bg-white flex flex-col hidden md:flex">
-        <div className="h-16 flex items-center px-6 border-b border-neutral-200">
+      <div className="w-64 border-r border-neutral-200 bg-white flex flex-col hidden md:flex h-full">
+        <div className="h-16 flex items-center px-6 border-b border-neutral-200 shrink-0">
           <h1 className="text-xl font-light tracking-widest text-black">EMAAR</h1>
         </div>
 
-        <nav className="flex-1 py-6 px-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -45,19 +48,19 @@ export default function DashboardLayout({ children }) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-neutral-200">
-          <Link
-            href="/login"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors"
+        <div className="p-4 border-t border-neutral-200 shrink-0">
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors"
           >
             <LogOut size={18} />
             Sign Out
-          </Link>
+          </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full">
         {/* Top Header */}
         <header className="h-16 border-b border-neutral-200 bg-white flex items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4 flex-1">

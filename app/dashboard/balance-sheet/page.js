@@ -69,64 +69,64 @@ export default function BalanceSheetPage() {
       <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
         <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
           <table className="w-full text-left border-collapse text-sm">
-            <thead className="sticky top-0 z-10">
-              <tr className="bg-neutral-50 text-sm font-semibold uppercase tracking-wider text-neutral-600 border-b border-neutral-200">
-                <th className="px-6 py-3 border border-neutral-200">Name</th>
-                <th className="px-6 py-3 border border-neutral-200 text-right">Qty</th>
-                <th className="px-6 py-3 border border-neutral-200 text-right">Unit</th>
-                <th className="px-6 py-3 border border-neutral-200 text-right text-blue-700">CDT</th>
-                <th className="px-6 py-3 border border-neutral-200 text-right text-red-700">DBT</th>
-                <th className="px-6 py-3 border border-neutral-200 text-right text-blue-700">EXP</th>
-                <th className="px-6 py-3 border border-neutral-200 text-right text-blue-700">Balance</th>
+            <thead className="sticky top-0 z-10 bg-neutral-50/50 border-b border-neutral-100 text-xs uppercase tracking-wider text-neutral-500 font-medium shadow-sm">
+              <tr>
+                <th className="py-4 px-6">Name</th>
+                <th className="py-4 px-6 text-right">Qty</th>
+                <th className="py-4 px-6 text-right">Unit</th>
+                <th className="py-4 px-6 text-right text-blue-700">CDT</th>
+                <th className="py-4 px-6 text-right text-red-700">DBT</th>
+                <th className="py-4 px-6 text-right text-blue-700">EXP</th>
+                <th className="py-4 px-6 text-right text-blue-700">Balance</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-neutral-100">
               {mockData.map((row, index) => (
                 <tr 
                   key={index} 
-                  className={`hover:bg-neutral-50/80 transition-colors ${
-                    row.highlight ? row.highlight : row.isShaded ? 'bg-neutral-50' : 'bg-white'
+                  className={`hover:bg-neutral-50 transition-colors ${
+                    row.highlight ? row.highlight : row.isShaded ? 'bg-neutral-50/50' : 'bg-white'
                   }`}
                 >
-                  <td className="px-6 py-2.5 border border-neutral-200 font-medium text-neutral-800">
+                  <td className="py-4 px-6 font-medium text-neutral-800 text-sm">
                     {row.name}
                   </td>
-                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-neutral-700">
-                    {formatNumber(row.qty)}
+                  <td className="py-4 px-6 font-mono text-right text-neutral-700 text-sm">
+                    {formatNumber(row.qty) || '-'}
                   </td>
-                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-neutral-700">
-                    {formatNumber(row.unit)}
+                  <td className="py-4 px-6 font-mono text-right text-neutral-700 text-sm">
+                    {formatNumber(row.unit) || '-'}
                   </td>
-                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-blue-600 font-medium">
-                    {formatNumber(row.cdt)}
+                  <td className="py-4 px-6 font-mono text-right text-blue-600 font-medium text-sm">
+                    {formatNumber(row.cdt) || '-'}
                   </td>
-                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-red-600 font-medium">
-                    {row.dbt === 0 ? '0' : formatNumber(row.dbt)}
+                  <td className="py-4 px-6 font-mono text-right text-red-600 font-medium text-sm">
+                    {row.dbt === 0 ? '0' : formatNumber(row.dbt) || '-'}
                   </td>
-                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-neutral-800 font-medium">
-                    {formatNumber(row.exp)}
+                  <td className="py-4 px-6 font-mono text-right text-neutral-800 font-medium text-sm">
+                    {formatNumber(row.exp) || '-'}
                   </td>
-                  <td className="px-6 py-2.5 border border-neutral-200 font-mono text-right text-neutral-800 font-medium">
-                    {formatNumber(row.balance)}
+                  <td className="py-4 px-6 font-mono text-right text-neutral-800 font-medium text-sm">
+                    {formatNumber(row.balance) || '-'}
                   </td>
                 </tr>
               ))}
             </tbody>
-            <tfoot className="sticky bottom-0 z-10">
-              <tr className="bg-neutral-100 border-t-2 border-neutral-400 text-sm font-semibold">
-                <td className="px-6 py-4 border border-neutral-200 text-right tracking-wider uppercase text-neutral-800" colSpan={3}>
+            <tfoot className="sticky bottom-0 z-10 bg-neutral-50/50 border-t border-neutral-200 shadow-sm">
+              <tr className="text-sm font-medium">
+                <td className="py-4 px-6 text-right tracking-wider uppercase text-neutral-500" colSpan={3}>
                   Total
                 </td>
-                <td className="px-6 py-4 border border-neutral-200 text-right font-mono text-blue-700">
+                <td className="py-4 px-6 text-right font-mono text-blue-700">
                   {formatNumber(totals.cdt)}
                 </td>
-                <td className="px-6 py-4 border border-neutral-200 text-right font-mono text-red-600">
+                <td className="py-4 px-6 text-right font-mono text-red-600">
                   {formatNumber(totals.dbt)}
                 </td>
-                <td className="px-6 py-4 border border-neutral-200 text-right font-mono text-neutral-800">
+                <td className="py-4 px-6 text-right font-mono text-neutral-800">
                   {formatNumber(totals.exp)}
                 </td>
-                <td className="px-6 py-4 border border-neutral-200 text-right font-mono text-neutral-800">
+                <td className="py-4 px-6 text-right font-mono text-neutral-800">
                   {formatNumber(totals.balance)}
                 </td>
               </tr>
