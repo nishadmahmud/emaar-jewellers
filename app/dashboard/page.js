@@ -321,7 +321,7 @@ export default function DashboardPage() {
           {/* Card 1: Total Account Balance */}
           <div className="bg-white border border-neutral-200 p-5 rounded-xl shadow-sm flex justify-between relative overflow-hidden h-[130px]">
             <div className="z-10 relative flex flex-col justify-between">
-              <h3 className="text-neutral-400 text-[10px] md:text-xs font-medium uppercase tracking-wider">Stock Balance</h3>
+              <h3 className="text-neutral-400 text-[10px] md:text-xs font-medium uppercase tracking-wider">Total Stock Value</h3>
               <div>
                 <p className="text-xl md:text-2xl font-bold text-black flex items-center gap-1">{formatNumber(dashboardData?.data?.total_accessories_stock || 0, 0)}</p>
               </div>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
           {/* Card 2: Total Stock Value */}
           <div className="bg-black border border-black p-5 rounded-xl shadow-sm flex justify-between relative overflow-hidden h-[130px]">
             <div className="z-10 relative flex flex-col justify-between">
-              <h3 className="text-neutral-400 text-[10px] md:text-xs font-medium uppercase tracking-wider">Total Stock Value</h3>
+              <h3 className="text-neutral-400 text-[10px] md:text-xs font-medium uppercase tracking-wider">Stock Balance</h3>
               <div>
                 <p className="text-xl md:text-2xl font-bold text-white flex items-center gap-1">৳ {formatNumber(dashboardData?.data?.total_accessories_stock_value || 0, 2)}</p>
               </div>
