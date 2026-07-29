@@ -19,6 +19,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Sales History', href: '/dashboard/sales', icon: History },
     { name: 'Purchase', href: '/dashboard/purchase', icon: ArrowDownToLine },
     { name: 'Purchase History', href: '/dashboard/purchases', icon: History },
+    { name: 'Vendors', href: '/dashboard/vendors', icon: Users },
     { name: 'Balance Sheet', href: '/dashboard/balance-sheet', icon: FileText },
     { name: 'Customers', href: '/dashboard/customers', icon: Users },
   ];
