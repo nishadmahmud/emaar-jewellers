@@ -8,6 +8,8 @@ import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import { AlertTriangle } from 'lucide-react';
 
+import PaymentMethodsModal from '@/components/PaymentMethodsModal';
+
 function normalizeBdMobileInput(raw) {
   const d = String(raw || "").replace(/\D/g, "");
   if (d.length >= 11 && d.startsWith("880")) return d.slice(-11);
@@ -22,6 +24,10 @@ export default function SellPage() {
   const API_URL = process.env.NEXT_PUBLIC_API;
 
   const [loading, setLoading] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState([]);
+  const [paymentSummaryText, setPaymentSummaryText] = useState('');
+
   const [formData, setFormData] = useState({
     customerId: null,
     customerName: '',
@@ -270,11 +276,20 @@ export default function SellPage() {
   
   const discountNum = parseFloat(formData.discount) || 0;
   const grandTotal = subtotal - discountNum;
+  const effectivePaidAmount =
+    formData.paidAmount !== '' && formData.paidAmount !== null && formData.paidAmount !== undefined
+      ? parseFloat(formData.paidAmount) || 0
+      : grandTotal;
+  const dueAmount = Math.max(0, grandTotal - effectivePaidAmount);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.customerId) {
       toast.error('Please select a customer.');
+      return;
+    }
+    if (dueAmount > 0 && formData.customerId === 'walk-in') {
+      toast.error('Please select or add a specific customer to record a due sale.');
       return;
     }
     if (cart.length === 0) {
@@ -283,12 +298,24 @@ export default function SellPage() {
     }
     setLoading(true);
     try {
+      const finalPaymentMethods = (savedPaymentMethods && savedPaymentMethods.length > 0)
+        ? savedPaymentMethods.map(m => ({
+            payment_type_id: Number(m.payment_type_id) || 1,
+            payment_type_category_id: Number(m.payment_type_category_id) || 1,
+            payment_amount: Number(m.payment_amount) || 0,
+          }))
+        : [{
+            payment_type_id: formData.paymentMethodId || 1,
+            payment_type_category_id: 1,
+            payment_amount: effectivePaidAmount,
+          }];
+
       const payload = {
         customer_id: formData.customerId === 'walk-in' ? null : formData.customerId,
         customer_name: formData.customerName,
         customer_phone: "", 
-        pay_mode: formData.paymentMethodName || 'Cash',
-        paid_amount: grandTotal,
+        pay_mode: paymentSummaryText || formData.paymentMethodName || 'Cash',
+        paid_amount: effectivePaidAmount,
         sub_total: subtotal,
         discount: discountNum,
         vat: 0,
@@ -304,11 +331,7 @@ export default function SellPage() {
           mode: 1,
           size: 1,
         })),
-        payment_method: [{
-          payment_type_id: formData.paymentMethodId || 1,
-          payment_type_category_id: 1,
-          payment_amount: grandTotal,
-        }],
+        payment_method: finalPaymentMethods,
       };
       const res = await axios.post(`${API_URL}/save-sales`, payload, {
         headers: { Authorization: `Bearer ${token}` }
@@ -354,7 +377,7 @@ export default function SellPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto text-black">
+    <div className="max-w-7xl mx-auto text-black">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl font-medium tracking-wide">Point of Sale</h2>
@@ -614,7 +637,7 @@ export default function SellPage() {
         </div>
 
         {/* Right Column: Invoice Summary */}
-        <div className="w-full lg:w-[400px]">
+        <div className="w-full lg:w-[460px] shrink-0">
           <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden sticky top-6">
             <div className="p-6 border-b border-neutral-100 bg-neutral-50">
               <div className="flex items-center gap-2 text-neutral-800">
@@ -636,25 +659,69 @@ export default function SellPage() {
                 <span className="font-medium">{getCurrencySymbol()}{subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
               </div>
               
-              <div className="pt-4">
-                <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Additional Discount</label>
+              <div className="pt-4 border-t border-neutral-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
+                  <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">Paid Amount</label>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, paidAmount: grandTotal})}
+                      className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-semibold hover:bg-emerald-200 transition border border-emerald-200"
+                    >
+                      Full Pay
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, paidAmount: (grandTotal / 2).toFixed(2)})}
+                      className="text-[11px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-semibold hover:bg-amber-200 transition border border-amber-200"
+                    >
+                      50%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, paidAmount: '0'})}
+                      className="text-[11px] px-2 py-0.5 rounded-md bg-red-100 text-red-800 font-semibold hover:bg-red-200 transition border border-red-200"
+                    >
+                      Full Due (৳0)
+                    </button>
+                  </div>
+                </div>
                 <div className="flex items-center">
-                  <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3 py-2 rounded-l-lg text-neutral-500 text-sm">
+                  <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3 py-2 rounded-l-lg text-neutral-500 text-sm font-medium">
                     {getCurrencySymbol()}
                   </span>
                   <input
                     type="number"
-                    value={formData.discount}
-                    onChange={(e) => setFormData({...formData, discount: e.target.value})}
-                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-r-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                    value={formData.paidAmount ?? ''}
+                    placeholder={grandTotal.toFixed(2)}
+                    onChange={(e) => setFormData({...formData, paidAmount: e.target.value})}
+                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-r-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm font-medium"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 mt-4 border-t border-neutral-200">
-                <div className="flex justify-between items-end mb-1">
+              <div className="pt-4 mt-4 border-t border-neutral-200 space-y-2">
+                <div className="flex justify-between items-end">
                   <span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">Grand Total</span>
-                  <span className="text-3xl font-light tracking-tight">{getCurrencySymbol()}{Math.max(0, grandTotal).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="text-2xl font-light tracking-tight">{getCurrencySymbol()}{Math.max(0, grandTotal).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm pt-1">
+                  <span className="font-medium text-neutral-500">Due Amount</span>
+                  <span className={`font-bold ${dueAmount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                    {getCurrencySymbol()}{dueAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-neutral-400 font-medium">Payment Status:</span>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                    dueAmount === 0 && grandTotal > 0
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : effectivePaidAmount > 0 && dueAmount > 0
+                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                      : 'bg-red-100 text-red-800 border-red-300'
+                  }`}>
+                    {dueAmount === 0 && grandTotal > 0 ? 'Paid' : effectivePaidAmount > 0 ? 'Partial Due' : 'Full Due'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -695,6 +762,15 @@ export default function SellPage() {
               </div>
 
               <button
+                type="button"
+                onClick={() => setIsPaymentModalOpen(true)}
+                className="w-full bg-emerald-600 text-white font-semibold py-2.5 rounded-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 mb-3 shadow-sm text-sm"
+              >
+                <CreditCard className="w-4 h-4" />
+                Make Payment {paymentSummaryText ? `(${paymentSummaryText})` : ''}
+              </button>
+
+              <button
                 type="submit"
                 form="sell-form"
                 disabled={loading || !formData.customerName || cart.length === 0}
@@ -707,6 +783,19 @@ export default function SellPage() {
           </div>
         </div>
       </div>
+
+      <PaymentMethodsModal
+        open={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        total={grandTotal}
+        paymentGateways={paymentMethods}
+        savedMethods={savedPaymentMethods}
+        onSave={({ totalPaid, summaryText, methods }) => {
+          setSavedPaymentMethods(methods);
+          setPaymentSummaryText(summaryText);
+          setFormData((prev) => ({ ...prev, paidAmount: totalPaid }));
+        }}
+      />
 
       {showAddCustomer && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

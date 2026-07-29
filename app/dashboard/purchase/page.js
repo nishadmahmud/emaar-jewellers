@@ -7,12 +7,18 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
 
+import PaymentMethodsModal from '@/components/PaymentMethodsModal';
+
 export default function PurchasePage() {
   const { data: session } = useSession();
   const token = session?.accessToken;
   const API_URL = process.env.NEXT_PUBLIC_API;
 
   const [loading, setLoading] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState([]);
+  const [paymentSummaryText, setPaymentSummaryText] = useState('');
+
   const [formData, setFormData] = useState({
     vendorId: null,
     vendorName: '',
@@ -211,6 +217,11 @@ export default function PurchasePage() {
   }, 0);
   
   const grandTotal = goldValue;
+  const effectivePaidAmount =
+    formData.paidAmount !== '' && formData.paidAmount !== null && formData.paidAmount !== undefined
+      ? parseFloat(formData.paidAmount) || 0
+      : grandTotal;
+  const dueAmount = Math.max(0, grandTotal - effectivePaidAmount);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -224,11 +235,23 @@ export default function PurchasePage() {
     }
     setLoading(true);
     try {
+      const finalPaymentMethods = (savedPaymentMethods && savedPaymentMethods.length > 0)
+        ? savedPaymentMethods.map(m => ({
+            payment_type_id: Number(m.payment_type_id) || 1,
+            payment_type_category_id: Number(m.payment_type_category_id) || 1,
+            payment_amount: Number(m.payment_amount) || 0,
+          }))
+        : [{
+            payment_type_id: formData.paymentMethodId || 1,
+            payment_type_category_id: 1,
+            payment_amount: effectivePaidAmount,
+          }];
+
       const payload = {
         vendor_id: formData.vendorId,
         vendor_name: formData.vendorName,
-        pay_mode: formData.paymentMethodName || 'Cash',
-        paid_amount: grandTotal,
+        pay_mode: paymentSummaryText || formData.paymentMethodName || 'Cash',
+        paid_amount: effectivePaidAmount,
         sub_total: grandTotal,
         discount: 0,
         vat: 0,
@@ -244,11 +267,7 @@ export default function PurchasePage() {
           mode: 1,
           size: 1,
         })),
-        payment_method: [{
-          payment_type_id: formData.paymentMethodId || 1,
-          payment_type_category_id: 1,
-          payment_amount: grandTotal,
-        }],
+        payment_method: finalPaymentMethods,
       };
       const res = await axios.post(`${API_URL}/save-purchase`, payload, {
         headers: { Authorization: `Bearer ${token}` }
@@ -294,7 +313,7 @@ export default function PurchasePage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto text-black">
+    <div className="max-w-7xl mx-auto text-black">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl font-medium tracking-wide">Inbound Purchase</h2>
@@ -538,7 +557,7 @@ export default function PurchasePage() {
         </div>
 
         {/* Right Column: Settlement Summary */}
-        <div className="w-full lg:w-[400px]">
+        <div className="w-full lg:w-[460px] shrink-0">
           <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden sticky top-6">
             <div className="p-6 border-b border-neutral-100 bg-neutral-50">
               <div className="flex items-center gap-2 text-neutral-800">
@@ -553,12 +572,70 @@ export default function PurchasePage() {
                 <span className="font-medium">{getCurrencySymbol()}{goldValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
               </div>
               
-              <div className="pt-4 mt-4 border-t border-neutral-200">
+              <div className="pt-4 border-t border-neutral-100">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider">Paid Amount</label>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, paidAmount: grandTotal})}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold hover:bg-emerald-200 transition border border-emerald-200"
+                    >
+                      Full Pay
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, paidAmount: (grandTotal / 2).toFixed(2)})}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold hover:bg-amber-200 transition border border-amber-200"
+                    >
+                      50%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, paidAmount: '0'})}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-800 font-semibold hover:bg-red-200 transition border border-red-200"
+                    >
+                      Full Due (৳0)
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3 py-2 rounded-l-lg text-neutral-500 text-sm">
+                    {getCurrencySymbol()}
+                  </span>
+                  <input
+                    type="number"
+                    value={formData.paidAmount ?? ''}
+                    placeholder={grandTotal.toFixed(2)}
+                    onChange={(e) => setFormData({...formData, paidAmount: e.target.value})}
+                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-r-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 mt-4 border-t border-neutral-200 space-y-2">
                 <div className="flex justify-between items-end mb-1">
                   <span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">Net Payable</span>
-                  <span className="text-3xl font-light tracking-tight text-black">{getCurrencySymbol()}{Math.max(0, grandTotal).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="text-2xl font-light tracking-tight text-black">{getCurrencySymbol()}{Math.max(0, grandTotal).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
-                <div className="text-right text-xs text-neutral-400 mt-1">Will be credited to vendor account (CDT)</div>
+                <div className="flex justify-between items-center text-sm pt-1">
+                  <span className="font-medium text-neutral-500">Due Amount</span>
+                  <span className={`font-bold ${dueAmount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                    {getCurrencySymbol()}{dueAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs text-neutral-400 font-medium">Payment Status:</span>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                    dueAmount === 0 && grandTotal > 0
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : effectivePaidAmount > 0 && dueAmount > 0
+                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                      : 'bg-red-100 text-red-800 border-red-300'
+                  }`}>
+                    {dueAmount === 0 && grandTotal > 0 ? 'Paid' : effectivePaidAmount > 0 ? 'Partial Due' : 'Full Due'}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -598,6 +675,15 @@ export default function PurchasePage() {
               </div>
 
               <button
+                type="button"
+                onClick={() => setIsPaymentModalOpen(true)}
+                className="w-full bg-emerald-600 text-white font-semibold py-2.5 rounded-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 mb-3 shadow-sm text-sm"
+              >
+                <CreditCard className="w-4 h-4" />
+                Make Payment {paymentSummaryText ? `(${paymentSummaryText})` : ''}
+              </button>
+
+              <button
                 type="submit"
                 form="purchase-form"
                 disabled={loading || !formData.vendorName || cart.length === 0}
@@ -610,6 +696,19 @@ export default function PurchasePage() {
           </div>
         </div>
       </div>
+
+      <PaymentMethodsModal
+        open={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        total={grandTotal}
+        paymentGateways={paymentMethods}
+        savedMethods={savedPaymentMethods}
+        onSave={({ totalPaid, summaryText, methods }) => {
+          setSavedPaymentMethods(methods);
+          setPaymentSummaryText(summaryText);
+          setFormData((prev) => ({ ...prev, paidAmount: totalPaid }));
+        }}
+      />
     </div>
   );
 }

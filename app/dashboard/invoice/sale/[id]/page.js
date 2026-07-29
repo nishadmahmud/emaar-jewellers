@@ -72,6 +72,7 @@ export default function SaleInvoicePage() {
   const finalTotal = subTotal - discount;
   const paid = Number(invoiceData.paid_amount || 0);
   const due = Math.max(finalTotal - paid, 0);
+  const multiplePayments = invoiceData.multiple_payment || invoiceData.multiple_payments || [];
 
   return (
     <>
@@ -200,10 +201,40 @@ export default function SaleInvoicePage() {
                   <span>Total Amount</span>
                   <span>৳ {finalTotal.toLocaleString()}</span>
                 </div>
-                <div className="flex justify-between text-sm text-green-600 pt-1">
+                <div className="flex justify-between text-sm text-green-600 pt-1 font-semibold">
                   <span>Paid Amount</span>
-                  <span>৳ {paid.toLocaleString()}</span>
+                  <span>৳ {paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
+
+                {/* Individual Payment Methods Breakdown */}
+                {multiplePayments && multiplePayments.length > 0 && (
+                  <div className="pt-2 border-t border-neutral-200 mt-2 space-y-1.5 text-xs text-neutral-600">
+                    <div className="font-semibold text-neutral-500 uppercase tracking-wider mb-1 text-[10px]">Payment Breakdown</div>
+                    {multiplePayments.map((pm, idx) => {
+                      const typeName = pm.payment_type?.type_name || 'Payment';
+                      const categoryMatch = pm.payment_type?.payment_type_category?.find(
+                        (c) => Number(c.id) === Number(pm.payment_type_category_id)
+                      );
+                      const accName = categoryMatch?.payment_category_name || '';
+                      const accNum = categoryMatch?.account_number || '';
+                      const detailLabel = [accName, accNum].filter(Boolean).join(' - ');
+
+                      return (
+                        <div key={pm.id || idx} className="flex justify-between items-center bg-white px-2.5 py-1.5 rounded border border-neutral-200/80 shadow-2xs">
+                          <div className="font-medium text-neutral-800">
+                            <span>{typeName}</span>
+                            {detailLabel && detailLabel.toLowerCase() !== typeName.toLowerCase() && (
+                              <span className="text-neutral-500 text-[11px] ml-1">({detailLabel})</span>
+                            )}
+                          </div>
+                          <div className="font-semibold text-emerald-700">
+                            ৳ {Number(pm.payment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {due > 0 && (
                   <div className="flex justify-between text-sm font-medium text-red-600 pt-1">
                     <span>Due Amount</span>
