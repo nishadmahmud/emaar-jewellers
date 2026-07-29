@@ -323,10 +323,7 @@ export default function DashboardPage() {
             <div className="z-10 relative flex flex-col justify-between">
               <h3 className="text-neutral-400 text-[10px] md:text-xs font-medium uppercase tracking-wider">Stock Balance</h3>
               <div>
-                <p className="text-xl md:text-2xl font-bold text-black flex items-center gap-1">৳ {formatNumber(dashboardData?.data?.balance || 0, 2)}</p>
-                {dashboardData?.data?.balance_percentage && (
-                  <p className="text-xs text-green-600 mt-1 font-medium">{dashboardData.data.balance_percentage} {dashboardData.data.balance_report}</p>
-                )}
+                <p className="text-xl md:text-2xl font-bold text-black flex items-center gap-1">{formatNumber(dashboardData?.data?.total_accessories_stock || 0, 0)}</p>
               </div>
             </div>
             <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
@@ -340,7 +337,6 @@ export default function DashboardPage() {
               <h3 className="text-neutral-400 text-[10px] md:text-xs font-medium uppercase tracking-wider">Total Stock Value</h3>
               <div>
                 <p className="text-xl md:text-2xl font-bold text-white flex items-center gap-1">৳ {formatNumber(dashboardData?.data?.total_accessories_stock_value || 0, 2)}</p>
-                <p className="text-[10px] md:text-xs text-neutral-400 mt-1 font-medium">From Accessories Stock</p>
               </div>
             </div>
             <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 opacity-10 pointer-events-none">
