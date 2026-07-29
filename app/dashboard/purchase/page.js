@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ArrowDownToLine, Loader2, Store, Scale, FileText, Download, Search, CreditCard, Banknote, ChevronDown } from 'lucide-react';
+import { ArrowDownToLine, Loader2, Store, Scale, FileText, Download, Search, CreditCard, Banknote, ChevronDown, Trash2, Plus, Minus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
@@ -13,18 +14,69 @@ export default function PurchasePage() {
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    vendorName: 'SKNDR (Dubai)',
-    productId: null,
-    productName: '',
-    grossWeight: '50',
-    grossWeightGram: '583.200',
-    netWeight: '50',
-    netWeightGram: '583.200',
-    ratePerVori: '124500',
+    vendorId: null,
+    vendorName: '',
     paymentMethodId: null,
     paymentMethodName: 'Cash',
     currency: 'TK'
   });
+  
+  const [cart, setCart] = useState([]);
+
+  // --- Vendor Search ---
+  const [vendorSearch, setVendorSearch] = useState('');
+  const [vendorList, setVendorList] = useState([]);
+  const [isVendorDropdownOpen, setIsVendorDropdownOpen] = useState(false);
+  const [isVendorSearching, setIsVendorSearching] = useState(false);
+  const vendorDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (vendorSearch && token && isVendorDropdownOpen) {
+        setIsVendorSearching(true);
+        axios.post(`${API_URL}/search-vendor?page=1&limit=10`,
+          { keyword: vendorSearch },
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        .then(res => {
+          setVendorList(res.data?.data?.data || res.data?.data || []);
+        })
+        .catch(err => console.error("Vendor search error", err))
+        .finally(() => setIsVendorSearching(false));
+      } else if (!vendorSearch && token && isVendorDropdownOpen) {
+        setIsVendorSearching(true);
+        axios.get(`${API_URL}/vendor-lists?page=1&limit=20`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => {
+          setVendorList(res.data?.data?.data || res.data?.data || []);
+        })
+        .catch(err => console.error("Vendor fetch error", err))
+        .finally(() => setIsVendorSearching(false));
+      }
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [vendorSearch, token, isVendorDropdownOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (vendorDropdownRef.current && !vendorDropdownRef.current.contains(event.target)) {
+        setIsVendorDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectVendor = (vendor) => {
+    setFormData(prev => ({
+      ...prev,
+      vendorId: vendor.id,
+      vendorName: vendor.name
+    }));
+    setVendorSearch(vendor.name);
+    setIsVendorDropdownOpen(false);
+  };
 
   // --- Payment Methods API ---
   const [paymentMethods, setPaymentMethods] = useState([]);
@@ -54,6 +106,7 @@ export default function PurchasePage() {
   const [productList, setProductList] = useState([]);
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
   const [isProductSearching, setIsProductSearching] = useState(false);
+  const router = useRouter();
   const productDropdownRef = useRef(null);
 
   useEffect(() => {
@@ -97,77 +150,133 @@ export default function PurchasePage() {
   }, []);
 
   const selectProduct = (product) => {
-    setFormData(prev => ({
-      ...prev,
-      productId: product.id,
-      productName: product.name,
-      ratePerVori: product.purchase_price || product.retails_price || product.sell_price || prev.ratePerVori
-    }));
-    setProductSearch(product.name);
-    setIsProductDropdownOpen(false);
-  };
-
-
-  const handleGrossWeightVori = (val) => {
-    const vori = parseFloat(val);
-    setFormData({
-      ...formData,
-      grossWeight: val,
-      grossWeightGram: isNaN(vori) ? '' : (vori * 11.664).toFixed(3)
-    });
-  };
-
-  const handleGrossWeightGram = (val) => {
-    const gram = parseFloat(val);
-    setFormData({
-      ...formData,
-      grossWeightGram: val,
-      grossWeight: isNaN(gram) ? '' : (gram / 11.664).toFixed(3)
-    });
-  };
-
-  const handleNetWeightVori = (val) => {
-    const vori = parseFloat(val);
-    setFormData({
-      ...formData,
-      netWeight: val,
-      netWeightGram: isNaN(vori) ? '' : (vori * 11.664).toFixed(3)
-    });
-  };
-
-  const handleNetWeightGram = (val) => {
-    const gram = parseFloat(val);
-    setFormData({
-      ...formData,
-      netWeightGram: val,
-      netWeight: isNaN(gram) ? '' : (gram / 11.664).toFixed(3)
-    });
-  };
-
-  // Calculate totals
-  const netWeightNum = parseFloat(formData.netWeight) || 0;
-  const rateNum = parseFloat(formData.ratePerVori) || 0;
-  const goldValue = netWeightNum * rateNum;
-  const grandTotal = goldValue;
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    setTimeout(() => {
-      setLoading(false);
-      toast.success(`Successfully recorded purchase of ${formData.netWeight} Vori from ${formData.vendorName}!`);
-      setFormData({
-        ...formData,
-        productId: null,
-        productName: '',
+    const existing = cart.find(item => item.id === product.id);
+    if (existing) {
+      setCart(cart.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item));
+    } else {
+      setCart([...cart, {
+        id: product.id,
+        name: product.name,
+        have_variant: product.have_variant ? 1 : 0,
+        qty: 1,
         grossWeight: '',
         grossWeightGram: '',
         netWeight: '',
-        netWeightGram: ''
+        netWeightGram: '',
+        ratePerVori: product.purchase_price || product.retails_price || product.sell_price || 0
+      }]);
+    }
+    setProductSearch('');
+    setIsProductDropdownOpen(false);
+  };
+  
+  const updateCartItem = (id, field, value) => {
+    setCart(cart.map(item => {
+      if (item.id === id) {
+        const updated = { ...item, [field]: value };
+        if (field === 'grossWeight') {
+           const val = parseFloat(value);
+           updated.grossWeightGram = isNaN(val) ? '' : (val * 11.664).toFixed(3);
+        }
+        if (field === 'grossWeightGram') {
+           const val = parseFloat(value);
+           updated.grossWeight = isNaN(val) ? '' : (val / 11.664).toFixed(3);
+        }
+        if (field === 'netWeight') {
+           const val = parseFloat(value);
+           updated.netWeightGram = isNaN(val) ? '' : (val * 11.664).toFixed(3);
+        }
+        if (field === 'netWeightGram') {
+           const val = parseFloat(value);
+           updated.netWeight = isNaN(val) ? '' : (val / 11.664).toFixed(3);
+        }
+        return updated;
+      }
+      return item;
+    }));
+  };
+  
+  const removeCartItem = (id) => {
+    setCart(cart.filter(item => item.id !== id));
+  };
+
+
+  // Calculate totals
+  const goldValue = cart.reduce((acc, item) => {
+    const netWeightNum = parseFloat(item.netWeight) || 0;
+    const qtyNum = parseFloat(item.qty) || 1;
+    const rateNum = parseFloat(item.ratePerVori) || 0;
+    const weightMultiplier = netWeightNum > 0 ? netWeightNum : 1;
+    return acc + (weightMultiplier * rateNum * qtyNum);
+  }, 0);
+  
+  const grandTotal = goldValue;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.vendorId) {
+      toast.error('Please select a vendor.');
+      return;
+    }
+    if (cart.length === 0) {
+      toast.error('Please add at least one product.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const payload = {
+        vendor_id: formData.vendorId,
+        vendor_name: formData.vendorName,
+        pay_mode: formData.paymentMethodName || 'Cash',
+        paid_amount: grandTotal,
+        sub_total: grandTotal,
+        discount: 0,
+        vat: 0,
+        tax: 0,
+        order_type: 'shop',
+        product: cart.map(item => ({
+          product_id: item.id,
+          qty: parseFloat(item.qty) || 1,
+          price: parseFloat(item.ratePerVori) || 0,
+          purchase_price: parseFloat(item.ratePerVori) || 0,
+          retails_price: 0,
+          have_variant: item.have_variant || 0,
+          mode: 1,
+          size: 1,
+        })),
+        payment_method: [{
+          payment_type_id: formData.paymentMethodId || 1,
+          payment_type_category_id: 1,
+          payment_amount: grandTotal,
+        }],
+      };
+      const res = await axios.post(`${API_URL}/save-purchase`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      setProductSearch('');
-    }, 1000);
+      if (res.data) {
+        toast.success('Purchase recorded successfully!');
+        setCart([]);
+        setFormData({
+          vendorId: null,
+          vendorName: '',
+          itemType: 'Gold Bar (99.99%)',
+          paymentMethodId: null,
+          paymentMethodName: 'Cash',
+          currency: 'TK'
+        });
+        
+        if (res.data.data?.invoice_id) {
+          router.push(`/dashboard/invoice/purchase/${res.data.data.invoice_id}`);
+        } else if (res.data.invoice_id) {
+          router.push(`/dashboard/invoice/purchase/${res.data.invoice_id}`);
+        }
+      }
+    } catch (err) {
+      console.error('Purchase save error:', err);
+      toast.error(err?.response?.data?.message || 'Failed to save purchase. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getCurrencySymbol = () => {
@@ -202,7 +311,7 @@ export default function PurchasePage() {
           <form id="purchase-form" onSubmit={handleSubmit} className="space-y-6">
             
             {/* Vendor Section */}
-            <div className="bg-white border border-neutral-200 p-6 rounded-xl shadow-sm">
+            <div className="bg-white border border-neutral-200 p-6 rounded-xl shadow-sm relative" ref={vendorDropdownRef}>
               <div className="flex items-center gap-2 mb-4 text-neutral-800">
                 <Store size={18} />
                 <h3 className="font-medium">Vendor Details</h3>
@@ -210,16 +319,53 @@ export default function PurchasePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Vendor Name</label>
-                  <select
-                    value={formData.vendorName}
-                    onChange={(e) => setFormData({...formData, vendorName: e.target.value})}
-                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-all outline-none text-sm"
-                  >
-                    <option>SKNDR (Dubai)</option>
-                    <option>ABT.ic</option>
-                    <option>BNK22</option>
-                    <option>Local Scrap Dealer</option>
-                  </select>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search size={14} className="text-neutral-400" />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={vendorSearch}
+                      onChange={(e) => {
+                        setVendorSearch(e.target.value);
+                        setIsVendorDropdownOpen(true);
+                        if (formData.vendorId) {
+                          setFormData(prev => ({...prev, vendorId: null, vendorName: ''}));
+                        }
+                      }}
+                      onFocus={() => setIsVendorDropdownOpen(true)}
+                      className="w-full pl-9 pr-10 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-all outline-none text-sm"
+                      placeholder="Search vendor by name or phone..."
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      {isVendorSearching ? <Loader2 size={14} className="text-neutral-400 animate-spin" /> : <ChevronDown size={14} className="text-neutral-400" />}
+                    </div>
+                  </div>
+
+                  {/* Vendor Dropdown Menu */}
+                  {isVendorDropdownOpen && (
+                    <div className="absolute z-10 mt-1 w-[calc(100%-3rem)] bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {vendorList.length > 0 ? (
+                        <ul>
+                          {vendorList.map((vendor) => (
+                            <li
+                              key={vendor.id}
+                              onClick={() => selectVendor(vendor)}
+                              className="px-4 py-3 hover:bg-neutral-50 cursor-pointer border-b border-neutral-100 last:border-0"
+                            >
+                              <div className="font-medium text-sm text-neutral-900">{vendor.name}</div>
+                              {vendor.mobile_number && <div className="text-xs text-neutral-500">{vendor.mobile_number}</div>}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="p-4 text-sm text-neutral-500 text-center">
+                          {vendorSearch ? 'No vendors found.' : 'Loading vendors...'}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -250,7 +396,6 @@ export default function PurchasePage() {
                     </div>
                     <input
                       type="text"
-                      required
                       value={productSearch}
                       onChange={(e) => {
                         setProductSearch(e.target.value);
@@ -294,62 +439,99 @@ export default function PurchasePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
-                <div>
-                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Gross (Vori)</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    required
-                    value={formData.grossWeight}
-                    onChange={(e) => handleGrossWeightVori(e.target.value)}
-                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
-                  />
+              {/* Cart Table */}
+              {cart.length > 0 && (
+                <div className="overflow-x-auto border border-neutral-200 rounded-lg">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 uppercase text-xs tracking-wider">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">Item</th>
+                        <th className="px-4 py-3 font-medium w-32">Qty</th>
+                        <th className="px-4 py-3 font-medium w-24">Gross(V)</th>
+                        <th className="px-4 py-3 font-medium w-24">Net(V)</th>
+                        <th className="px-4 py-3 font-medium w-32">Rate</th>
+                        <th className="px-4 py-3 font-medium w-32">Total</th>
+                        <th className="px-4 py-3 font-medium w-12 text-center"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-100">
+                      {cart.map((item) => {
+                        const netWeight = parseFloat(item.netWeight) || 0;
+                        const qty = parseFloat(item.qty) || 1;
+                        const rate = parseFloat(item.ratePerVori) || 0;
+                        const weightMultiplier = netWeight > 0 ? netWeight : 1;
+                        const itemTotal = weightMultiplier * rate * qty;
+                        
+                        return (
+                          <tr key={item.id} className="hover:bg-neutral-50/50">
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-neutral-900 truncate max-w-[150px]">{item.name}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <button type="button" onClick={() => updateCartItem(item.id, 'qty', Math.max(1, qty - 1))} className="p-1 bg-neutral-100 rounded hover:bg-neutral-200 text-neutral-600">
+                                  <Minus size={14} />
+                                </button>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={item.qty}
+                                  onChange={(e) => updateCartItem(item.id, 'qty', e.target.value)}
+                                  className="w-12 text-center px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                                />
+                                <button type="button" onClick={() => updateCartItem(item.id, 'qty', qty + 1)} className="p-1 bg-neutral-100 rounded hover:bg-neutral-200 text-neutral-600">
+                                  <Plus size={14} />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                step="0.001"
+                                value={item.grossWeight}
+                                onChange={(e) => updateCartItem(item.id, 'grossWeight', e.target.value)}
+                                className="w-20 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                                placeholder="0"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                step="0.001"
+                                value={item.netWeight}
+                                onChange={(e) => updateCartItem(item.id, 'netWeight', e.target.value)}
+                                className="w-20 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded text-sm focus:ring-1 focus:ring-emerald-500 outline-none"
+                                placeholder="0"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                value={item.ratePerVori}
+                                onChange={(e) => updateCartItem(item.id, 'ratePerVori', e.target.value)}
+                                className="w-24 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                              />
+                            </td>
+                            <td className="px-4 py-3 font-medium text-neutral-900">
+                              {getCurrencySymbol()}{itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button type="button" onClick={() => removeCartItem(item.id)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors">
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Gross (Gram)</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    required
-                    value={formData.grossWeightGram}
-                    onChange={(e) => handleGrossWeightGram(e.target.value)}
-                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
-                  />
+              )}
+              {cart.length === 0 && (
+                <div className="py-8 text-center text-neutral-400 text-sm border-2 border-dashed border-neutral-100 rounded-lg mt-4">
+                  No items added to cart yet.
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Net (Vori)</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    required
-                    value={formData.netWeight}
-                    onChange={(e) => handleNetWeightVori(e.target.value)}
-                    className="w-full px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Net (Gram)</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    required
-                    value={formData.netWeightGram}
-                    onChange={(e) => handleNetWeightGram(e.target.value)}
-                    className="w-full px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Rate Per Vori</label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.ratePerVori}
-                    onChange={(e) => setFormData({...formData, ratePerVori: e.target.value})}
-                    className="w-full px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
-                  />
-                </div>
-              </div>
+              )}
             </div>
 
           </form>
@@ -367,15 +549,7 @@ export default function PurchasePage() {
             
             <div className="p-6 space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Net Pure Weight</span>
-                <span className="font-medium text-emerald-600">{netWeightNum.toFixed(3)} Vori</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-neutral-500">Gross Weight</span>
-                <span className="font-medium text-neutral-600">{parseFloat(formData.grossWeight || 0).toFixed(3)} Vori</span>
-              </div>
-              <div className="flex justify-between text-sm mt-2 pt-2 border-t border-neutral-100">
-                <span className="text-neutral-500">Gross Gold Value</span>
+                <span className="text-neutral-500">Cart Items ({cart.length})</span>
                 <span className="font-medium">{getCurrencySymbol()}{goldValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
               </div>
               
@@ -426,7 +600,7 @@ export default function PurchasePage() {
               <button
                 type="submit"
                 form="purchase-form"
-                disabled={loading || !formData.productName}
+                disabled={loading || !formData.vendorName || cart.length === 0}
                 className="w-full bg-black text-white font-medium py-3 rounded-lg hover:bg-neutral-800 transition-all flex items-center justify-center disabled:opacity-50 shadow-md hover:shadow-lg transform active:scale-[0.98]"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <ArrowDownToLine className="w-5 h-5 mr-2" />}

@@ -1,0 +1,227 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+const Card = ({ children, className }) => <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 ${className || ''}`}>{children}</div>;
+const CardContent = ({ children, className }) => <div className={`p-6 ${className || ''}`}>{children}</div>;
+import { Receipt, Download, ArrowLeft, Loader2, Printer } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import SaleInvoicePdf from '@/components/invoice/SaleInvoicePdf';
+import { useSession } from 'next-auth/react';
+
+const API_URL = process.env.NEXT_PUBLIC_API;
+
+export default function SaleInvoicePage() {
+  const { id } = useParams();
+  const router = useRouter();
+  const [invoice, setInvoice] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    const token = session?.accessToken;
+    if (!token) return;
+
+    const fetchInvoice = async () => {
+      try {
+        const res = await axios.post(`${API_URL}/invoice-details`, { invoice_id: id }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data?.success) {
+          setInvoice(res.data);
+        } else {
+          toast.error('Failed to load invoice');
+        }
+      } catch (err) {
+        toast.error('Error fetching invoice details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) {
+      fetchInvoice();
+    }
+  }, [id, session?.accessToken]);
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
+      </div>
+    );
+  }
+
+  if (!invoice) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <p className="text-neutral-500">Invoice not found.</p>
+        <button onClick={() => router.back()} className="text-sm font-medium hover:underline">
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
+  const invoiceData = invoice.data || {};
+  const salesDetails = invoiceData.sales_details || [];
+  
+  const subTotal = Number(invoiceData.sub_total || 0);
+  const discount = Number(invoiceData.discount || 0);
+  const finalTotal = subTotal - discount;
+  const paid = Number(invoiceData.paid_amount || 0);
+  const due = Math.max(finalTotal - paid, 0);
+
+  return (
+    <>
+      <style>{`
+        @media print {
+          @page { margin: 0; }
+          body { 
+            -webkit-print-color-adjust: exact; 
+            padding: 2cm !important; 
+          }
+        }
+      `}</style>
+      <div className="max-w-4xl mx-auto space-y-6 pb-20">
+        {/* Header Actions */}
+        <div className="flex items-center justify-between print:hidden">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-black transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-black rounded-lg hover:bg-neutral-50 transition-colors text-sm font-medium"
+          >
+            <Printer size={16} />
+            Print
+          </button>
+          <PDFDownloadLink
+            document={<SaleInvoicePdf invoice={invoice} />}
+            fileName={`Sale-Invoice-${id}.pdf`}
+            className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-neutral-800 transition-colors text-sm font-medium"
+          >
+            {({ loading }) => (
+              <>
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                {loading ? 'Generating...' : 'Download PDF'}
+              </>
+            )}
+          </PDFDownloadLink>
+        </div>
+      </div>
+
+      {/* Invoice Web View */}
+      <Card className="overflow-hidden border-neutral-200 shadow-sm print:shadow-none print:border-none">
+        <CardContent className="p-0">
+          <div className="p-8 sm:p-12 bg-white text-neutral-900">
+            {/* Store Info & Invoice Meta */}
+            <div className="flex flex-col sm:flex-row justify-between items-start border-b border-neutral-100 pb-8 mb-8 gap-6">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-black mb-1">EMAAR JEWELLERS</h1>
+                <p className="text-sm text-neutral-500 max-w-[250px]">
+                  Baitul Mukarram National Mosque Market, Dhaka, Bangladesh
+                </p>
+              </div>
+              <div className="text-left sm:text-right">
+                <div className="inline-flex items-center justify-center p-2 bg-neutral-50 rounded-lg mb-3">
+                  <Receipt size={24} className="text-neutral-700" />
+                </div>
+                <h2 className="text-lg font-semibold">INVOICE</h2>
+                <p className="text-sm text-neutral-500 font-mono mt-1">{invoiceData.invoice_id || id}</p>
+                <p className="text-xs text-neutral-400 mt-1">
+                  {invoiceData.created_at ? new Date(invoiceData.created_at).toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+            </div>
+
+            {/* Customer Info */}
+            <div className="mb-10">
+              <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Bill To</h3>
+              <p className="font-medium text-black">{invoiceData.customer_name || 'Walk-in Customer'}</p>
+              {invoiceData.customer_phone && <p className="text-sm text-neutral-600 mt-1">{invoiceData.customer_phone}</p>}
+              {invoiceData.customer_address && <p className="text-sm text-neutral-600 mt-1">{invoiceData.customer_address}</p>}
+            </div>
+
+            {/* Itemized Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-neutral-50 text-neutral-600">
+                  <tr>
+                    <th className="px-4 py-3 font-medium rounded-l-lg">Item Description</th>
+                    <th className="px-4 py-3 font-medium text-center">Qty</th>
+                    <th className="px-4 py-3 font-medium text-right">Rate</th>
+                    <th className="px-4 py-3 font-medium text-right rounded-r-lg">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100">
+                  {salesDetails.map((item, index) => {
+                    const itemName = item.product_info?.name || 'Unnamed Item';
+                    return (
+                      <tr key={item.id || index} className="group">
+                        <td className="px-4 py-4">
+                          <p className="font-medium text-neutral-900">{itemName}</p>
+                          {item.product_info?.sku && (
+                            <p className="text-xs text-neutral-400 mt-0.5">SKU: {item.product_info.sku}</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-center text-neutral-600">{item.qty || 1}</td>
+                        <td className="px-4 py-4 text-right text-neutral-600">৳ {Number(item.price || 0).toLocaleString()}</td>
+                        <td className="px-4 py-4 text-right font-medium text-neutral-900">
+                          ৳ {(Number(item.price || 0) * Number(item.qty || 1)).toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Totals Section */}
+            <div className="mt-8 flex justify-end">
+              <div className="w-full sm:w-[350px] space-y-3 bg-neutral-50 p-6 rounded-xl">
+                <div className="flex justify-between text-sm text-neutral-600">
+                  <span>Subtotal</span>
+                  <span>৳ {subTotal.toLocaleString()}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm text-red-500">
+                    <span>Discount</span>
+                    <span>- ৳ {discount.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="pt-3 border-t border-neutral-200 flex justify-between font-semibold text-base text-black">
+                  <span>Total Amount</span>
+                  <span>৳ {finalTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm text-green-600 pt-1">
+                  <span>Paid Amount</span>
+                  <span>৳ {paid.toLocaleString()}</span>
+                </div>
+                {due > 0 && (
+                  <div className="flex justify-between text-sm font-medium text-red-600 pt-1">
+                    <span>Due Amount</span>
+                    <span>৳ {due.toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer Notes */}
+            <div className="mt-16 pt-8 border-t border-neutral-100 text-center text-xs text-neutral-400">
+              <p>Thank you for shopping with Emaar Jewellers.</p>
+              <p className="mt-1">This is a system generated invoice.</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+    </>
+  );
+}
