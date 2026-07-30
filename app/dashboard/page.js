@@ -236,7 +236,40 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
 
 
 const DueListTable = ({ title, data, type, loading }) => {
-  const rows = Array.isArray(data?.data) ? data.data : [];
+  const rawRows = Array.isArray(data?.data) ? data.data : [];
+
+  // Group & merge rows by customer/vendor name
+  const rows = useMemo(() => {
+    const map = new Map();
+    rawRows.forEach((r) => {
+      const nameKey = (r.name || 'Unknown').trim().toLowerCase();
+      if (!map.has(nameKey)) {
+        map.set(nameKey, {
+          name: r.name || 'N/A',
+          invoice_id: r.invoice_id || 'N/A',
+          invoices: r.invoice_id ? [r.invoice_id] : [],
+          total_amount: Number(r.total_amount || 0),
+          paid_amount: Number(r.paid_amount || 0),
+          due: Number(r.due || 0),
+          customer_id: r.customer_id,
+          vendor_id: r.vendor_id,
+        });
+      } else {
+        const existing = map.get(nameKey);
+        if (r.invoice_id && !existing.invoices.includes(r.invoice_id)) {
+          existing.invoices.push(r.invoice_id);
+        }
+        existing.total_amount += Number(r.total_amount || 0);
+        existing.paid_amount += Number(r.paid_amount || 0);
+        existing.due += Number(r.due || 0);
+      }
+    });
+
+    return Array.from(map.values()).map(item => ({
+      ...item,
+      invoice_id: item.invoices.length > 1 ? `${item.invoices.length} Invoices (${item.invoices[0]})` : item.invoice_id
+    }));
+  }, [rawRows]);
   
   return (
     <div className="bg-white rounded-xl shadow-sm border border-neutral-200/80 overflow-hidden w-full flex flex-col h-full">
@@ -432,7 +465,18 @@ export default function DashboardPage() {
 
   const dash = dashboardData?.data || dashboardData || {};
 
-  const topMetrics = [
+  const mainMetrics = [
+    {
+      title: "Total Sales",
+      value: dash.sales || 0,
+      currency: "BDT",
+      trend: dash.sales_change !== undefined ? dash.sales_change : "0%",
+      trendText: dash.sales_report || "less than last day",
+      icon: "📊",
+      color: "bg-blue-50/40 border-blue-100/60",
+      textColor: "text-blue-900",
+      link: "/dashboard/sales",
+    },
     {
       title: "Stock Balance",
       value: dash.total_accessories_stock_value || 0,
@@ -447,40 +491,6 @@ export default function DashboardPage() {
       icon: "🎧",
       color: "bg-teal-50/40 border-teal-100/60",
       textColor: "text-teal-900",
-    },
-  ];
-
-  const mainMetrics = [
-    {
-      title: "Total Sales",
-      value: dash.sales || 0,
-      currency: "BDT",
-      trend: dash.sales_change !== undefined ? dash.sales_change : "0%",
-      trendText: dash.sales_report || "less than last day",
-      icon: "📊",
-      color: "bg-blue-50/40 border-blue-100/60",
-      textColor: "text-blue-900",
-      link: "/dashboard/sales",
-    },
-    {
-      title: "Total Revenue",
-      value: dash.revenue || 0,
-      currency: "BDT",
-      trend: dash.revenue_percentage !== undefined ? dash.revenue_percentage : "0%",
-      trendText: dash.revenue_report || "less than last day",
-      icon: "💰",
-      color: "bg-emerald-50/40 border-emerald-100/60",
-      textColor: "text-emerald-900",
-    },
-    {
-      title: "Total Expense",
-      value: dash.expense || 0,
-      currency: "BDT",
-      trend: dash.expense_percentage !== undefined ? dash.expense_percentage : "0%",
-      trendText: dash.expense_report || "more than last day",
-      icon: "💸",
-      color: "bg-rose-50/40 border-rose-100/60",
-      textColor: "text-rose-900",
     },
     {
       title: "Total Purchase",
@@ -498,10 +508,14 @@ export default function DashboardPage() {
     <div className="space-y-4 text-black">
       {/* Financial Overview Button & Interval Selector Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg font-medium text-xs shadow-sm">
+        <button
+          type="button"
+          onClick={() => setIsFinancialModalOpen(true)}
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-lg font-medium text-xs shadow-sm cursor-pointer transition-all"
+        >
           <TrendingUp size={14} />
           <span>Financial Overview</span>
-        </div>
+        </button>
 
         <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-neutral-200 shadow-sm">
           {[
@@ -531,14 +545,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-2.5">
-          {/* Row 1: Stock Balance & Current Stock (2 columns on desktop) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {topMetrics.map((m) => (
-              <StatCard key={m.title} {...m} />
-            ))}
-          </div>
-
-          {/* Row 2: Sales, Revenue, Expense, Purchase (4 columns on desktop) */}
+          {/* Main 4 KPI Cards Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
             {mainMetrics.map((m) => (
               <StatCard key={m.title} {...m} />
@@ -578,6 +585,12 @@ export default function DashboardPage() {
           loading={vendorDueLoading}
         />
       </div>
+
+      {/* Financial Overview Modal */}
+      <FinancialOverviewModal
+        open={isFinancialModalOpen}
+        onClose={() => setIsFinancialModalOpen(false)}
+      />
     </div>
   );
 }

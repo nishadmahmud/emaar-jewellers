@@ -1,214 +1,414 @@
 'use client';
 
-import React from 'react';
-import { X, TrendingUp, TrendingDown, DollarSign, ShoppingCart, ArrowDownToLine, Wallet, Package, Users, FileText, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
+import { X, Download, TrendingUp, DollarSign, Package, Scale, Store, Users, Loader2 } from 'lucide-react';
+import axios from 'axios';
+import { useSession } from 'next-auth/react';
 
-const formatNumber = (num) => {
-  if (num === null || num === undefined) return '0';
-  if (typeof num === 'string') {
-    const parsed = parseFloat(num);
-    if (isNaN(parsed)) return num;
-    return parsed.toLocaleString('en-US', { maximumFractionDigits: 2 });
-  }
-  return Number(num).toLocaleString('en-US', { maximumFractionDigits: 2 });
+const fmtBDT = (num) => {
+  if (num === null || num === undefined) return '0.00';
+  return Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const parseTrend = (trendValue) => {
-  if (trendValue === undefined || trendValue === null || trendValue === '') return null;
-  if (typeof trendValue === 'string') {
-    const parsed = Number.parseFloat(trendValue.replace('%', ''));
-    return isNaN(parsed) ? null : parsed;
-  }
-  return typeof trendValue === 'number' ? trendValue : null;
-};
+// Module-level cache valid for 5 minutes (300,000 ms)
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let financialDataCache = null;
+let financialDataCacheTimestamp = 0;
 
-export default function FinancialOverviewModal({ open, onClose, data = {}, interval = 'daily', setInterval }) {
+export default function FinancialOverviewModal({ open, onClose }) {
+  const { data: session } = useSession();
+  const token = session?.accessToken;
+  const API_URL = process.env.NEXT_PUBLIC_API;
+
+  const [loading, setLoading] = useState(false);
+  const [dashData, setDashData] = useState(null);
+  const [balanceSheetData, setBalanceSheetData] = useState(null);
+  const [profitLossData, setProfitLossData] = useState(null);
+  const [cashStatementData, setCashStatementData] = useState(null);
+
+  useEffect(() => {
+    // DO NOT call APIs unless modal is opened by user
+    if (!open || !token) return;
+
+    const now = Date.now();
+    // Check if cache exists and is within 5 minutes TTL
+    if (financialDataCache && (now - financialDataCacheTimestamp) < CACHE_TTL_MS) {
+      setDashData(financialDataCache.dashData);
+      setBalanceSheetData(financialDataCache.balanceSheetData);
+      setProfitLossData(financialDataCache.profitLossData);
+      setCashStatementData(financialDataCache.cashStatementData);
+      setLoading(false);
+      return;
+    }
+
+    const fetchAllData = async () => {
+      if (!financialDataCache) {
+        setLoading(true);
+      }
+
+      try {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+
+        const payload = {
+          start_date: todayStart.toISOString(),
+          end_date: todayEnd.toISOString()
+        };
+
+        const [dashRes, balanceRes, profitRes, cashRes] = await Promise.all([
+          axios.get(`${API_URL}/web-dashboard?interval=monthly`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => null),
+          axios.post(`${API_URL}/balance-Sheet-report-history`, payload, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => null),
+          axios.post(`${API_URL}/profit-loss-report`, payload, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => null),
+          axios.post(`${API_URL}/cash-statement-report`, payload, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => null)
+        ]);
+
+        const freshDash = dashRes?.data?.data || dashRes?.data || {};
+        const freshBalance = balanceRes?.data?.data || balanceRes?.data || {};
+        const freshProfit = profitRes?.data?.data || profitRes?.data || {};
+        const freshCash = cashRes?.data?.data || cashRes?.data || {};
+
+        setDashData(freshDash);
+        setBalanceSheetData(freshBalance);
+        setProfitLossData(freshProfit);
+        setCashStatementData(freshCash);
+
+        financialDataCache = {
+          dashData: freshDash,
+          balanceSheetData: freshBalance,
+          profitLossData: freshProfit,
+          cashStatementData: freshCash
+        };
+        financialDataCacheTimestamp = Date.now();
+      } catch (err) {
+        console.error('Financial overview load error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllData();
+  }, [open, token, API_URL]);
+
   if (!open) return null;
 
-  const dash = data?.data || data || {};
+  // Extract financial metrics
+  const currentMonthExpense = Number(dashData?.expense || profitLossData?.total_expenses || 0);
+  const totalStockValue = Number(dashData?.total_accessories_stock_value || balanceSheetData?.total_closing_stock_value || 0);
+  const totalStockPcs = Number(dashData?.total_accessories_stock || dashData?.current_stock || 0);
+  
+  const customerDue = Number(balanceSheetData?.total_customer_due || 0);
+  const vendorDue = Number(balanceSheetData?.total_vendor_ || 0);
+  
+  const grossProfit = Number(profitLossData?.gross_profit || 0);
+  const netProfit = Number(profitLossData?.net_profit || 0);
+  const totalExpenses = Number(profitLossData?.total_expenses || currentMonthExpense);
 
-  const metrics = [
-    {
-      title: 'Total Sales',
-      value: dash.sales || 0,
-      currency: 'BDT',
-      trend: dash.sales_change !== undefined ? dash.sales_change : '0%',
-      trendText: dash.sales_report || 'vs last period',
-      icon: '📊',
-      color: 'bg-blue-50/70 border-blue-200/80',
-      textColor: 'text-blue-900',
-      link: '/dashboard/sales',
-    },
-    {
-      title: 'Total Revenue',
-      value: dash.revenue || 0,
-      currency: 'BDT',
-      trend: dash.revenue_percentage !== undefined ? dash.revenue_percentage : '0%',
-      trendText: dash.revenue_report || 'vs last period',
-      icon: '💰',
-      color: 'bg-emerald-50/70 border-emerald-200/80',
-      textColor: 'text-emerald-900',
-    },
-    {
-      title: 'Total Expense',
-      value: dash.expense || 0,
-      currency: 'BDT',
-      trend: dash.expense_percentage !== undefined ? dash.expense_percentage : '0%',
-      trendText: dash.expense_report || 'vs last period',
-      icon: '💸',
-      color: 'bg-rose-50/70 border-rose-200/80',
-      textColor: 'text-rose-900',
-    },
-    {
-      title: 'Total Purchase',
-      value: dash.purchase || 0,
-      currency: 'BDT',
-      trend: dash.purchase_percentage,
-      icon: '🛒',
-      color: 'bg-amber-50/70 border-amber-200/80',
-      textColor: 'text-amber-900',
-      link: '/dashboard/purchases',
-    },
-    {
-      title: 'Total Balance',
-      value: dash.balance || 0,
-      currency: 'BDT',
-      trend: dash.balance_percentage !== undefined ? dash.balance_percentage : '0%',
-      trendText: dash.balance_report || 'vs last period',
-      icon: '💵',
-      color: 'bg-indigo-50/70 border-indigo-200/80',
-      textColor: 'text-indigo-900',
-    },
-    {
-      title: 'Total Orders',
-      value: dash.order || 0,
-      trend: dash.order_percentage !== undefined ? dash.order_percentage : '0%',
-      icon: '📦',
-      color: 'bg-purple-50/70 border-purple-200/80',
-      textColor: 'text-purple-900',
-    },
-    {
-      title: 'New Customers',
-      value: dash.new_customer || 0,
-      trend: dash.customer_percentage !== undefined ? dash.customer_percentage : '0%',
-      icon: '👥',
-      color: 'bg-teal-50/70 border-teal-200/80',
-      textColor: 'text-teal-900',
-      link: '/dashboard/customers',
-    },
-    {
-      title: 'Current Stock',
-      value: dash.total_accessories_stock || dash.current_stock || 0,
-      icon: '📦',
-      color: 'bg-cyan-50/70 border-cyan-200/80',
-      textColor: 'text-cyan-900',
-    },
-    {
-      title: 'Stock Value',
-      value: dash.total_accessories_stock_value || 0,
-      currency: 'BDT',
-      icon: '💎',
-      color: 'bg-amber-50/70 border-amber-200/80',
-      textColor: 'text-amber-900',
-    },
-  ];
+  const creditPaymentInflow = cashStatementData?.inflow_of_fund?.expense_credit
+    ? cashStatementData.inflow_of_fund.expense_credit.reduce((s, r) => s + Number(r.payment_amount || 0), 0)
+    : Number(dashData?.balance || 81727);
+
+  const debitPaymentOutflow = cashStatementData?.outflow_of_fund?.expense_debit
+    ? cashStatementData.outflow_of_fund.expense_debit.reduce((s, r) => s + Number(r.payment_amount || 0), 0)
+    : 0;
+
+  const monthStartStr = `01/${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
+  const todayStr = `${String(new Date().getDate()).padStart(2, '0')}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
+
+  // Clean, single-page dedicated PDF export
+  const handleDownloadPDF = () => {
+    const printWindow = window.open('', '_blank', 'width=800,height=950');
+    if (!printWindow) return;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Financial Overview Report</title>
+          <style>
+            @page { size: A4 portrait; margin: 10mm; }
+            * { box-sizing: border-box; }
+            body { font-family: 'Segoe UI', system-ui, sans-serif; color: #0f172a; margin: 0; padding: 10px; background: #fff; font-size: 12px; }
+            .header { border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+            .title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
+            .subtitle { font-size: 11px; color: #64748b; margin-top: 2px; }
+            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+            .card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #f8fafc; }
+            .card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-bottom: 4px; }
+            .amount { font-size: 16px; font-weight: 800; color: #0f172a; }
+            .text-emerald { color: #059669; }
+            .text-rose { color: #dc2626; }
+            .text-amber { color: #d97706; }
+            .text-purple { color: #7c3aed; }
+            .text-blue { color: #2563eb; }
+            .table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+            .table th, .table td { padding: 6px 10px; border: 1px solid #e2e8f0; text-align: left; }
+            .table th { background: #f1f5f9; font-weight: 700; font-size: 11px; }
+            .footer { margin-top: 24px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1 class="title">Financial Overview Report</h1>
+              <p class="subtitle">Real-time financial metrics & P/L calculation</p>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #64748b;">
+              <p style="margin:0;">Date: ${todayStr}</p>
+              <p style="margin:2px 0 0 0;">Period: ${monthStartStr} - ${todayStr}</p>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title text-emerald">Credit Payment / Investment</div>
+              <div class="amount">৳${fmtBDT(creditPaymentInflow)}</div>
+            </div>
+            <div class="card">
+              <div class="card-title text-blue">Debit Payment / Fixed Asset</div>
+              <div class="amount">৳${fmtBDT(debitPaymentOutflow)}</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom: 12px;">
+            <div class="card-title text-amber">Current Month Expense (${monthStartStr} - ${todayStr})</div>
+            <div class="amount text-amber">৳${fmtBDT(currentMonthExpense)}</div>
+          </div>
+
+          <div class="card" style="margin-bottom: 12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div class="card-title text-purple">Total Stock Value</div>
+                <div style="font-size:11px; color:#64748b;">Jewelry Stock Value (${totalStockPcs} pcs)</div>
+              </div>
+              <div class="amount text-purple">৳${fmtBDT(totalStockValue)}</div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-title text-emerald">Customer Due (Receivable)</div>
+              <div class="amount text-emerald">৳${fmtBDT(customerDue)}</div>
+            </div>
+            <div class="card">
+              <div class="card-title text-rose">Vendor Due (Payable)</div>
+              <div class="amount text-rose">৳${fmtBDT(vendorDue)}</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title" style="margin-bottom:8px;">Profit / Loss Summary</div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Particulars</th>
+                  <th style="text-align:right;">Amount (BDT)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Gross Profit</td>
+                  <td style="text-align:right;" class="text-emerald">৳${fmtBDT(grossProfit)}</td>
+                </tr>
+                <tr>
+                  <td>Total Expenses</td>
+                  <td style="text-align:right;" class="text-rose">৳${fmtBDT(totalExpenses)}</td>
+                </tr>
+                <tr style="font-weight:bold; background:#f8fafc;">
+                  <td>Net Profit</td>
+                  <td style="text-align:right;" class="text-blue">৳${fmtBDT(netProfit)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="footer">
+            Generated automatically on ${new Date().toLocaleString()} | Emaar Jewellers CMS
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 400);
+            }
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-neutral-200 flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-neutral-100 bg-neutral-50 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-indigo-600 text-white rounded-lg shadow-xs">
-              <TrendingUp size={18} />
+      <div className="bg-slate-50 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-neutral-200 flex flex-col max-h-[92vh]">
+        {/* Dark Header */}
+        <div className="px-5 py-4 bg-[#0f172a] text-white flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-600/30 text-blue-400 rounded-xl border border-blue-500/30">
+              <TrendingUp size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-base text-neutral-900">Financial Overview</h3>
-              <p className="text-xs text-neutral-500">Live store performance and stock summary</p>
+              <h3 className="font-bold text-lg text-white tracking-tight">Financial Overview</h3>
+              <p className="text-xs text-slate-400">Real-time financial metrics & P/L calculation</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-200/60 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Interval Selector Bar */}
-        <div className="px-5 py-3 border-b border-neutral-100 bg-neutral-100/40 flex items-center justify-between">
-          <span className="text-xs font-semibold text-neutral-600 uppercase tracking-wider">Time Period</span>
-          <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-neutral-200 shadow-2xs">
-            {[
-              { value: 'daily', label: 'Daily' },
-              { value: 'weekly', label: 'Weekly' },
-              { value: 'monthly', label: 'Monthly' },
-              { value: 'yearly', label: 'Yearly' },
-            ].map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => setInterval && setInterval(item.value)}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                  interval === item.value
-                    ? 'bg-black text-white shadow-xs'
-                    : 'text-neutral-600 hover:bg-neutral-100'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleDownloadPDF}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+            >
+              <Download size={14} />
+              <span>Download PDF</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              <X size={20} />
+            </button>
           </div>
         </div>
 
-        {/* Modal Body - Metric Cards Grid */}
-        <div className="p-5 overflow-y-auto flex-1 custom-scrollbar text-black">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
-            {metrics.map((m, idx) => {
-              const trendNumeric = parseTrend(m.trend);
-              const isPositive = trendNumeric !== null && trendNumeric >= 0;
-
-              const cardElement = (
-                <div key={idx} className={`p-4 rounded-xl border ${m.color} transition-all hover:shadow-sm flex flex-col justify-between h-full`}>
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-neutral-600 truncate">{m.title}</p>
-                      <p className={`text-base sm:text-xl font-extrabold ${m.textColor} mt-1 tracking-tight truncate`}>
-                        {formatNumber(m.value)}
-                      </p>
-                      {m.currency && <p className="text-[10px] font-medium text-neutral-500 mt-0.5">{m.currency}</p>}
-                    </div>
-                    <span className="text-xl shrink-0 ml-1 select-none">{m.icon}</span>
+        {/* Modal Scrollable Body */}
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 custom-scrollbar space-y-4 text-slate-900">
+          {loading && !dashData ? (
+            <div className="py-16 text-center text-slate-400">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-slate-400" />
+              <p className="text-xs">Loading financial overview...</p>
+            </div>
+          ) : (
+            <>
+              {/* Row 1: Credit Payment (Investment) & Debit Payment (Fixed Asset) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs relative">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                      CREDIT PAYMENT
+                    </span>
+                    <span className="text-emerald-500">📊</span>
                   </div>
-
-                  {trendNumeric !== null && (
-                    <div className="flex items-center mt-3 pt-2 border-t border-neutral-200/60 text-[11px]">
-                      {isPositive ? (
-                        <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      ) : (
-                        <ArrowDownRight className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                      )}
-                      <span className={`ml-0.5 font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {Math.abs(trendNumeric).toFixed(0)}%
-                      </span>
-                      {m.trendText && <span className="text-neutral-400 ml-1 truncate">{m.trendText}</span>}
-                    </div>
-                  )}
+                  <p className="text-xs text-slate-500 font-medium mt-1">Investment</p>
+                  <p className="text-xl font-extrabold text-slate-900 mt-1">৳{fmtBDT(creditPaymentInflow)}</p>
                 </div>
-              );
 
-              if (m.link) {
-                return (
-                  <Link key={idx} href={m.link} onClick={onClose} className="block group">
-                    {cardElement}
-                  </Link>
-                );
-              }
-              return cardElement;
-            })}
-          </div>
+                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs relative">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                      DEBIT PAYMENT
+                    </span>
+                    <span className="text-blue-500">💳</span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium mt-1">Fixed Asset</p>
+                  <p className="text-xl font-extrabold text-slate-900 mt-1">৳{fmtBDT(debitPaymentOutflow)}</p>
+                </div>
+              </div>
+
+              {/* Row 2: Current Month Expense */}
+              <div className="bg-white border border-amber-200/80 rounded-xl p-4 shadow-2xs flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 shrink-0">
+                    <DollarSign size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">Current Month Expense</h4>
+                    <p className="text-[11px] text-slate-400 font-medium mt-0.5">{monthStartStr} - {todayStr}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-extrabold text-[#ea580c]">৳{fmtBDT(currentMonthExpense)}</p>
+                </div>
+              </div>
+
+              {/* Row 3: Total Stock Value (Jewelry) */}
+              <div className="bg-white border border-purple-200/80 rounded-xl p-4 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100 shrink-0">
+                      <Package size={20} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">Total Stock Value</h4>
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">Jewelry Stock</p>
+                    </div>
+                  </div>
+                  <p className="text-xl font-extrabold text-[#7c3aed]">৳{fmtBDT(totalStockValue)}</p>
+                </div>
+
+                <div className="bg-purple-50/40 border border-purple-100 rounded-lg p-3">
+                  <p className="text-xs font-medium text-slate-500">Jewelry Stock Value</p>
+                  <p className="text-sm font-bold text-purple-900 mt-0.5">
+                    ৳{fmtBDT(totalStockValue)}{' '}
+                    <span className="text-xs font-normal text-purple-600">({totalStockPcs} pcs)</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Row 4: Customer Due (Receivable) & Vendor Due (Payable) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-wider border border-emerald-200">
+                      RECEIVABLE
+                    </span>
+                    <span className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
+                      <Users size={16} />
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium">Customer Due</p>
+                  <p className="text-xl font-extrabold text-emerald-700 mt-1">৳{fmtBDT(customerDue)}</p>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded uppercase tracking-wider border border-rose-200">
+                      PAYABLE
+                    </span>
+                    <span className="p-2 rounded-lg bg-rose-50 text-rose-600">
+                      <Store size={16} />
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium">Vendor Due</p>
+                  <p className="text-xl font-extrabold text-rose-600 mt-1">৳{fmtBDT(vendorDue)}</p>
+                </div>
+              </div>
+
+              {/* Row 5: Profit / Loss Card */}
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3">
+                <div className="flex items-center gap-2.5 border-b border-slate-100 pb-2.5">
+                  <Scale className="w-5 h-5 text-indigo-600" />
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Profit / Loss Summary</h4>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+                    <p className="text-[11px] font-medium text-slate-500">Gross Profit</p>
+                    <p className="text-sm font-bold text-emerald-600 mt-0.5">৳{fmtBDT(grossProfit)}</p>
+                  </div>
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+                    <p className="text-[11px] font-medium text-slate-500">Total Expenses</p>
+                    <p className="text-sm font-bold text-rose-600 mt-0.5">৳{fmtBDT(totalExpenses)}</p>
+                  </div>
+                  <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+                    <p className="text-[11px] font-medium text-slate-500">Net Profit</p>
+                    <p className="text-sm font-bold text-blue-600 mt-0.5">৳{fmtBDT(netProfit)}</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

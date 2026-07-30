@@ -2,14 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, History, LogOut, Search, Settings, Package, PackagePlus, Menu, X, Users, ArrowDownToLine, FileText } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, History, LogOut, Search, Settings, Package, PackagePlus, Menu, X, Users, ArrowDownToLine, FileText, Receipt, CreditCard } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useState } from 'react';
+import QuickPaymentModal from '@/components/quick-payment/QuickPaymentModal';
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const [currency, setCurrency] = useState('TK');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isQuickPaymentOpen, setIsQuickPaymentOpen] = useState(false);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -22,6 +24,8 @@ export default function DashboardLayout({ children }) {
     { name: 'Vendors', href: '/dashboard/vendors', icon: Users },
     { name: 'Balance Sheet', href: '/dashboard/balance-sheet', icon: FileText },
     { name: 'Customers', href: '/dashboard/customers', icon: Users },
+    { name: 'Expense', href: '/dashboard/expense', icon: Receipt },
+    { name: 'Quick Payment', action: 'quick-payment', icon: CreditCard },
   ];
 
   return (
@@ -54,8 +58,24 @@ export default function DashboardLayout({ children }) {
 
             <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
               {navigation.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = item.href ? pathname === item.href : false;
                 const Icon = item.icon;
+                if (item.action === 'quick-payment') {
+                  return (
+                    <button
+                      key={item.name}
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setIsQuickPaymentOpen(true);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors text-left cursor-pointer"
+                    >
+                      <Icon size={18} />
+                      {item.name}
+                    </button>
+                  );
+                }
                 return (
                   <Link
                     key={item.name}
@@ -95,8 +115,21 @@ export default function DashboardLayout({ children }) {
 
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
           {navigation.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = item.href ? pathname === item.href : false;
             const Icon = item.icon;
+            if (item.action === 'quick-payment') {
+              return (
+                <button
+                  key={item.name}
+                  type="button"
+                  onClick={() => setIsQuickPaymentOpen(true)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors text-left cursor-pointer"
+                >
+                  <Icon size={18} />
+                  {item.name}
+                </button>
+              );
+            }
             return (
               <Link
                 key={item.name}
@@ -150,6 +183,7 @@ export default function DashboardLayout({ children }) {
             </div>
           </div>
 
+          {/* Header Action Buttons */}
           <div className="flex items-center gap-3">
             <Link
               href="/dashboard/sell"
@@ -173,6 +207,12 @@ export default function DashboardLayout({ children }) {
           {children}
         </main>
       </div>
+
+      {/* Global Quick Payment Modal */}
+      <QuickPaymentModal
+        open={isQuickPaymentOpen}
+        onClose={() => setIsQuickPaymentOpen(false)}
+      />
     </div>
   );
 }

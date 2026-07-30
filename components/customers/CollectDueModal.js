@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Loader2, CheckCircle2, ChevronDown, Check } from 'lucide-react';
+import { X, Loader2, CheckCircle2, ChevronDown, Check, Eye } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 
 // Custom Select Component to avoid native browser dropdown glitches
-function CustomSelect({ label, options = [], value, onChange, placeholder = 'Select option...' }) {
+function CustomSelect({ label, options = [], value, onChange, placeholder = 'Select option...', onViewInvoice }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -44,9 +44,10 @@ function CustomSelect({ label, options = [], value, onChange, placeholder = 'Sel
           ) : (
             options.map((opt) => {
               const isSelected = String(opt.id) === String(value);
+              const hasInvoiceId = Boolean(opt.id);
               return (
                 <button
-                  key={opt.id}
+                  key={opt.id || 'all'}
                   type="button"
                   onClick={() => {
                     onChange(opt.id);
@@ -56,14 +57,176 @@ function CustomSelect({ label, options = [], value, onChange, placeholder = 'Sel
                     isSelected ? 'bg-black text-white font-semibold' : 'hover:bg-neutral-100 text-neutral-800'
                   }`}
                 >
-                  <span className="truncate">{opt.name}</span>
-                  {isSelected && <Check className="w-4 h-4 shrink-0" />}
+                  <span className="truncate mr-2">{opt.name}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {hasInvoiceId && onViewInvoice && (
+                      <span
+                        title="View Sales Details"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsOpen(false);
+                          onViewInvoice(opt.id);
+                        }}
+                        className={`p-1 rounded-md transition-colors cursor-pointer ${
+                          isSelected ? 'hover:bg-neutral-800 text-white' : 'hover:bg-neutral-200 text-neutral-600'
+                        }`}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </span>
+                    )}
+                    {isSelected && <Check className="w-4 h-4 shrink-0" />}
+                  </div>
                 </button>
               );
             })
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// In-memory cache for invoice sales details
+const invoiceDetailsCache = {};
+
+// Small Sales Details Popup Modal
+function SalesDetailsModal({ invoiceId, onClose, token, API_URL }) {
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    if (!invoiceId || !token) return;
+
+    // Return instant cached data if already fetched
+    if (invoiceDetailsCache[invoiceId]) {
+      setItems(invoiceDetailsCache[invoiceId]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    const extractItems = (data) => {
+      if (!data) return [];
+      if (Array.isArray(data)) return data;
+      const target = data.data || data;
+      if (Array.isArray(target)) return target;
+      return (
+        target.sales_details ||
+        target.sale_details ||
+        target.product_details ||
+        target.details ||
+        target.items ||
+        target.products ||
+        target.selling_products ||
+        target.invoice_details ||
+        target.sale_products ||
+        []
+      );
+    };
+
+    const cacheAndSet = (list) => {
+      invoiceDetailsCache[invoiceId] = list;
+      setItems(list);
+    };
+
+    // Attempt 1: POST /invoice-details { invoice_id }
+    axios
+      .post(`${API_URL}/invoice-details`, { invoice_id: invoiceId }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      .then((res) => {
+        const productList = extractItems(res.data);
+        if (productList.length > 0) {
+          cacheAndSet(productList);
+        } else {
+          // Attempt 2 Fallback: GET /get-invoice-details/{invoiceId}
+          axios
+            .get(`${API_URL}/get-invoice-details/${encodeURIComponent(invoiceId)}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+            .then((res2) => {
+              cacheAndSet(extractItems(res2.data));
+            })
+            .catch(() => cacheAndSet([]));
+        }
+      })
+      .catch(() => {
+        // Attempt 2 Fallback: GET /get-invoice-details/{invoiceId}
+        axios
+          .get(`${API_URL}/get-invoice-details/${encodeURIComponent(invoiceId)}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          .then((res2) => {
+            cacheAndSet(extractItems(res2.data));
+          })
+          .catch(() => cacheAndSet([]));
+      })
+      .finally(() => setLoading(false));
+  }, [invoiceId, token, API_URL]);
+
+  if (!invoiceId) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-[60] p-4 animate-in fade-in duration-150">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-neutral-200 text-black flex flex-col max-h-[85vh]">
+        <div className="px-4 py-3.5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50">
+          <div>
+            <h4 className="font-bold text-sm text-neutral-900">Sales Details</h4>
+            <p className="text-xs text-neutral-500 font-mono">{invoiceId}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-lg text-neutral-400 hover:text-black hover:bg-neutral-200 transition-colors cursor-pointer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
+          {loading ? (
+            <div className="py-8 text-center text-neutral-400">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-neutral-400" />
+              <p className="text-xs">Loading sales details...</p>
+            </div>
+          ) : items.length === 0 ? (
+            <div className="py-8 text-center text-xs text-neutral-400">No product items found.</div>
+          ) : (
+            <div className="overflow-x-auto border border-neutral-200 rounded-xl">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-neutral-100 text-neutral-700 font-bold border-b border-neutral-200">
+                  <tr>
+                    <th className="py-2.5 px-3">Product Name</th>
+                    <th className="py-2.5 px-3 text-center">Total Stock</th>
+                    <th className="py-2.5 px-3 text-right">Rate</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-100 font-medium">
+                  {items.map((item, idx) => {
+                    const name =
+                      item.product_info?.name ||
+                      item.product_name ||
+                      item.name ||
+                      item.product?.name ||
+                      item.product_title ||
+                      'N/A';
+                    const qty = item.qty || item.quantity || item.stock || item.pcs || 1;
+                    const rate = Number(item.price || item.rate || item.unit_price || item.selling_price || 0);
+                    return (
+                      <tr key={idx} className="hover:bg-neutral-50">
+                        <td className="py-2.5 px-3 text-neutral-900">{name}</td>
+                        <td className="py-2.5 px-3 text-center text-neutral-700 font-semibold">{qty}</td>
+                        <td className="py-2.5 px-3 text-right text-neutral-900 font-bold">৳ {rate.toLocaleString()}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -78,6 +241,9 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
   const [gatewaysList, setGatewaysList] = useState([]);
   const [loadingInitial, setLoadingInitial] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // View Sales Details Popup state
+  const [viewingInvoiceId, setViewingInvoiceId] = useState(null);
 
   // Pay Due Form State
   const [selectedInvoice, setSelectedInvoice] = useState('');
@@ -108,7 +274,6 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
 
       Promise.all([fetchInvoices, fetchGateways])
         .then(([invRes, gwRes]) => {
-          // Parse invoices array robustly
           const invArray = Array.isArray(invRes.data?.data?.data)
             ? invRes.data.data.data
             : Array.isArray(invRes.data?.data)
@@ -118,7 +283,6 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
             : [];
           setDueInvoices(invArray);
 
-          // Parse gateways array robustly
           let gwArray = Array.isArray(gwRes.data?.data?.data)
             ? gwRes.data.data.data
             : Array.isArray(gwRes.data?.data)
@@ -144,7 +308,6 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
         })
         .catch((err) => {
           console.error('Error loading due modal data:', err);
-          // Default fallback Cash gateway
           const fallback = [{ id: 1, type_name: 'Cash', payment_type_category: [{ id: 1, payment_category_name: 'Cash Account' }] }];
           setGatewaysList(fallback);
           setSelectedGatewayId('1');
@@ -307,243 +470,252 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
     })
   ];
 
-  // Options for Gateway Select
-  const gatewayOptions = gatewaysList.map((g) => ({
-    id: String(g.id),
-    name: g.type_name
-  }));
-
-  // Options for Category Select
-  const categoryOptions = categories.map((c) => ({
-    id: String(c.id),
-    name: c.payment_category_name || c.account_name || 'Account'
-  }));
-
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-neutral-100 flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-neutral-100 bg-neutral-50 flex items-center justify-between">
-          <div>
-            <h3 className="font-bold text-base text-neutral-900">Collect Due Payment</h3>
-            <p className="text-xs text-neutral-500">{customerName || 'Customer'} • #{customerId}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-200/60 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex border-b border-neutral-200 bg-neutral-100/50 p-1">
-          <button
-            type="button"
-            onClick={() => setActiveTab('pay')}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-              activeTab === 'pay' ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-neutral-900'
-            }`}
-          >
-            Pay Due
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('discount')}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-              activeTab === 'discount' ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-neutral-900'
-            }`}
-          >
-            Due Discount
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('balance')}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-              activeTab === 'balance' ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-neutral-900'
-            }`}
-          >
-            Opening Balance
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-5 overflow-y-auto flex-1 custom-scrollbar text-black space-y-4">
-          {loadingInitial ? (
-            <div className="py-12 text-center text-neutral-400">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-neutral-400" />
-              <p className="text-xs">Loading customer due information...</p>
+    <>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-neutral-100 text-black flex flex-col max-h-[90vh]">
+          {/* Header */}
+          <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-lg text-neutral-900">Collect Due Payment</h3>
+              <p className="text-xs text-neutral-500 font-mono mt-0.5">{customerName || 'Customer'} • #{customerId}</p>
             </div>
-          ) : (
-            <>
-              {/* TAB 1: PAY DUE */}
-              {activeTab === 'pay' && (
-                <form onSubmit={handleDueSubmit} className="space-y-4">
-                  {/* Total Due Badge */}
-                  <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 flex justify-between items-center">
-                    <span className="text-xs font-medium text-rose-700 uppercase tracking-wider">Total Customer Due</span>
-                    <span className="text-base font-bold text-rose-700 tabular-nums">৳ {Number(totalDue).toLocaleString()}</span>
-                  </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 text-neutral-400 hover:text-black rounded-xl hover:bg-neutral-100 transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
 
-                  {/* Select Invoice */}
-                  <CustomSelect
-                    label="Select Invoice (Optional)"
-                    options={invoiceOptions}
-                    value={selectedInvoice}
-                    onChange={(val) => setSelectedInvoice(val)}
-                    placeholder="All Invoices (General Payment)"
-                  />
+          {/* Tab Controls */}
+          <div className="flex bg-neutral-100 p-1.5 mx-6 mt-4 rounded-2xl gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('pay')}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+                activeTab === 'pay' ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-black'
+              }`}
+            >
+              Pay Due
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('discount')}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+                activeTab === 'discount' ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-black'
+              }`}
+            >
+              Due Discount
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('balance')}
+              className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+                activeTab === 'balance' ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-black'
+              }`}
+            >
+              Opening Balance
+            </button>
+          </div>
 
-                  {/* Date */}
-                  <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">Transaction Date</label>
-                    <input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-base sm:text-sm text-neutral-900 bg-white focus:ring-2 focus:ring-black outline-none"
-                    />
-                  </div>
+          {/* Form Body */}
+          <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+            {loadingInitial ? (
+              <div className="py-12 text-center text-neutral-400">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-neutral-400" />
+                <p className="text-xs font-medium">Loading payment data...</p>
+              </div>
+            ) : (
+              <>
+                {/* Total Customer Due Header Card */}
+                <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-4 mb-5 flex items-center justify-between">
+                  <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">TOTAL CUSTOMER DUE</span>
+                  <span className="text-xl font-extrabold text-rose-600">৳ {Number(totalDue).toLocaleString()}</span>
+                </div>
 
-                  {/* Payment Gateway */}
-                  <CustomSelect
-                    label="Payment Method"
-                    options={gatewayOptions}
-                    value={selectedGatewayId}
-                    onChange={(val) => handleGatewayChange(val)}
-                    placeholder="Select Payment Method..."
-                  />
-
-                  {/* Payment Account Category (if non-cash) */}
-                  {categoryOptions.length > 0 && currentGateway?.type_name?.toLowerCase() !== 'cash' && (
+                {/* TAB 1: PAY DUE */}
+                {activeTab === 'pay' && (
+                  <form onSubmit={handleDueSubmit} className="space-y-4">
                     <CustomSelect
-                      label="Account"
-                      options={categoryOptions}
-                      value={selectedCategoryId}
-                      onChange={(val) => setSelectedCategoryId(val)}
-                      placeholder="Select Account..."
+                      label="Select Invoice (Optional)"
+                      options={invoiceOptions}
+                      value={selectedInvoice}
+                      onChange={setSelectedInvoice}
+                      placeholder="All Invoices (General Payment)"
+                      onViewInvoice={(invId) => setViewingInvoiceId(invId)}
                     />
-                  )}
 
-                  {/* Amount Input */}
-                  <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">Amount Paid (BDT)</label>
-                    <div className="flex items-center">
-                      <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3.5 py-2.5 rounded-l-xl text-neutral-500 text-sm font-medium">৳</span>
+                    <CustomSelect
+                      label="Payment Method"
+                      options={gatewaysList.map((g) => ({ id: g.id, name: g.type_name }))}
+                      value={selectedGatewayId}
+                      onChange={handleGatewayChange}
+                    />
+
+                    {categories.length > 0 && (
+                      <CustomSelect
+                        label="Account Category"
+                        options={categories.map((c) => ({ id: c.id, name: c.payment_category_name }))}
+                        value={selectedCategoryId}
+                        onChange={setSelectedCategoryId}
+                      />
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
+                        Amount Paid (BDT)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">৳</span>
+                        <input
+                          type="number"
+                          step="any"
+                          required
+                          value={payAmount}
+                          onChange={(e) => setPayAmount(e.target.value)}
+                          placeholder="Enter amount"
+                          className="w-full pl-8 pr-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-base sm:text-sm font-semibold outline-none focus:ring-2 focus:ring-black transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
+                        Payment Date
+                      </label>
                       <input
-                        required
-                        type="number"
-                        placeholder="Enter amount"
-                        value={payAmount}
-                        onChange={(e) => setPayAmount(e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-r-xl text-base sm:text-sm font-semibold text-neutral-900 focus:ring-2 focus:ring-black outline-none"
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-base sm:text-sm font-medium outline-none focus:ring-2 focus:ring-black transition-all"
                       />
                     </div>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="pt-2 flex gap-3">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="flex-1 py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="flex-1 py-2.5 bg-black text-white rounded-xl text-sm font-semibold hover:bg-neutral-800 flex items-center justify-center gap-2 shadow-md disabled:opacity-50 cursor-pointer"
-                    >
-                      {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                      {submitting ? 'Saving...' : 'Save Payment'}
-                    </button>
-                  </div>
-                </form>
-              )}
+                    <div className="pt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex-1 py-3 text-xs font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="flex-1 py-3 text-xs font-bold text-white bg-black hover:bg-neutral-800 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                        Save Payment
+                      </button>
+                    </div>
+                  </form>
+                )}
 
-              {/* TAB 2: DUE DISCOUNT */}
-              {activeTab === 'discount' && (
-                <form onSubmit={handleDiscountSubmit} className="space-y-4">
-                  <CustomSelect
-                    label="Select Invoice"
-                    options={discountInvoiceOptions}
-                    value={selectedDiscountInvoice}
-                    onChange={(val) => setSelectedDiscountInvoice(val)}
-                    placeholder="Select Invoice ID..."
-                  />
-
-                  <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">Discount Amount (BDT)</label>
-                    <input
-                      required
-                      type="number"
-                      placeholder="Enter discount amount"
-                      value={discountAmount}
-                      onChange={(e) => setDiscountAmount(e.target.value)}
-                      className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-base sm:text-sm font-semibold text-neutral-900 focus:ring-2 focus:ring-black outline-none"
+                {/* TAB 2: DUE DISCOUNT */}
+                {activeTab === 'discount' && (
+                  <form onSubmit={handleDiscountSubmit} className="space-y-4">
+                    <CustomSelect
+                      label="Select Invoice (Required)"
+                      options={discountInvoiceOptions}
+                      value={selectedDiscountInvoice}
+                      onChange={setSelectedDiscountInvoice}
+                      placeholder="Select Invoice ID"
+                      onViewInvoice={(invId) => setViewingInvoiceId(invId)}
                     />
-                  </div>
 
-                  <div className="pt-2 flex gap-3">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="flex-1 py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="flex-1 py-2.5 bg-black text-white rounded-xl text-sm font-semibold hover:bg-neutral-800 flex items-center justify-center gap-2 shadow-md disabled:opacity-50 cursor-pointer"
-                    >
-                      {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                      {submitting ? 'Applying...' : 'Apply Discount'}
-                    </button>
-                  </div>
-                </form>
-              )}
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
+                        Discount Amount (BDT)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">৳</span>
+                        <input
+                          type="number"
+                          step="any"
+                          required
+                          value={discountAmount}
+                          onChange={(e) => setDiscountAmount(e.target.value)}
+                          placeholder="Enter discount amount"
+                          className="w-full pl-8 pr-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-base sm:text-sm font-semibold outline-none focus:ring-2 focus:ring-black transition-all"
+                        />
+                      </div>
+                    </div>
 
-              {/* TAB 3: OPENING BALANCE */}
-              {activeTab === 'balance' && (
-                <form onSubmit={handleAdvanceSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">Advance / Opening Due Amount</label>
-                    <input
-                      required
-                      type="number"
-                      placeholder="Enter opening balance amount"
-                      value={advanceAmount}
-                      onChange={(e) => setAdvanceAmount(e.target.value)}
-                      className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-xl text-base sm:text-sm font-semibold text-neutral-900 focus:ring-2 focus:ring-black outline-none"
-                    />
-                  </div>
+                    <div className="pt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex-1 py-3 text-xs font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="flex-1 py-3 text-xs font-bold text-white bg-black hover:bg-neutral-800 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                        Save Discount
+                      </button>
+                    </div>
+                  </form>
+                )}
 
-                  <div className="pt-2 flex gap-3">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="flex-1 py-2.5 border border-neutral-200 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="flex-1 py-2.5 bg-black text-white rounded-xl text-sm font-semibold hover:bg-neutral-800 flex items-center justify-center gap-2 shadow-md disabled:opacity-50 cursor-pointer"
-                    >
-                      {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                      {submitting ? 'Saving...' : 'Add Advance Due'}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </>
-          )}
+                {/* TAB 3: OPENING BALANCE */}
+                {activeTab === 'balance' && (
+                  <form onSubmit={handleAdvanceSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
+                        Advance / Opening Due Amount (BDT)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">৳</span>
+                        <input
+                          type="number"
+                          step="any"
+                          required
+                          value={advanceAmount}
+                          onChange={(e) => setAdvanceAmount(e.target.value)}
+                          placeholder="Enter opening due amount"
+                          className="w-full pl-8 pr-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-base sm:text-sm font-semibold outline-none focus:ring-2 focus:ring-black transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex-1 py-3 text-xs font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="flex-1 py-3 text-xs font-bold text-white bg-black hover:bg-neutral-800 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                        Save Advance Due
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Sales Details Popup Modal */}
+      <SalesDetailsModal
+        invoiceId={viewingInvoiceId}
+        onClose={() => setViewingInvoiceId(null)}
+        token={token}
+        API_URL={API_URL}
+      />
+    </>
   );
 }
