@@ -301,8 +301,8 @@ export default function PurchasePage() {
   const getCurrencySymbol = () => {
     switch(formData.currency) {
       case 'USD': return '$';
-      case 'AED': return 'د.إ';
-      default: return '৳';
+      case 'AED': return 'AED';
+      default: return 'AED';
     }
   };
 
@@ -536,7 +536,7 @@ export default function PurchasePage() {
 
                           <div className="flex justify-between items-center pt-1 border-t border-neutral-100 text-xs">
                             <span className="text-neutral-500 font-medium">Subtotal:</span>
-                            <span className="font-bold text-neutral-900">৳ {itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            <span className="font-bold text-neutral-900">AED {itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                           </div>
                         </div>
                       );
@@ -680,7 +680,7 @@ export default function PurchasePage() {
                       onClick={() => setFormData({...formData, paidAmount: '0'})}
                       className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-800 font-semibold hover:bg-red-200 transition border border-red-200"
                     >
-                      Full Due (৳0)
+                      Full Due (AED 0)
                     </button>
                   </div>
                 </div>

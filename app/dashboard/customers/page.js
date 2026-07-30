@@ -96,9 +96,9 @@ export default function CustomerListPage() {
             <td class="text-center">${i + 1}</td>
             <td>${c.name}</td>
             <td>${c.mobile_number || '-'}</td>
-            <td class="text-right">${c.total_due_amount?.toLocaleString("en-IN") || 0} BDT</td>
+            <td class="text-right">${c.total_due_amount?.toLocaleString("en-US") || 0} AED</td>
             <td class="text-center">${c.invoice_list_count || 0}</td>
-            <td class="text-right">${Number(c.total_purchase_amount || 0).toLocaleString("en-IN")} BDT</td>
+            <td class="text-right">${Number(c.total_purchase_amount || 0).toLocaleString("en-US")} AED</td>
           </tr>`
         )
         .join("");
@@ -128,7 +128,7 @@ export default function CustomerListPage() {
                   <th>Mobile</th>
                   <th class="text-right">Due Amount</th>
                   <th class="text-center">Purchase Count</th>
-                  <th class="text-right">Total Purchase (BDT)</th>
+                  <th class="text-right">Total Purchase (AED)</th>
                 </tr>
               </thead>
               <tbody>${rowsHtml}</tbody>
@@ -266,7 +266,7 @@ export default function CustomerListPage() {
                           </div>
                           <p className="text-xs text-neutral-500 truncate mt-0.5">{c.mobile_number || 'No phone'}</p>
                           <p className="text-[10px] text-neutral-400 mt-0.5">
-                            Total: {Number(c.total_purchase_amount || 0).toLocaleString("en-IN")} BDT • Purchases: {c.invoice_list_count || 0}
+                            Total: {Number(c.total_purchase_amount || 0).toLocaleString("en-US")} AED • Purchases: {c.invoice_list_count || 0}
                           </p>
                         </div>
 
@@ -274,7 +274,7 @@ export default function CustomerListPage() {
                           <div>
                             {due > 0 ? (
                               <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200">
-                                Due ৳ {due.toLocaleString("en-IN")}
+                                Due AED {due.toLocaleString("en-US")}
                               </span>
                             ) : (
                               <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200">
@@ -316,13 +316,13 @@ export default function CustomerListPage() {
                           {c.mobile_number || '-'}
                         </td>
                         <td className="py-3 px-6 border-r border-neutral-100 text-right text-red-600 font-medium tabular-nums">
-                          {c.total_due_amount?.toLocaleString("en-IN") || 0} BDT
+                          {c.total_due_amount?.toLocaleString("en-US") || 0} AED
                         </td>
                         <td className="py-3 px-6 border-r border-neutral-100 text-center tabular-nums">
                           {c.invoice_list_count || 0}
                         </td>
                         <td className="py-3 px-6 border-r border-neutral-100 text-right font-medium tabular-nums">
-                          {Number(c.total_purchase_amount || 0).toLocaleString("en-IN")} BDT
+                          {Number(c.total_purchase_amount || 0).toLocaleString("en-US")} AED
                         </td>
                         <td className="py-3 px-6 text-center">
                           <Link href={`/dashboard/customers/${c.id}?interval=daily`}>

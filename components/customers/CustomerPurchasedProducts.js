@@ -34,7 +34,7 @@ export default function CustomerPurchasedProducts({ partyWiseProduct }) {
                                     </h4>
                                     <div className="flex justify-between items-end mt-2">
                                         <div className="text-xs text-neutral-500">#{item?.product_info?.barcode || 'N/A'}</div>
-                                        <div className="font-semibold text-neutral-900">{item?.product_info?.retails_price || 0} BDT</div>
+                                        <div className="font-semibold text-neutral-900">{item?.product_info?.retails_price || 0} AED</div>
                                     </div>
                                 </div>
                             </div>

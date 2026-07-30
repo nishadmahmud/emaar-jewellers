@@ -3,9 +3,9 @@
 import React from 'react';
 import { ShoppingCart, CheckCircle, AlertCircle } from 'lucide-react';
 
-const formatBDT = (num) => {
+const formatAED = (num) => {
   if (num === null || num === undefined) return '0.00';
-  return Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 export default function VendorStats({ vendor }) {
@@ -21,7 +21,7 @@ export default function VendorStats({ vendor }) {
       <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Total Purchase</p>
-          <p className="text-xl font-extrabold text-neutral-900 mt-1">৳ {formatBDT(totalPurchase)}</p>
+          <p className="text-xl font-extrabold text-neutral-900 mt-1">AED {formatAED(totalPurchase)}</p>
         </div>
         <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
           <ShoppingCart size={20} />
@@ -32,7 +32,7 @@ export default function VendorStats({ vendor }) {
       <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Total Paid</p>
-          <p className="text-xl font-extrabold text-emerald-600 mt-1">৳ {formatBDT(totalPaid)}</p>
+          <p className="text-xl font-extrabold text-emerald-600 mt-1">AED {formatAED(totalPaid)}</p>
         </div>
         <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
           <CheckCircle size={20} />
@@ -43,7 +43,7 @@ export default function VendorStats({ vendor }) {
       <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Total Due</p>
-          <p className="text-xl font-extrabold text-rose-600 mt-1">৳ {formatBDT(totalDue)}</p>
+          <p className="text-xl font-extrabold text-rose-600 mt-1">AED {formatAED(totalDue)}</p>
         </div>
         <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
           <AlertCircle size={20} />

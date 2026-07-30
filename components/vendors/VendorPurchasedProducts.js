@@ -3,9 +3,9 @@
 import React from 'react';
 import { Package, Tag } from 'lucide-react';
 
-const formatBDT = (num) => {
+const formatAED = (num) => {
   if (num === null || num === undefined) return '0.00';
-  return Number(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 export default function VendorPurchasedProducts({ vendorWiseProduct }) {
@@ -47,7 +47,7 @@ export default function VendorPurchasedProducts({ vendorWiseProduct }) {
                     <p className="text-[11px] text-neutral-500 mt-0.5">Quantity: {qty} Pcs</p>
                   </div>
                   <div className="text-right font-extrabold text-xs text-neutral-900">
-                    ৳ {formatBDT(totalVal)}
+                    AED {formatAED(totalVal)}
                   </div>
                 </div>
               );
@@ -61,7 +61,7 @@ export default function VendorPurchasedProducts({ vendorWiseProduct }) {
                 <tr>
                   <th className="py-2.5 px-4">Product Name</th>
                   <th className="py-2.5 px-4 text-center">Total Qty</th>
-                  <th className="py-2.5 px-4 text-right">Total Amount (BDT)</th>
+                  <th className="py-2.5 px-4 text-right">Total Amount (AED)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
@@ -74,7 +74,7 @@ export default function VendorPurchasedProducts({ vendorWiseProduct }) {
                     <tr key={idx} className="hover:bg-neutral-50/50 transition-colors">
                       <td className="py-3 px-4 font-medium text-neutral-900">{pName}</td>
                       <td className="py-3 px-4 text-center font-semibold text-neutral-700">{qty} Pcs</td>
-                      <td className="py-3 px-4 text-right font-extrabold text-neutral-900">৳ {formatBDT(totalVal)}</td>
+                      <td className="py-3 px-4 text-right font-extrabold text-neutral-900">AED {formatAED(totalVal)}</td>
                     </tr>
                   );
                 })}

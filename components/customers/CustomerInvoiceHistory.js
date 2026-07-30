@@ -48,7 +48,7 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                                             </div>
                                             <p className="text-[11px] text-neutral-500 mt-0.5">{formatInvoiceDate(invoice?.invoice_id)}</p>
                                             <p className="text-[11px] text-neutral-700 font-medium mt-0.5">
-                                                Total: {total.toLocaleString("en-IN")} BDT
+                                                Total: {total.toLocaleString("en-US")} AED
                                             </p>
                                         </div>
 
@@ -56,7 +56,7 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                                             <div>
                                                 {due > 0 ? (
                                                     <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200">
-                                                        Due ৳ {due.toLocaleString("en-IN")}
+                                                        Due AED {due.toLocaleString("en-US")}
                                                     </span>
                                                 ) : (
                                                     <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200">
@@ -98,10 +98,10 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                                                 {formatInvoiceDate(invoice?.invoice_id)}
                                             </td>
                                             <td className="py-3 px-6 text-right tabular-nums font-medium">
-                                                {invoice?.sub_total?.toLocaleString("en-IN")} BDT
+                                                {invoice?.sub_total?.toLocaleString("en-US")} AED
                                             </td>
                                             <td className="py-3 px-6 text-right tabular-nums text-red-600 font-medium">
-                                                {(invoice?.sub_total - invoice?.paid_amount)?.toLocaleString("en-IN")} BDT
+                                                {(invoice?.sub_total - invoice?.paid_amount)?.toLocaleString("en-US")} AED
                                             </td>
                                             <td className="py-3 px-6 text-center">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

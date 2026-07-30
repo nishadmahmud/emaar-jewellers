@@ -5,8 +5,8 @@ import { useSession } from 'next-auth/react';
 import axios from 'axios';
 import { FileText, Download, Calendar, Loader2, Search, AlertCircle } from 'lucide-react';
 
-const fmtBDT = (n) =>
-  Number(n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 3 });
+const fmtAED = (n) =>
+  Number(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 3 });
 
 export default function BalanceSheetPage() {
   const { data: session } = useSession();
@@ -161,14 +161,14 @@ export default function BalanceSheetPage() {
         {/* Left: KPIs */}
         <div className="bg-orange-500 text-white rounded-2xl shadow-sm p-4 sm:p-6 flex flex-col justify-center">
           <div className="text-center mb-3 sm:mb-4">
-            <p className="text-lg sm:text-2xl font-extrabold tabular-nums">{fmtBDT(assetsTotal)} BDT</p>
+            <p className="text-lg sm:text-2xl font-extrabold tabular-nums">{fmtAED(assetsTotal)} AED</p>
             <p className="text-xs sm:text-sm font-medium opacity-90">Assets Total (Computed)</p>
           </div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-[11px] sm:text-xs">
-            <p className="opacity-90">Available Balance:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(availableBalanceTotal)} BDT</span></p>
-            <p className="opacity-90">Customer Due:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(totalCustomerDue)} BDT</span></p>
-            <p className="opacity-90">Vendor Payable:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(totalVendor)} BDT</span></p>
-            <p className="opacity-90">Closing Stock:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(totalClosingStock)} BDT</span></p>
+            <p className="opacity-90">Available Balance:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtAED(availableBalanceTotal)} AED</span></p>
+            <p className="opacity-90">Customer Due:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtAED(totalCustomerDue)} AED</span></p>
+            <p className="opacity-90">Vendor Payable:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtAED(totalVendor)} AED</span></p>
+            <p className="opacity-90">Closing Stock:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtAED(totalClosingStock)} AED</span></p>
           </div>
         </div>
 
@@ -256,19 +256,19 @@ export default function BalanceSheetPage() {
                 <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white">
                   <div className="bg-neutral-100/70 px-3 py-2 border-b border-neutral-200 font-bold text-xs text-neutral-900 flex justify-between">
                     <span>Liabilities & Equity</span>
-                    <span>Amount (BDT)</span>
+                    <span>Amount (AED)</span>
                   </div>
                   <div className="divide-y divide-neutral-100 text-xs">
                     {liabilitiesRows.map((row, idx) => (
                       <div key={idx} className="flex justify-between items-center px-3 py-2.5 hover:bg-neutral-50/50">
                         <span className="text-neutral-700 font-medium">{row.label}</span>
-                        <span className="font-semibold text-neutral-900 tabular-nums">{fmtBDT(row.amount)}</span>
+                        <span className="font-semibold text-neutral-900 tabular-nums">{fmtAED(row.amount)}</span>
                       </div>
                     ))}
                   </div>
                   <div className="bg-neutral-100/80 px-3 py-2.5 border-t border-neutral-200 font-bold text-xs flex justify-between text-neutral-900">
                     <span>Total Liabilities:</span>
-                    <span className="tabular-nums">{fmtBDT(liabilitiesTotal)} BDT</span>
+                    <span className="tabular-nums">{fmtAED(liabilitiesTotal)} AED</span>
                   </div>
                 </div>
 
@@ -276,7 +276,7 @@ export default function BalanceSheetPage() {
                 <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white">
                   <div className="bg-neutral-100/70 px-3 py-2 border-b border-neutral-200 font-bold text-xs text-neutral-900 flex justify-between">
                     <span>Assets</span>
-                    <span>Amount (BDT)</span>
+                    <span>Amount (AED)</span>
                   </div>
                   <div className="divide-y divide-neutral-100 text-xs">
                     {assetsRows.map((row, idx) => (
@@ -287,14 +287,14 @@ export default function BalanceSheetPage() {
                       ) : (
                         <div key={idx} className="flex justify-between items-center px-3 py-2.5 hover:bg-neutral-50/50">
                           <span className="text-neutral-700 font-medium">{row.label}</span>
-                          <span className="font-semibold text-neutral-900 tabular-nums">{fmtBDT(row.amount)}</span>
+                          <span className="font-semibold text-neutral-900 tabular-nums">{fmtAED(row.amount)}</span>
                         </div>
                       )
                     ))}
                   </div>
                   <div className="bg-neutral-100/80 px-3 py-2.5 border-t border-neutral-200 font-bold text-xs flex justify-between text-neutral-900">
                     <span>Total Assets:</span>
-                    <span className="tabular-nums">{fmtBDT(assetsTotal)} BDT</span>
+                    <span className="tabular-nums">{fmtAED(assetsTotal)} AED</span>
                   </div>
                 </div>
               </div>
@@ -305,9 +305,9 @@ export default function BalanceSheetPage() {
                   <thead className="bg-neutral-100/50 border-b border-neutral-200">
                     <tr>
                       <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 w-1/4">Liabilities & Equity</th>
-                      <th className="py-3 px-6 font-semibold text-neutral-900 text-right border-r border-neutral-200 w-1/4">Amount (BDT)</th>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 text-right border-r border-neutral-200 w-1/4">Amount (AED)</th>
                       <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 w-1/4">Assets</th>
-                      <th className="py-3 px-6 font-semibold text-neutral-900 text-right w-1/4">Amount (BDT)</th>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 text-right w-1/4">Amount (AED)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
@@ -318,7 +318,7 @@ export default function BalanceSheetPage() {
                           {row.L ? row.L.label : ''}
                         </td>
                         <td className={`py-3 px-6 border-r border-neutral-100 text-right tabular-nums ${row.L?.isGroup ? 'bg-neutral-50' : ''}`}>
-                          {row.L && !row.L.isGroup ? fmtBDT(row.L.amount) : ''}
+                          {row.L && !row.L.isGroup ? fmtAED(row.L.amount) : ''}
                         </td>
 
                         {/* Assets */}
@@ -326,7 +326,7 @@ export default function BalanceSheetPage() {
                           {row.A ? row.A.label : ''}
                         </td>
                         <td className={`py-3 px-6 text-right tabular-nums ${row.A?.isGroup ? 'bg-neutral-50' : ''}`}>
-                          {row.A && !row.A.isGroup ? fmtBDT(row.A.amount) : ''}
+                          {row.A && !row.A.isGroup ? fmtAED(row.A.amount) : ''}
                         </td>
                       </tr>
                     ))}
@@ -334,9 +334,9 @@ export default function BalanceSheetPage() {
                   <tfoot className="bg-neutral-100/80 border-t border-neutral-200 font-bold">
                     <tr>
                       <td className="py-4 px-6 border-r border-neutral-200">Total:</td>
-                      <td className="py-4 px-6 border-r border-neutral-200 text-right tabular-nums">{fmtBDT(liabilitiesTotal)}</td>
+                      <td className="py-4 px-6 border-r border-neutral-200 text-right tabular-nums">{fmtAED(liabilitiesTotal)}</td>
                       <td className="py-4 px-6 border-r border-neutral-200">Total:</td>
-                      <td className="py-4 px-6 text-right tabular-nums">{fmtBDT(assetsTotal)}</td>
+                      <td className="py-4 px-6 text-right tabular-nums">{fmtAED(assetsTotal)}</td>
                     </tr>
                   </tfoot>
                 </table>

@@ -244,7 +244,7 @@ function PurchaseDetailsModal({ invoiceId, onClose, token, API_URL }) {
                       <tr key={idx} className="hover:bg-neutral-50">
                         <td className="py-2.5 px-3 text-neutral-900">{name}</td>
                         <td className="py-2.5 px-3 text-center text-neutral-700 font-semibold">{qty}</td>
-                        <td className="py-2.5 px-3 text-right text-neutral-900 font-bold">৳ {rate.toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right text-neutral-900 font-bold">AED {rate.toLocaleString()}</td>
                       </tr>
                     );
                   })}
@@ -393,7 +393,7 @@ export default function PayVendorDueModal({ open, onClose, vendorId, vendorName,
     ...dueInvoices.map((inv) => {
       const invId = inv.purchase_invoice_id || inv.invoice_id || inv.id;
       const dueVal = Number(inv.total_due || inv.due_amount || inv.due || 0).toLocaleString();
-      return { id: invId, name: `${invId} (Due: ৳ ${dueVal})` };
+      return { id: invId, name: `${invId} (Due: AED ${dueVal})` };
     })
   ];
 
@@ -424,7 +424,7 @@ export default function PayVendorDueModal({ open, onClose, vendorId, vendorName,
                 <p className="text-[10px] font-bold text-rose-800 uppercase tracking-wider">TOTAL VENDOR DUE</p>
                 <p className="text-xs text-rose-600 font-medium">Outstanding Balance</p>
               </div>
-              <p className="text-xl font-extrabold text-rose-600">৳ {Number(totalDue).toLocaleString('en-IN')}</p>
+              <p className="text-xl font-extrabold text-rose-600">AED {Number(totalDue).toLocaleString('en-US')}</p>
             </div>
 
             {loadingInitial ? (
@@ -465,10 +465,10 @@ export default function PayVendorDueModal({ open, onClose, vendorId, vendorName,
                 {/* Pay Amount */}
                 <div>
                   <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
-                    Paid Amount (BDT)
+                    Paid Amount (AED)
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">৳</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">AED</span>
                     <input
                       type="number"
                       step="any"

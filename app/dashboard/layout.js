@@ -2,16 +2,49 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, History, LogOut, Search, Settings, Package, PackagePlus, Menu, X, Users, ArrowDownToLine, FileText, Receipt, CreditCard } from 'lucide-react';
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  History,
+  LogOut,
+  Search,
+  Settings,
+  Package,
+  PackagePlus,
+  Menu,
+  X,
+  Users,
+  ArrowDownToLine,
+  FileText,
+  Receipt,
+  CreditCard,
+  Tags,
+  ChevronDown,
+} from 'lucide-react';
 import { signOut } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import QuickPaymentModal from '@/components/quick-payment/QuickPaymentModal';
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
-  const [currency, setCurrency] = useState('TK');
+  const [currency, setCurrency] = useState('AED');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isQuickPaymentOpen, setIsQuickPaymentOpen] = useState(false);
+
+  const [openDropdowns, setOpenDropdowns] = useState({});
+
+  useEffect(() => {
+    if (pathname?.includes('/expense')) {
+      setOpenDropdowns((prev) => ({ ...prev, Expense: true }));
+    }
+    if (pathname?.includes('/quick-payment')) {
+      setOpenDropdowns((prev) => ({ ...prev, 'Quick Payment': true }));
+    }
+  }, [pathname]);
+
+  const toggleDropdown = (name) => {
+    setOpenDropdowns((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -24,9 +57,114 @@ export default function DashboardLayout({ children }) {
     { name: 'Vendors', href: '/dashboard/vendors', icon: Users },
     { name: 'Balance Sheet', href: '/dashboard/balance-sheet', icon: FileText },
     { name: 'Customers', href: '/dashboard/customers', icon: Users },
-    { name: 'Expense', href: '/dashboard/expense', icon: Receipt },
-    { name: 'Quick Payment', action: 'quick-payment', icon: CreditCard },
+    {
+      name: 'Expense',
+      icon: Receipt,
+      children: [
+        { name: 'Expense List', href: '/dashboard/expense/list', icon: Receipt },
+        { name: 'Expense Category List', href: '/dashboard/expense/categories', icon: Tags },
+      ],
+    },
+    {
+      name: 'Quick Payment',
+      icon: CreditCard,
+      children: [
+        { name: 'Quick Payment List', href: '/dashboard/quick-payment/list', icon: CreditCard },
+        { name: 'Payment Category List', href: '/dashboard/quick-payment/categories', icon: Tags },
+      ],
+    },
   ];
+
+  const renderNavItem = (item, isMobile = false) => {
+    const Icon = item.icon;
+
+    if (item.children) {
+      const isOpen = Boolean(openDropdowns[item.name]);
+      const isAnyChildActive = item.children.some((child) => child.href && pathname === child.href);
+
+      return (
+        <div key={item.name} className="space-y-1">
+          <button
+            type="button"
+            onClick={() => toggleDropdown(item.name)}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all cursor-pointer font-medium ${
+              isAnyChildActive
+                ? 'bg-neutral-900 text-white shadow-xs'
+                : 'text-neutral-600 hover:text-black hover:bg-neutral-100/80'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Icon size={18} />
+              <span>{item.name}</span>
+            </div>
+            <ChevronDown
+              size={16}
+              className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {isOpen && (
+            <div className="pl-6 space-y-1 border-l-2 border-neutral-200/80 ml-4 py-1">
+              {item.children.map((child) => {
+                const ChildIcon = child.icon;
+                const isChildActive = child.href ? pathname === child.href : false;
+
+                if (child.action === 'quick-payment-modal') {
+                  return (
+                    <button
+                      key={child.name}
+                      type="button"
+                      onClick={() => {
+                        if (isMobile) setIsMobileMenuOpen(false);
+                        setIsQuickPaymentOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors text-left cursor-pointer"
+                    >
+                      <ChildIcon size={15} />
+                      <span>{child.name}</span>
+                    </button>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={child.name}
+                    href={child.href}
+                    onClick={() => isMobile && setIsMobileMenuOpen(false)}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors font-medium ${
+                      isChildActive
+                        ? 'bg-black text-white font-bold shadow-2xs'
+                        : 'text-neutral-500 hover:text-black hover:bg-neutral-100'
+                    }`}
+                  >
+                    <ChildIcon size={15} />
+                    <span>{child.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const isActive = item.href ? pathname === item.href : false;
+    return (
+      <Link
+        key={item.name}
+        href={item.href}
+        onClick={() => isMobile && setIsMobileMenuOpen(false)}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors font-medium ${
+          isActive
+            ? 'bg-black text-white font-medium shadow-xs'
+            : 'text-neutral-600 hover:text-black hover:bg-neutral-100'
+        }`}
+      >
+        <Icon size={18} />
+        <span>{item.name}</span>
+      </Link>
+    );
+  };
 
   return (
     <div className="h-screen overflow-hidden bg-neutral-50 text-neutral-900 flex print:h-auto print:overflow-visible print:bg-white print:block">
@@ -34,11 +172,11 @@ export default function DashboardLayout({ children }) {
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
           {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black/50 transition-opacity" 
+          <div
+            className="fixed inset-0 bg-black/50 transition-opacity"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          
+
           {/* Mobile Sidebar */}
           <div className="relative flex w-64 flex-col bg-white h-full transform transition-transform ease-in-out duration-300">
             <div className="absolute right-0 top-0 -mr-12 pt-4">
@@ -51,47 +189,13 @@ export default function DashboardLayout({ children }) {
                 <X className="h-6 w-6 text-white" aria-hidden="true" />
               </button>
             </div>
-            
+
             <div className="h-16 flex items-center px-6 border-b border-neutral-200 shrink-0">
               <h1 className="text-xl font-light tracking-widest text-black">EMAAR</h1>
             </div>
 
             <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-              {navigation.map((item) => {
-                const isActive = item.href ? pathname === item.href : false;
-                const Icon = item.icon;
-                if (item.action === 'quick-payment') {
-                  return (
-                    <button
-                      key={item.name}
-                      type="button"
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        setIsQuickPaymentOpen(true);
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors text-left cursor-pointer"
-                    >
-                      <Icon size={18} />
-                      {item.name}
-                    </button>
-                  );
-                }
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                      isActive 
-                        ? 'bg-black text-white font-medium' 
-                        : 'text-neutral-500 hover:text-black hover:bg-neutral-100'
-                    }`}
-                  >
-                    <Icon size={18} />
-                    {item.name}
-                  </Link>
-                );
-              })}
+              {navigation.map((item) => renderNavItem(item, true))}
             </nav>
 
             <div className="p-4 border-t border-neutral-200 shrink-0">
@@ -114,37 +218,7 @@ export default function DashboardLayout({ children }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-          {navigation.map((item) => {
-            const isActive = item.href ? pathname === item.href : false;
-            const Icon = item.icon;
-            if (item.action === 'quick-payment') {
-              return (
-                <button
-                  key={item.name}
-                  type="button"
-                  onClick={() => setIsQuickPaymentOpen(true)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors text-left cursor-pointer"
-                >
-                  <Icon size={18} />
-                  {item.name}
-                </button>
-              );
-            }
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  isActive 
-                    ? 'bg-black text-white font-medium' 
-                    : 'text-neutral-500 hover:text-black hover:bg-neutral-100'
-                }`}
-              >
-                <Icon size={18} />
-                {item.name}
-              </Link>
-            );
-          })}
+          {navigation.map((item) => renderNavItem(item, false))}
         </nav>
 
         <div className="p-4 border-t border-neutral-200 shrink-0">
@@ -177,42 +251,62 @@ export default function DashboardLayout({ children }) {
               </div>
               <input
                 type="text"
-                placeholder="Search transactions, customers..."
-                className="w-full pl-10 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-black placeholder-neutral-400 focus:outline-none focus:border-neutral-300 transition-colors"
+                placeholder="Search products, sales, customers..."
+                className="w-full pl-10 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:bg-white transition-all text-black"
               />
             </div>
           </div>
 
-          {/* Header Action Buttons */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard/sell"
-              className="flex items-center gap-2 px-3.5 py-2 bg-black text-white text-xs font-semibold rounded-lg hover:bg-neutral-800 transition-colors shadow-sm tracking-wider"
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-lg">
+              <button
+                onClick={() => setCurrency('AED')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                  currency === 'AED' ? 'bg-white text-black shadow-xs' : 'text-neutral-500 hover:text-black'
+                }`}
+              >
+                AED
+              </button>
+              <button
+                onClick={() => setCurrency('GRAM')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                  currency === 'GRAM' ? 'bg-white text-black shadow-xs' : 'text-neutral-500 hover:text-black'
+                }`}
+              >
+                GRAM (g)
+              </button>
+            </div>
+
+            <button
+              onClick={() => setIsQuickPaymentOpen(true)}
+              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 bg-black hover:bg-neutral-800 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
             >
-              <ShoppingCart size={15} />
-              <span>POS</span>
-            </Link>
-            <Link
-              href="/dashboard/purchase"
-              className="flex items-center gap-2 px-3.5 py-2 bg-neutral-100 text-neutral-900 border border-neutral-200 text-xs font-semibold rounded-lg hover:bg-neutral-200 transition-colors tracking-wider"
-            >
-              <ArrowDownToLine size={15} />
-              <span>PURCHASE</span>
-            </Link>
+              <CreditCard size={15} />
+              <span>Quick Payment</span>
+            </button>
+
+            <div className="h-8 w-px bg-neutral-200" />
+
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-semibold">
+                EJ
+              </div>
+              <div className="hidden md:block text-left">
+                <p className="text-xs font-semibold text-black leading-tight">Emaar Jewellers</p>
+                <p className="text-[10px] text-neutral-500 leading-tight">Admin Manager</p>
+              </div>
+            </div>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-8 print:overflow-visible print:p-0 print:block">
+        {/* Main Viewport */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 print:p-0 print:overflow-visible">
           {children}
         </main>
       </div>
 
       {/* Global Quick Payment Modal */}
-      <QuickPaymentModal
-        open={isQuickPaymentOpen}
-        onClose={() => setIsQuickPaymentOpen(false)}
-      />
+      <QuickPaymentModal open={isQuickPaymentOpen} onClose={() => setIsQuickPaymentOpen(false)} />
     </div>
   );
 }

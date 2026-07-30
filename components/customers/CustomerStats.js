@@ -8,14 +8,14 @@ export default function CustomerStats({ data }) {
     const stats = [
         {
             title: "Total Purchase Amount",
-            value: `${(data.invoice_list_sum_sub_total || 0).toLocaleString("en-IN")} BDT`,
+            value: `${(data.invoice_list_sum_sub_total || 0).toLocaleString("en-US")} AED`,
             icon: TrendingUp,
             colors: "bg-emerald-50 text-emerald-600 border-emerald-100",
             iconBg: "bg-emerald-100"
         },
         {
             title: "Total Due",
-            value: `${(data.due || 0).toLocaleString("en-IN")} BDT`,
+            value: `${(data.due || 0).toLocaleString("en-US")} AED`,
             icon: CreditCard,
             colors: "bg-blue-50 text-blue-600 border-blue-100",
             iconBg: "bg-blue-100"

@@ -2,7 +2,7 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 
 export const middleware = async (req) => {
-  const response = await getToken({ req });
+  const response = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   const token = response?.accessToken;
   const isPinVerified = response?.pinVerified;
 
@@ -31,8 +31,8 @@ export const middleware = async (req) => {
     return NextResponse.redirect(url);
   }
 
-  // 3. Token + pin verified -> prevent access to verify-pin or login
-  if (token && isPinVerified && (path === "/verify-pin" || path === "/login")) {
+  // 3. Token + pin verified -> prevent access to verify-pin
+  if (token && isPinVerified && path === "/verify-pin") {
     const url = req.nextUrl.clone();
     const redirectTo = req.nextUrl.searchParams.get("callbackUrl") || "/dashboard";
     url.pathname = redirectTo;

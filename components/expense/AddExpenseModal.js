@@ -88,9 +88,15 @@ export default function AddExpenseModal({ open, onClose, onSuccess }) {
     if (open && token) {
       setLoadingInitial(true);
 
-      const fetchCat = axios.get(`${API_URL}/expense-catogory-list`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const fetchCat = axios
+        .get(`${API_URL}/get-expense-type-list`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .catch(() =>
+          axios.get(`${API_URL}/expense-catogory-list`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        );
       const fetchGw = axios.get(`${API_URL}/payment-type-list`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -233,10 +239,10 @@ export default function AddExpenseModal({ open, onClose, onSuccess }) {
               {/* Amount */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
-                  Amount (BDT)
+                  Amount (AED)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">৳</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">AED</span>
                   <input
                     type="number"
                     step="any"

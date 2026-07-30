@@ -171,9 +171,9 @@ export default function PurchaseInvoicePage() {
                           )}
                         </td>
                         <td className="px-4 py-4 text-center text-neutral-600">{item.qty || 1}</td>
-                        <td className="px-4 py-4 text-right text-neutral-600">৳ {Number(item.price || 0).toLocaleString()}</td>
+                        <td className="px-4 py-4 text-right text-neutral-600">AED {Number(item.price || 0).toLocaleString()}</td>
                         <td className="px-4 py-4 text-right font-medium text-neutral-900">
-                          ৳ {(Number(item.price || 0) * Number(item.qty || 1)).toLocaleString()}
+                          AED {(Number(item.price || 0) * Number(item.qty || 1)).toLocaleString()}
                         </td>
                       </tr>
                     );
@@ -187,21 +187,21 @@ export default function PurchaseInvoicePage() {
               <div className="w-full sm:w-[350px] space-y-3 bg-neutral-50 p-6 rounded-xl">
                 <div className="flex justify-between text-sm text-neutral-600">
                   <span>Subtotal</span>
-                  <span>৳ {subTotal.toLocaleString()}</span>
+                  <span>AED {subTotal.toLocaleString()}</span>
                 </div>
                 {discount > 0 && (
                   <div className="flex justify-between text-sm text-red-500">
                     <span>Discount</span>
-                    <span>- ৳ {discount.toLocaleString()}</span>
+                    <span>- AED {discount.toLocaleString()}</span>
                   </div>
                 )}
                 <div className="pt-3 border-t border-neutral-200 flex justify-between font-semibold text-base text-black">
                   <span>Total Amount</span>
-                  <span>৳ {finalTotal.toLocaleString()}</span>
+                  <span>AED {finalTotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm text-green-600 pt-1 font-semibold">
                   <span>Paid Amount</span>
-                  <span>৳ {paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span>AED {paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
 
                 {/* Individual Payment Methods Breakdown */}
@@ -226,7 +226,7 @@ export default function PurchaseInvoicePage() {
                             )}
                           </div>
                           <div className="font-semibold text-emerald-700">
-                            ৳ {Number(pm.payment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            AED {Number(pm.payment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </div>
                         </div>
                       );
@@ -236,7 +236,7 @@ export default function PurchaseInvoicePage() {
                 {due > 0 && (
                   <div className="flex justify-between text-sm font-medium text-red-600 pt-1">
                     <span>Due Amount</span>
-                    <span>৳ {due.toLocaleString()}</span>
+                    <span>AED {due.toLocaleString()}</span>
                   </div>
                 )}
               </div>
