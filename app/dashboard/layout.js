@@ -150,31 +150,26 @@ export default function DashboardLayout({ children }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center border border-neutral-200 rounded-lg overflow-hidden bg-neutral-50 p-0.5">
-              {['TK', 'USD', 'AED'].map((curr) => (
-                <button
-                  key={curr}
-                  onClick={() => setCurrency(curr)}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                    currency === curr 
-                      ? 'bg-white text-black shadow-sm' 
-                      : 'text-neutral-500 hover:text-black'
-                  }`}
-                >
-                  {curr}
-                </button>
-              ))}
-            </div>
-
-            <div className="h-8 w-8 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center">
-              <span className="text-xs font-medium text-black">AD</span>
-            </div>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/sell"
+              className="flex items-center gap-2 px-3.5 py-2 bg-black text-white text-xs font-semibold rounded-lg hover:bg-neutral-800 transition-colors shadow-sm tracking-wider"
+            >
+              <ShoppingCart size={15} />
+              <span>POS</span>
+            </Link>
+            <Link
+              href="/dashboard/purchase"
+              className="flex items-center gap-2 px-3.5 py-2 bg-neutral-100 text-neutral-900 border border-neutral-200 text-xs font-semibold rounded-lg hover:bg-neutral-200 transition-colors tracking-wider"
+            >
+              <ArrowDownToLine size={15} />
+              <span>PURCHASE</span>
+            </Link>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 print:overflow-visible print:p-0 print:block">
+        <main className="flex-1 overflow-y-auto p-3.5 sm:p-6 lg:p-8 print:overflow-visible print:p-0 print:block">
           {children}
         </main>
       </div>

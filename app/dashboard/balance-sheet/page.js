@@ -143,39 +143,40 @@ export default function BalanceSheetPage() {
   return (
     <div className="max-w-7xl mx-auto text-black">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
         <div>
-          <h2 className="text-2xl font-medium tracking-wide">Balance Sheet</h2>
-          <p className="text-sm text-neutral-500 mt-1">Snapshot of Liabilities and Assets for the selected period.</p>
+          <h2 className="text-xl sm:text-2xl font-semibold sm:font-medium tracking-wide">Balance Sheet</h2>
         </div>
         <button
-          className="flex items-center gap-2 bg-black text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-neutral-800 transition-colors shadow-sm"
+          className="flex items-center gap-1.5 bg-black text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-neutral-800 transition-colors shadow-sm shrink-0"
           onClick={() => window.print()}
         >
-          <Download size={16} /> Export PDF
+          <Download size={14} className="sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Export PDF</span>
+          <span className="sm:hidden">Export</span>
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[30%,70%] gap-4 mb-6">
         {/* Left: KPIs */}
-        <div className="bg-orange-500 text-white rounded-2xl shadow-sm p-6 flex flex-col justify-center">
-          <div className="text-center mb-4">
-            <p className="text-2xl font-extrabold tabular-nums">{fmtBDT(assetsTotal)} BDT</p>
-            <p className="text-sm font-medium opacity-90">Assets Total (Computed)</p>
+        <div className="bg-orange-500 text-white rounded-2xl shadow-sm p-4 sm:p-6 flex flex-col justify-center">
+          <div className="text-center mb-3 sm:mb-4">
+            <p className="text-lg sm:text-2xl font-extrabold tabular-nums">{fmtBDT(assetsTotal)} BDT</p>
+            <p className="text-xs sm:text-sm font-medium opacity-90">Assets Total (Computed)</p>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-            <p className="opacity-90">Available Balance:<br/><span className="font-semibold text-[13px] tabular-nums opacity-100">{fmtBDT(availableBalanceTotal)} BDT</span></p>
-            <p className="opacity-90">Customer Due:<br/><span className="font-semibold text-[13px] tabular-nums opacity-100">{fmtBDT(totalCustomerDue)} BDT</span></p>
-            <p className="opacity-90">Vendor Payable:<br/><span className="font-semibold text-[13px] tabular-nums opacity-100">{fmtBDT(totalVendor)} BDT</span></p>
-            <p className="opacity-90">Closing Stock:<br/><span className="font-semibold text-[13px] tabular-nums opacity-100">{fmtBDT(totalClosingStock)} BDT</span></p>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-[11px] sm:text-xs">
+            <p className="opacity-90">Available Balance:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(availableBalanceTotal)} BDT</span></p>
+            <p className="opacity-90">Customer Due:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(totalCustomerDue)} BDT</span></p>
+            <p className="opacity-90">Vendor Payable:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(totalVendor)} BDT</span></p>
+            <p className="opacity-90">Closing Stock:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(totalClosingStock)} BDT</span></p>
           </div>
         </div>
 
         {/* Right: Date Range Picker */}
-        <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 flex items-center">
-          <div className="flex flex-wrap items-end gap-4 w-full">
-            <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+        <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-4 sm:p-6 flex items-center">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 sm:gap-4 w-full">
+            <div className="flex flex-col gap-1 flex-1">
+              <label className="text-[11px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Start Date
               </label>
               <div className="relative">
@@ -184,12 +185,12 @@ export default function BalanceSheetPage() {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 border border-neutral-200 rounded-lg text-sm text-neutral-700 bg-neutral-50/50 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 transition-all"
+                  className="w-full pl-9 pr-3 py-2 sm:py-2.5 border border-neutral-200 rounded-lg text-xs sm:text-sm text-neutral-700 bg-neutral-50/50 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 transition-all"
                 />
               </div>
             </div>
-            <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-xs font-medium text-neutral-500 uppercase tracking-wider">
+            <div className="flex flex-col gap-1 flex-1">
+              <label className="text-[11px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 End Date
               </label>
               <div className="relative">
@@ -198,14 +199,14 @@ export default function BalanceSheetPage() {
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 border border-neutral-200 rounded-lg text-sm text-neutral-700 bg-neutral-50/50 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 transition-all"
+                  className="w-full pl-9 pr-3 py-2 sm:py-2.5 border border-neutral-200 rounded-lg text-xs sm:text-sm text-neutral-700 bg-neutral-50/50 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 transition-all"
                 />
               </div>
             </div>
             <button
               onClick={fetchReport}
               disabled={loading}
-              className="flex items-center gap-2 bg-black text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-neutral-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed h-[42px]"
+              className="flex items-center justify-center gap-2 bg-black text-white text-xs sm:text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-neutral-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed h-[38px] sm:h-[42px]"
             >
               {loading ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -226,67 +227,121 @@ export default function BalanceSheetPage() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Table Container */}
       <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-        <div className="p-5 border-b border-neutral-100 bg-neutral-50/50">
-          <h3 className="font-semibold text-lg text-neutral-800">Balance Sheet</h3>
+        <div className="p-4 sm:p-5 border-b border-neutral-100 bg-neutral-50/50">
+          <h3 className="font-semibold text-base sm:text-lg text-neutral-800">Balance Sheet Details</h3>
         </div>
-        <div className="overflow-x-auto">
+        <div>
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-neutral-400">
-              <Loader2 size={32} className="animate-spin mb-3" />
-              <p className="text-sm">Loading balance sheet data...</p>
+            <div className="flex flex-col items-center justify-center py-16 text-neutral-400">
+              <Loader2 size={28} className="animate-spin mb-2" />
+              <p className="text-xs sm:text-sm">Loading balance sheet data...</p>
             </div>
           ) : !hasFetched ? (
-            <div className="flex flex-col items-center justify-center py-20 text-neutral-400">
-              <FileText size={32} className="mb-3" />
-              <p className="text-sm">Select a date range and generate the report.</p>
+            <div className="flex flex-col items-center justify-center py-16 text-neutral-400">
+              <FileText size={28} className="mb-2" />
+              <p className="text-xs sm:text-sm">Select a date range and generate the report.</p>
             </div>
           ) : !data ? (
-            <div className="flex flex-col items-center justify-center py-20 text-neutral-400">
-              <FileText size={32} className="mb-3" />
-              <p className="text-sm">No data found for the selected date range.</p>
+            <div className="flex flex-col items-center justify-center py-16 text-neutral-400">
+              <FileText size={28} className="mb-2" />
+              <p className="text-xs sm:text-sm">No data found for the selected date range.</p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse text-sm min-w-[800px]">
-              <thead className="bg-neutral-100/50 border-b border-neutral-200">
-                <tr>
-                  <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 w-1/4">Liabilities & Equity</th>
-                  <th className="py-3 px-6 font-semibold text-neutral-900 text-right border-r border-neutral-200 w-1/4">Amount (BDT)</th>
-                  <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 w-1/4">Assets</th>
-                  <th className="py-3 px-6 font-semibold text-neutral-900 text-right w-1/4">Amount (BDT)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {tableRows.map((row, i) => (
-                  <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
-                    {/* Liabilities */}
-                    <td className={`py-3 px-6 border-r border-neutral-100 text-neutral-800 ${row.L?.isGroup ? 'font-semibold bg-neutral-50' : ''}`}>
-                      {row.L ? row.L.label : ''}
-                    </td>
-                    <td className={`py-3 px-6 border-r border-neutral-100 text-right tabular-nums ${row.L?.isGroup ? 'bg-neutral-50' : ''}`}>
-                      {row.L && !row.L.isGroup ? fmtBDT(row.L.amount) : ''}
-                    </td>
+            <>
+              {/* Mobile View: Clean Section Cards (No horizontal scroll) */}
+              <div className="block sm:hidden p-3 space-y-4">
+                {/* Section 1: Liabilities & Equity */}
+                <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white">
+                  <div className="bg-neutral-100/70 px-3 py-2 border-b border-neutral-200 font-bold text-xs text-neutral-900 flex justify-between">
+                    <span>Liabilities & Equity</span>
+                    <span>Amount (BDT)</span>
+                  </div>
+                  <div className="divide-y divide-neutral-100 text-xs">
+                    {liabilitiesRows.map((row, idx) => (
+                      <div key={idx} className="flex justify-between items-center px-3 py-2.5 hover:bg-neutral-50/50">
+                        <span className="text-neutral-700 font-medium">{row.label}</span>
+                        <span className="font-semibold text-neutral-900 tabular-nums">{fmtBDT(row.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-neutral-100/80 px-3 py-2.5 border-t border-neutral-200 font-bold text-xs flex justify-between text-neutral-900">
+                    <span>Total Liabilities:</span>
+                    <span className="tabular-nums">{fmtBDT(liabilitiesTotal)} BDT</span>
+                  </div>
+                </div>
 
-                    {/* Assets */}
-                    <td className={`py-3 px-6 border-r border-neutral-100 text-neutral-800 ${row.A?.isGroup ? 'font-semibold bg-neutral-50' : ''}`}>
-                      {row.A ? row.A.label : ''}
-                    </td>
-                    <td className={`py-3 px-6 text-right tabular-nums ${row.A?.isGroup ? 'bg-neutral-50' : ''}`}>
-                      {row.A && !row.A.isGroup ? fmtBDT(row.A.amount) : ''}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-neutral-100/80 border-t border-neutral-200 font-bold">
-                <tr>
-                  <td className="py-4 px-6 border-r border-neutral-200">Total:</td>
-                  <td className="py-4 px-6 border-r border-neutral-200 text-right tabular-nums">{fmtBDT(liabilitiesTotal)}</td>
-                  <td className="py-4 px-6 border-r border-neutral-200">Total:</td>
-                  <td className="py-4 px-6 text-right tabular-nums">{fmtBDT(assetsTotal)}</td>
-                </tr>
-              </tfoot>
-            </table>
+                {/* Section 2: Assets */}
+                <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white">
+                  <div className="bg-neutral-100/70 px-3 py-2 border-b border-neutral-200 font-bold text-xs text-neutral-900 flex justify-between">
+                    <span>Assets</span>
+                    <span>Amount (BDT)</span>
+                  </div>
+                  <div className="divide-y divide-neutral-100 text-xs">
+                    {assetsRows.map((row, idx) => (
+                      row.isGroup ? (
+                        <div key={idx} className="bg-neutral-50 px-3 py-1.5 font-bold text-[11px] text-neutral-500 uppercase tracking-wider">
+                          {row.label}
+                        </div>
+                      ) : (
+                        <div key={idx} className="flex justify-between items-center px-3 py-2.5 hover:bg-neutral-50/50">
+                          <span className="text-neutral-700 font-medium">{row.label}</span>
+                          <span className="font-semibold text-neutral-900 tabular-nums">{fmtBDT(row.amount)}</span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                  <div className="bg-neutral-100/80 px-3 py-2.5 border-t border-neutral-200 font-bold text-xs flex justify-between text-neutral-900">
+                    <span>Total Assets:</span>
+                    <span className="tabular-nums">{fmtBDT(assetsTotal)} BDT</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Desktop View: Side by Side Table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left border-collapse text-sm min-w-[700px]">
+                  <thead className="bg-neutral-100/50 border-b border-neutral-200">
+                    <tr>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 w-1/4">Liabilities & Equity</th>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 text-right border-r border-neutral-200 w-1/4">Amount (BDT)</th>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 w-1/4">Assets</th>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 text-right w-1/4">Amount (BDT)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {tableRows.map((row, i) => (
+                      <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
+                        {/* Liabilities */}
+                        <td className={`py-3 px-6 border-r border-neutral-100 text-neutral-800 ${row.L?.isGroup ? 'font-semibold bg-neutral-50' : ''}`}>
+                          {row.L ? row.L.label : ''}
+                        </td>
+                        <td className={`py-3 px-6 border-r border-neutral-100 text-right tabular-nums ${row.L?.isGroup ? 'bg-neutral-50' : ''}`}>
+                          {row.L && !row.L.isGroup ? fmtBDT(row.L.amount) : ''}
+                        </td>
+
+                        {/* Assets */}
+                        <td className={`py-3 px-6 border-r border-neutral-100 text-neutral-800 ${row.A?.isGroup ? 'font-semibold bg-neutral-50' : ''}`}>
+                          {row.A ? row.A.label : ''}
+                        </td>
+                        <td className={`py-3 px-6 text-right tabular-nums ${row.A?.isGroup ? 'bg-neutral-50' : ''}`}>
+                          {row.A && !row.A.isGroup ? fmtBDT(row.A.amount) : ''}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-neutral-100/80 border-t border-neutral-200 font-bold">
+                    <tr>
+                      <td className="py-4 px-6 border-r border-neutral-200">Total:</td>
+                      <td className="py-4 px-6 border-r border-neutral-200 text-right tabular-nums">{fmtBDT(liabilitiesTotal)}</td>
+                      <td className="py-4 px-6 border-r border-neutral-200">Total:</td>
+                      <td className="py-4 px-6 text-right tabular-nums">{fmtBDT(assetsTotal)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>

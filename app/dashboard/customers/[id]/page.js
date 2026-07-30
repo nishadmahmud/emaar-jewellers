@@ -93,16 +93,16 @@ export default function CustomerDashboard() {
             </div>
 
             {/* Time Period Tabs */}
-            <div className="mb-8 overflow-x-auto">
-                <div className="inline-flex bg-neutral-100/80 p-1 rounded-xl border border-neutral-200 shadow-sm">
+            <div className="mb-6">
+                <div className="grid grid-cols-4 bg-neutral-100/80 p-1 rounded-xl border border-neutral-200 shadow-sm w-full max-w-md">
                     {tabs.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => handleIntervalChange(tab)}
-                            className={`px-6 py-2 rounded-lg text-sm font-medium capitalize transition-all ${
+                            className={`py-2 px-1 text-center text-xs sm:text-sm font-medium capitalize rounded-lg transition-all ${
                                 activeTab === tab 
-                                    ? 'bg-white text-black shadow-sm' 
-                                    : 'text-neutral-500 hover:text-black hover:bg-neutral-50'
+                                    ? 'bg-white text-black shadow-sm font-semibold' 
+                                    : 'text-neutral-500 hover:text-black'
                             }`}
                         >
                             {tab}
@@ -115,7 +115,7 @@ export default function CustomerDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Sidebar */}
                 <div className="lg:col-span-1">
-                    <CustomerProfileSidebar customer={customer} />
+                    <CustomerProfileSidebar customer={customer} onRefresh={fetchCustomerData} />
                 </div>
 
                 {/* Content */}

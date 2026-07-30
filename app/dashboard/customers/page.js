@@ -233,13 +233,13 @@ export default function CustomerListPage() {
                 setKeyword(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm text-black placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-white border border-neutral-200 rounded-lg text-base sm:text-sm text-black placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition-all"
             />
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto min-h-[400px]">
+        {/* Table / Card List */}
+        <div>
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 text-neutral-400">
               <Loader2 size={32} className="animate-spin mb-3" />
@@ -250,84 +250,167 @@ export default function CustomerListPage() {
               <p className="text-sm">No customers found.</p>
             </div>
           ) : (
-            <table className="w-full text-left border-collapse text-sm whitespace-nowrap">
-              <thead className="bg-neutral-100/50 border-b border-neutral-200">
-                <tr>
-                  <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200">ID / Name</th>
-                  <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200">Mobile</th>
-                  <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 text-right">Due Amount</th>
-                  <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 text-center">Purchases</th>
-                  <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 text-right">Total Amount</th>
-                  <th className="py-3 px-6 font-semibold text-neutral-900 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100">
-                {customers.map((c) => (
-                  <tr key={c.id} className="hover:bg-neutral-50/50 transition-colors">
-                    <td className="py-3 px-6 border-r border-neutral-100">
-                      <div className="font-medium text-neutral-900">#{c.id}</div>
-                      <div className="text-xs text-neutral-500">{c.name || 'Unnamed'}</div>
-                    </td>
-                    <td className="py-3 px-6 border-r border-neutral-100 text-neutral-600">
-                      {c.mobile_number || '-'}
-                    </td>
-                    <td className="py-3 px-6 border-r border-neutral-100 text-right text-red-600 font-medium tabular-nums">
-                      {c.total_due_amount?.toLocaleString("en-IN") || 0} BDT
-                    </td>
-                    <td className="py-3 px-6 border-r border-neutral-100 text-center tabular-nums">
-                      {c.invoice_list_count || 0}
-                    </td>
-                    <td className="py-3 px-6 border-r border-neutral-100 text-right font-medium tabular-nums">
-                      {Number(c.total_purchase_amount || 0).toLocaleString("en-IN")} BDT
-                    </td>
-                    <td className="py-3 px-6 text-center">
-                      <Link href={`/dashboard/customers/${c.id}?interval=daily`}>
-                        <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
-                          <Eye size={14} /> View
-                        </button>
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <>
+              {/* Mobile View: Clean Card List (No horizontal scroll) */}
+              <div className="block sm:hidden divide-y divide-neutral-100">
+                {customers.map((c) => {
+                  const due = c.total_due_amount || 0;
+
+                  return (
+                    <div key={c.id} className="px-3 py-3 flex items-center justify-between hover:bg-neutral-50/60 transition-colors">
+                      <div className="min-w-0 pr-2 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-xs text-neutral-900 truncate">{c.name || 'Unnamed'}</span>
+                          <span className="text-[10px] text-neutral-400 font-mono">#{c.id}</span>
+                        </div>
+                        <p className="text-xs text-neutral-500 truncate mt-0.5">{c.mobile_number || 'No phone'}</p>
+                        <p className="text-[10px] text-neutral-400 mt-0.5">
+                          Total: {Number(c.total_purchase_amount || 0).toLocaleString("en-IN")} BDT • Purchases: {c.invoice_list_count || 0}
+                        </p>
+                      </div>
+
+                      <div className="text-right shrink-0 flex items-center gap-2">
+                        <div>
+                          {due > 0 ? (
+                            <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200">
+                              Due ৳ {due.toLocaleString("en-IN")}
+                            </span>
+                          ) : (
+                            <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200">
+                              No Due
+                            </span>
+                          )}
+                        </div>
+                        <Link href={`/dashboard/customers/${c.id}?interval=daily`}>
+                          <button className="p-1.5 text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                            <Eye size={14} />
+                          </button>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden sm:block overflow-x-auto min-h-[400px]">
+                <table className="w-full text-left border-collapse text-sm whitespace-nowrap">
+                  <thead className="bg-neutral-100/50 border-b border-neutral-200">
+                    <tr>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200">ID / Name</th>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200">Mobile</th>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 text-right">Due Amount</th>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 text-center">Purchases</th>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 text-right">Total Amount</th>
+                      <th className="py-3 px-6 font-semibold text-neutral-900 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {customers.map((c) => (
+                      <tr key={c.id} className="hover:bg-neutral-50/50 transition-colors">
+                        <td className="py-3 px-6 border-r border-neutral-100">
+                          <div className="font-medium text-neutral-900">#{c.id}</div>
+                          <div className="text-xs text-neutral-500">{c.name || 'Unnamed'}</div>
+                        </td>
+                        <td className="py-3 px-6 border-r border-neutral-100 text-neutral-600">
+                          {c.mobile_number || '-'}
+                        </td>
+                        <td className="py-3 px-6 border-r border-neutral-100 text-right text-red-600 font-medium tabular-nums">
+                          {c.total_due_amount?.toLocaleString("en-IN") || 0} BDT
+                        </td>
+                        <td className="py-3 px-6 border-r border-neutral-100 text-center tabular-nums">
+                          {c.invoice_list_count || 0}
+                        </td>
+                        <td className="py-3 px-6 border-r border-neutral-100 text-right font-medium tabular-nums">
+                          {Number(c.total_purchase_amount || 0).toLocaleString("en-IN")} BDT
+                        </td>
+                        <td className="py-3 px-6 text-center">
+                          <Link href={`/dashboard/customers/${c.id}?interval=daily`}>
+                            <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                              <Eye size={14} /> View
+                            </button>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-neutral-100 bg-neutral-50/30 flex items-center justify-between">
-            <div className="text-sm text-neutral-500">
-              Showing <span className="font-medium text-neutral-900">{(currentPage - 1) * limit + 1}</span> to <span className="font-medium text-neutral-900">{Math.min(currentPage * limit, totalCustomers)}</span> of <span className="font-medium text-neutral-900">{totalCustomers}</span> results
+          <div className="border-t border-neutral-100 bg-neutral-50/30">
+            {/* Mobile Pagination */}
+            <div className="flex flex-col sm:hidden p-3 gap-2.5">
+              <div className="text-xs text-neutral-500 text-center">
+                Showing <span className="font-semibold text-neutral-900">{(currentPage - 1) * limit + 1}</span>-
+                <span className="font-semibold text-neutral-900">{Math.min(currentPage * limit, totalCustomers)}</span> of{' '}
+                <span className="font-semibold text-neutral-900">{totalCustomers}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="flex-1 py-1.5 px-3 rounded-lg border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 disabled:opacity-40 flex items-center justify-center gap-1 active:bg-neutral-100"
+                >
+                  <ChevronLeft size={14} /> Prev
+                </button>
+                <span className="text-xs font-semibold text-neutral-800 px-3 py-1 bg-white border border-neutral-200 rounded-lg">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="flex-1 py-1.5 px-3 rounded-lg border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 disabled:opacity-40 flex items-center justify-center gap-1 active:bg-neutral-100"
+                >
+                  Next <ChevronRight size={14} />
+                </button>
+              </div>
             </div>
-            <div className="flex gap-1">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="p-1.5 rounded border border-neutral-200 bg-white text-neutral-600 disabled:opacity-50 hover:bg-neutral-50"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              
-              {Array.from({ length: totalPages }, (_, i) => i + 1).filter(p => p === 1 || p === totalPages || Math.abs(currentPage - p) <= 2).map((p, i, arr) => (
-                <div key={p} className="flex">
-                  {i > 0 && p - arr[i-1] > 1 && <span className="px-2 py-1 text-neutral-400">...</span>}
-                  <button
-                    onClick={() => setCurrentPage(p)}
-                    className={`px-3 py-1.5 rounded border text-sm font-medium ${currentPage === p ? 'bg-black border-black text-white' : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50'}`}
-                  >
-                    {p}
-                  </button>
-                </div>
-              ))}
-              
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="p-1.5 rounded border border-neutral-200 bg-white text-neutral-600 disabled:opacity-50 hover:bg-neutral-50"
-              >
-                <ChevronRight size={16} />
-              </button>
+
+            {/* Desktop Pagination */}
+            <div className="hidden sm:flex p-4 items-center justify-between">
+              <div className="text-sm text-neutral-500">
+                Showing <span className="font-medium text-neutral-900">{(currentPage - 1) * limit + 1}</span> to{' '}
+                <span className="font-medium text-neutral-900">{Math.min(currentPage * limit, totalCustomers)}</span> of{' '}
+                <span className="font-medium text-neutral-900">{totalCustomers}</span> results
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded border border-neutral-200 bg-white text-neutral-600 disabled:opacity-50 hover:bg-neutral-50"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(currentPage - p) <= 2)
+                  .map((p, i, arr) => (
+                    <div key={p} className="flex">
+                      {i > 0 && p - arr[i - 1] > 1 && <span className="px-2 py-1 text-neutral-400">...</span>}
+                      <button
+                        onClick={() => setCurrentPage(p)}
+                        className={`px-3 py-1.5 rounded border text-sm font-medium ${
+                          currentPage === p
+                            ? 'bg-black border-black text-white'
+                            : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    </div>
+                  ))}
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 rounded border border-neutral-200 bg-white text-neutral-600 disabled:opacity-50 hover:bg-neutral-50"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
         )}

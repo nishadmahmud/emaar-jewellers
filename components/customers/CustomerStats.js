@@ -55,17 +55,17 @@ export default function CustomerStats({ data }) {
     return (
         <div className="mb-8">
             <h2 className="text-xl font-medium tracking-wide text-neutral-900 mb-4">Customer Statistics</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
                 {stats.map((stat, i) => {
                     const Icon = stat.icon;
                     return (
-                        <div key={i} className={`rounded-xl border p-4 flex items-center gap-4 ${stat.colors}`}>
-                            <div className={`p-3 rounded-lg ${stat.iconBg}`}>
-                                <Icon size={20} />
+                        <div key={i} className={`rounded-xl border p-3 sm:p-4 flex items-center gap-2.5 sm:gap-4 ${stat.colors}`}>
+                            <div className={`p-2.5 sm:p-3 rounded-lg ${stat.iconBg} shrink-0`}>
+                                <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                             </div>
-                            <div>
-                                <p className="text-sm font-medium opacity-80">{stat.title}</p>
-                                <p className="text-xl font-semibold mt-1">{stat.value}</p>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[11px] sm:text-xs font-medium opacity-80 truncate">{stat.title}</p>
+                                <p className="text-xs sm:text-lg font-bold mt-0.5 truncate">{stat.value}</p>
                             </div>
                         </div>
                     );

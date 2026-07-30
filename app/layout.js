@@ -16,6 +16,12 @@ export const metadata = {
   description: "Gold Management POS System for Emaar Jewellers",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 import { Providers } from "./Providers";
 
 export default function RootLayout({ children }) {

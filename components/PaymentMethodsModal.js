@@ -316,33 +316,35 @@ export default function PaymentMethodsModal({
             )}
 
             {/* Amount with Presets */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">Payment Amount</label>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={handleFullPay}
-                    className="text-[11px] px-2.5 py-1 rounded-md font-semibold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition-colors active:scale-95"
-                  >
-                    Full Pay
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleHalfPay}
-                    className="text-[11px] px-2.5 py-1 rounded-md font-semibold bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300 transition-colors active:scale-95"
-                  >
-                    50%
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleFullDue}
-                    className="text-[11px] px-2.5 py-1 rounded-md font-semibold bg-red-100 text-red-800 hover:bg-red-200 border border-red-300 transition-colors active:scale-95"
-                  >
-                    Full Due (৳0)
-                  </button>
-                </div>
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">Payment Amount</label>
+              
+              {/* Preset Buttons Row */}
+              <div className="flex items-center gap-2 w-full">
+                <button
+                  type="button"
+                  onClick={handleFullPay}
+                  className="flex-1 text-[11px] py-1.5 rounded-lg font-semibold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition-colors active:scale-95 text-center whitespace-nowrap"
+                >
+                  Full Pay
+                </button>
+                <button
+                  type="button"
+                  onClick={handleHalfPay}
+                  className="flex-1 text-[11px] py-1.5 rounded-lg font-semibold bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300 transition-colors active:scale-95 text-center whitespace-nowrap"
+                >
+                  50%
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFullDue}
+                  className="flex-1 text-[11px] py-1.5 rounded-lg font-semibold bg-red-100 text-red-800 hover:bg-red-200 border border-red-300 transition-colors active:scale-95 text-center whitespace-nowrap"
+                >
+                  Full Due (৳0)
+                </button>
               </div>
+
+              {/* Amount Input Box */}
               <div className="flex items-center">
                 <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3.5 py-2.5 rounded-l-xl text-neutral-500 text-sm font-medium">
                   ৳
@@ -351,7 +353,7 @@ export default function PaymentMethodsModal({
                   type="number"
                   value={primaryAmount ?? ''}
                   onChange={(e) => setPrimaryAmount(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-r-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-black outline-none"
+                  className="w-full px-3.5 py-2.5 border border-neutral-200 rounded-r-xl text-base sm:text-sm font-semibold bg-white focus:ring-2 focus:ring-black outline-none"
                 />
               </div>
             </div>

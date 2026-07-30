@@ -26,54 +26,105 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                 <span className="text-sm text-neutral-500 font-medium bg-neutral-100 px-3 py-1 rounded-full">{invoices.length} Invoices</span>
             </div>
             
-            <div className="overflow-x-auto">
+            <div>
                 {invoices.length > 0 ? (
-                    <table className="w-full text-left border-collapse text-sm whitespace-nowrap">
-                        <thead className="bg-neutral-50 border-b border-neutral-200">
-                            <tr>
-                                <th className="py-3 px-6 font-semibold text-neutral-900">Invoice ID</th>
-                                <th className="py-3 px-6 font-semibold text-neutral-900">Date</th>
-                                <th className="py-3 px-6 font-semibold text-neutral-900 text-right">Amount</th>
-                                <th className="py-3 px-6 font-semibold text-neutral-900 text-right">Due</th>
-                                <th className="py-3 px-6 font-semibold text-neutral-900 text-center">Status</th>
-                                <th className="py-3 px-6 font-semibold text-neutral-900 text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-neutral-100">
-                            {invoices.map((invoice) => (
-                                <tr key={invoice?.id} className="hover:bg-neutral-50/50 transition-colors">
-                                    <td className="py-3 px-6 font-medium text-neutral-900">
-                                        {invoice?.invoice_id}
-                                    </td>
-                                    <td className="py-3 px-6 text-neutral-500">
-                                        {formatInvoiceDate(invoice?.invoice_id)}
-                                    </td>
-                                    <td className="py-3 px-6 text-right tabular-nums font-medium">
-                                        {invoice?.sub_total?.toLocaleString("en-IN")} BDT
-                                    </td>
-                                    <td className="py-3 px-6 text-right tabular-nums text-red-600 font-medium">
-                                        {(invoice?.sub_total - invoice?.paid_amount)?.toLocaleString("en-IN")} BDT
-                                    </td>
-                                    <td className="py-3 px-6 text-center">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                            invoice?.status 
-                                                ? 'bg-green-100 text-green-800' 
-                                                : 'bg-amber-100 text-amber-800'
-                                        }`}>
-                                            {invoice?.status ? "Completed" : "On Hold"}
-                                        </span>
-                                    </td>
-                                    <td className="py-3 px-6 text-center">
-                                        <Link href={`/dashboard/invoice/${invoice?.invoice_id}`}>
-                                            <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
-                                                <Eye size={14} /> View
-                                            </button>
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <>
+                        {/* Mobile View: Clean Card List (No horizontal scroll) */}
+                        <div className="block sm:hidden divide-y divide-neutral-100">
+                            {invoices.map((invoice) => {
+                                const total = invoice?.sub_total || 0;
+                                const due = Math.max((invoice?.sub_total || 0) - (invoice?.paid_amount || 0), 0);
+
+                                return (
+                                    <div key={invoice?.id} className="px-3.5 py-3 flex items-center justify-between hover:bg-neutral-50/60 transition-colors">
+                                        <div className="min-w-0 pr-2 flex-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="font-semibold text-xs text-neutral-900 truncate">{invoice?.invoice_id}</span>
+                                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold ${
+                                                    invoice?.status ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                                                }`}>
+                                                    {invoice?.status ? "Completed" : "On Hold"}
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] text-neutral-500 mt-0.5">{formatInvoiceDate(invoice?.invoice_id)}</p>
+                                            <p className="text-[11px] text-neutral-700 font-medium mt-0.5">
+                                                Total: {total.toLocaleString("en-IN")} BDT
+                                            </p>
+                                        </div>
+
+                                        <div className="text-right shrink-0 flex items-center gap-2">
+                                            <div>
+                                                {due > 0 ? (
+                                                    <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200">
+                                                        Due ৳ {due.toLocaleString("en-IN")}
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200">
+                                                        Paid
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <Link href={`/dashboard/invoice/sale/${invoice?.invoice_id}`}>
+                                                <button className="p-1.5 text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                                                    <Eye size={14} />
+                                                </button>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden sm:block overflow-x-auto">
+                            <table className="w-full text-left border-collapse text-sm whitespace-nowrap">
+                                <thead className="bg-neutral-50 border-b border-neutral-200">
+                                    <tr>
+                                        <th className="py-3 px-6 font-semibold text-neutral-900">Invoice ID</th>
+                                        <th className="py-3 px-6 font-semibold text-neutral-900">Date</th>
+                                        <th className="py-3 px-6 font-semibold text-neutral-900 text-right">Amount</th>
+                                        <th className="py-3 px-6 font-semibold text-neutral-900 text-right">Due</th>
+                                        <th className="py-3 px-6 font-semibold text-neutral-900 text-center">Status</th>
+                                        <th className="py-3 px-6 font-semibold text-neutral-900 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-neutral-100">
+                                    {invoices.map((invoice) => (
+                                        <tr key={invoice?.id} className="hover:bg-neutral-50/50 transition-colors">
+                                            <td className="py-3 px-6 font-medium text-neutral-900">
+                                                {invoice?.invoice_id}
+                                            </td>
+                                            <td className="py-3 px-6 text-neutral-500">
+                                                {formatInvoiceDate(invoice?.invoice_id)}
+                                            </td>
+                                            <td className="py-3 px-6 text-right tabular-nums font-medium">
+                                                {invoice?.sub_total?.toLocaleString("en-IN")} BDT
+                                            </td>
+                                            <td className="py-3 px-6 text-right tabular-nums text-red-600 font-medium">
+                                                {(invoice?.sub_total - invoice?.paid_amount)?.toLocaleString("en-IN")} BDT
+                                            </td>
+                                            <td className="py-3 px-6 text-center">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    invoice?.status 
+                                                        ? 'bg-green-100 text-green-800' 
+                                                        : 'bg-amber-100 text-amber-800'
+                                                }`}>
+                                                    {invoice?.status ? "Completed" : "On Hold"}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-6 text-center">
+                                                <Link href={`/dashboard/invoice/sale/${invoice?.invoice_id}`}>
+                                                    <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                                                        <Eye size={14} /> View
+                                                    </button>
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 ) : (
                     <div className="text-center py-12 text-neutral-400">
                         <p>No invoices available for this period.</p>

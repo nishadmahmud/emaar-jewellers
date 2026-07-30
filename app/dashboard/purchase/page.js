@@ -314,13 +314,12 @@ export default function PurchasePage() {
 
   return (
     <div className="max-w-7xl mx-auto text-black">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div>
-          <h2 className="text-2xl font-medium tracking-wide">Inbound Purchase</h2>
-          <p className="text-sm text-neutral-500 mt-1">Record incoming stock from suppliers and vendors.</p>
+          <h2 className="text-xl sm:text-2xl font-semibold sm:font-medium tracking-wide">Inbound Purchase</h2>
         </div>
-        <button className="flex items-center gap-2 bg-white border border-neutral-200 text-sm font-medium px-4 py-2 rounded-lg hover:bg-neutral-50 transition-colors shadow-sm">
-          <Download size={16} /> Import Excel
+        <button className="flex items-center gap-1.5 bg-white border border-neutral-200 text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-neutral-50 transition-colors shadow-sm">
+          <Download size={15} /> Import Excel
         </button>
       </div>
 
@@ -458,92 +457,178 @@ export default function PurchasePage() {
                 </div>
               </div>
 
-              {/* Cart Table */}
+              {/* Cart Items View */}
               {cart.length > 0 && (
-                <div className="overflow-x-auto border border-neutral-200 rounded-lg">
-                  <table className="w-full text-left text-sm whitespace-nowrap">
-                    <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 uppercase text-xs tracking-wider">
-                      <tr>
-                        <th className="px-4 py-3 font-medium">Item</th>
-                        <th className="px-4 py-3 font-medium w-32">Qty</th>
-                        <th className="px-4 py-3 font-medium w-24">Gross(V)</th>
-                        <th className="px-4 py-3 font-medium w-24">Net(V)</th>
-                        <th className="px-4 py-3 font-medium w-32">Rate</th>
-                        <th className="px-4 py-3 font-medium w-32">Total</th>
-                        <th className="px-4 py-3 font-medium w-12 text-center"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-100">
-                      {cart.map((item) => {
-                        const netWeight = parseFloat(item.netWeight) || 0;
-                        const qty = parseFloat(item.qty) || 1;
-                        const rate = parseFloat(item.ratePerVori) || 0;
-                        const weightMultiplier = netWeight > 0 ? netWeight : 1;
-                        const itemTotal = weightMultiplier * rate * qty;
-                        
-                        return (
-                          <tr key={item.id} className="hover:bg-neutral-50/50">
-                            <td className="px-4 py-3">
-                              <div className="font-medium text-neutral-900 truncate max-w-[150px]">{item.name}</div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <button type="button" onClick={() => updateCartItem(item.id, 'qty', Math.max(1, qty - 1))} className="p-1 bg-neutral-100 rounded hover:bg-neutral-200 text-neutral-600">
-                                  <Minus size={14} />
+                <div>
+                  {/* Mobile Stacked Card View (No horizontal scrolling) */}
+                  <div className="block sm:hidden border border-neutral-200 rounded-lg overflow-hidden divide-y divide-neutral-200 bg-white">
+                    {cart.map((item) => {
+                      const netWeight = parseFloat(item.netWeight) || 0;
+                      const qty = parseFloat(item.qty) || 1;
+                      const rate = parseFloat(item.ratePerVori) || 0;
+                      const weightMultiplier = netWeight > 0 ? netWeight : 1;
+                      const itemTotal = weightMultiplier * rate * qty;
+
+                      return (
+                        <div key={item.id} className="p-3 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <p className="font-semibold text-xs text-neutral-900 truncate pr-2">{item.name}</p>
+                            <button type="button" onClick={() => removeCartItem(item.id)} className="p-1 text-rose-500 hover:text-rose-700 shrink-0">
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Wt (Vori)</label>
+                              <input
+                                type="number"
+                                step="0.001"
+                                placeholder="0"
+                                value={item.netWeight || item.goldVori || ''}
+                                onChange={(e) => updateCartItem(item.id, 'netWeight', e.target.value)}
+                                className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Wt (Gram)</label>
+                              <input
+                                type="number"
+                                step="0.001"
+                                placeholder="0"
+                                value={item.netWeightGram || item.goldGram || ''}
+                                onChange={(e) => updateCartItem(item.id, 'netWeightGram', e.target.value)}
+                                className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Qty</label>
+                              <div className="flex items-center gap-1">
+                                <button type="button" onClick={() => updateCartItem(item.id, 'qty', Math.max(1, qty - 1))} className="p-1 bg-neutral-100 rounded text-neutral-600">
+                                  <Minus size={12} />
                                 </button>
                                 <input
                                   type="number"
                                   min="1"
                                   value={item.qty}
                                   onChange={(e) => updateCartItem(item.id, 'qty', e.target.value)}
-                                  className="w-12 text-center px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                                  className="w-12 text-center py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                                 />
-                                <button type="button" onClick={() => updateCartItem(item.id, 'qty', qty + 1)} className="p-1 bg-neutral-100 rounded hover:bg-neutral-200 text-neutral-600">
-                                  <Plus size={14} />
+                                <button type="button" onClick={() => updateCartItem(item.id, 'qty', qty + 1)} className="p-1 bg-neutral-100 rounded text-neutral-600">
+                                  <Plus size={12} />
                                 </button>
                               </div>
-                            </td>
-                            <td className="px-4 py-3">
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Rate / Vori</label>
                               <input
                                 type="number"
-                                step="0.001"
-                                value={item.grossWeight}
-                                onChange={(e) => updateCartItem(item.id, 'grossWeight', e.target.value)}
-                                className="w-20 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
                                 placeholder="0"
-                              />
-                            </td>
-                            <td className="px-4 py-3">
-                              <input
-                                type="number"
-                                step="0.001"
-                                value={item.netWeight}
-                                onChange={(e) => updateCartItem(item.id, 'netWeight', e.target.value)}
-                                className="w-20 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded text-sm focus:ring-1 focus:ring-emerald-500 outline-none"
-                                placeholder="0"
-                              />
-                            </td>
-                            <td className="px-4 py-3">
-                              <input
-                                type="number"
                                 value={item.ratePerVori}
                                 onChange={(e) => updateCartItem(item.id, 'ratePerVori', e.target.value)}
-                                className="w-24 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                                className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                               />
-                            </td>
-                            <td className="px-4 py-3 font-medium text-neutral-900">
-                              {getCurrencySymbol()}{itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <button type="button" onClick={() => removeCartItem(item.id)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors">
-                                <Trash2 size={16} />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center pt-1 border-t border-neutral-100 text-xs">
+                            <span className="text-neutral-500 font-medium">Subtotal:</span>
+                            <span className="font-bold text-neutral-900">৳ {itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden sm:block overflow-x-auto border border-neutral-200 rounded-lg">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 uppercase text-xs tracking-wider">
+                        <tr>
+                          <th className="px-4 py-3 font-medium">Item</th>
+                          <th className="px-4 py-3 font-medium w-32">Qty</th>
+                          <th className="px-4 py-3 font-medium w-24">Gross(V)</th>
+                          <th className="px-4 py-3 font-medium w-24">Net(V)</th>
+                          <th className="px-4 py-3 font-medium w-32">Rate</th>
+                          <th className="px-4 py-3 font-medium w-32">Total</th>
+                          <th className="px-4 py-3 font-medium w-12 text-center"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100">
+                        {cart.map((item) => {
+                          const netWeight = parseFloat(item.netWeight) || 0;
+                          const qty = parseFloat(item.qty) || 1;
+                          const rate = parseFloat(item.ratePerVori) || 0;
+                          const weightMultiplier = netWeight > 0 ? netWeight : 1;
+                          const itemTotal = weightMultiplier * rate * qty;
+                          
+                          return (
+                            <tr key={item.id} className="hover:bg-neutral-50/50">
+                              <td className="px-4 py-3">
+                                <div className="font-medium text-neutral-900 truncate max-w-[150px]">{item.name}</div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <button type="button" onClick={() => updateCartItem(item.id, 'qty', Math.max(1, qty - 1))} className="p-1 bg-neutral-100 rounded hover:bg-neutral-200 text-neutral-600">
+                                    <Minus size={14} />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={item.qty}
+                                    onChange={(e) => updateCartItem(item.id, 'qty', e.target.value)}
+                                    className="w-12 text-center px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                                  />
+                                  <button type="button" onClick={() => updateCartItem(item.id, 'qty', qty + 1)} className="p-1 bg-neutral-100 rounded hover:bg-neutral-200 text-neutral-600">
+                                    <Plus size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  step="0.001"
+                                  value={item.grossWeight}
+                                  onChange={(e) => updateCartItem(item.id, 'grossWeight', e.target.value)}
+                                  className="w-20 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                                  placeholder="0"
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  step="0.001"
+                                  value={item.netWeight}
+                                  onChange={(e) => updateCartItem(item.id, 'netWeight', e.target.value)}
+                                  className="w-20 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded text-sm focus:ring-1 focus:ring-emerald-500 outline-none"
+                                  placeholder="0"
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  value={item.ratePerVori}
+                                  onChange={(e) => updateCartItem(item.id, 'ratePerVori', e.target.value)}
+                                  className="w-24 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                                />
+                              </td>
+                              <td className="px-4 py-3 font-medium text-neutral-900">
+                                {getCurrencySymbol()}{itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <button type="button" onClick={() => removeCartItem(item.id)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors">
+                                  <Trash2 size={16} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
               {cart.length === 0 && (
@@ -661,20 +746,7 @@ export default function PurchasePage() {
                 </div>
               )}
 
-              <div className="flex gap-2 mb-4">
-                {['TK', 'USD', 'AED'].map((curr) => (
-                  <button
-                    key={curr}
-                    type="button"
-                    onClick={() => setFormData({...formData, currency: curr})}
-                    className={`flex-1 py-1.5 text-xs font-medium border rounded-md transition-colors ${formData.currency === curr ? 'border-black bg-black text-white' : 'border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-600'}`}
-                  >
-                    {curr}
-                  </button>
-                ))}
-              </div>
-
-              <button
+               <button
                 type="button"
                 onClick={() => setIsPaymentModalOpen(true)}
                 className="w-full bg-emerald-600 text-white font-semibold py-2.5 rounded-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 mb-3 shadow-sm text-sm"

@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 const Card = ({ children, className }) => <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 ${className || ''}`}>{children}</div>;
-const CardContent = ({ children, className }) => <div className={`p-6 ${className || ''}`}>{children}</div>;
-import { Search, Loader2, Eye, Receipt } from 'lucide-react';
+const CardContent = ({ children, className = '' }) => <div className={className}>{children}</div>;
+import { Search, Loader2, Eye, Receipt, ArrowDownToLine, ChevronRight, ChevronLeft } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -13,13 +13,13 @@ const API_URL = process.env.NEXT_PUBLIC_API;
 
 export default function PurchaseHistoryPage() {
   const [invoices, setInvoices] = useState([]);
+  const [totalInvoices, setTotalInvoices] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const router = useRouter();
   const { data: session } = useSession();
-  
-  // Use a ref to prevent double-fetching on mount if not necessary
-  const isFirstMount = useRef(true);
 
   useEffect(() => {
     const token = session?.accessToken;
@@ -29,7 +29,7 @@ export default function PurchaseHistoryPage() {
       try {
         setLoading(true);
         const res = await axios.post(
-          `${API_URL}/search-purchase-invoice?page=1&limit=50`,
+          `${API_URL}/search-purchase-invoice?page=${currentPage}&limit=${limit}`,
           {
             keyword: search,
             nameId: false,
@@ -44,10 +44,12 @@ export default function PurchaseHistoryPage() {
           }
         );
 
-        if (res.data?.success && res.data?.data?.data) {
-          setInvoices(res.data.data.data);
+        if (res.data?.success && res.data?.data) {
+          setInvoices(res.data.data.data || []);
+          setTotalInvoices(res.data.data.total || 0);
         } else {
           setInvoices([]);
+          setTotalInvoices(0);
         }
       } catch (err) {
         toast.error('Failed to load purchase history');
@@ -61,14 +63,16 @@ export default function PurchaseHistoryPage() {
     }, 400);
 
     return () => clearTimeout(delayDebounce);
-  }, [search, session?.accessToken]);
+  }, [search, currentPage, limit, session?.accessToken]);
+
+  const totalPages = Math.ceil(totalInvoices / limit);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Purchase History</h1>
-          <p className="text-sm text-neutral-500 mt-1">View and manage all your past purchase invoices.</p>
+          <p className="text-sm text-neutral-500 mt-1">View and manage all past inventory purchases.</p>
         </div>
         
         {/* Search */}
@@ -80,82 +84,200 @@ export default function PurchaseHistoryPage() {
             type="text"
             placeholder="Search by ID or vendor..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-shadow"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="block w-full pl-10 pr-3 py-2 border border-neutral-200 rounded-lg text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-shadow"
           />
         </div>
       </div>
 
       <Card className="border-neutral-200 shadow-sm overflow-hidden">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-neutral-50 text-neutral-600 border-b border-neutral-200">
-                <tr>
-                  <th className="px-6 py-4 font-medium">Invoice ID</th>
-                  <th className="px-6 py-4 font-medium">Date</th>
-                  <th className="px-6 py-4 font-medium">Vendor</th>
-                  <th className="px-6 py-4 font-medium text-right">Total</th>
-                  <th className="px-6 py-4 font-medium text-right">Paid</th>
-                  <th className="px-6 py-4 font-medium text-right">Due</th>
-                  <th className="px-6 py-4 font-medium text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 bg-white">
-                {loading ? (
-                  <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center">
-                      <div className="flex justify-center items-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+          {loading ? (
+            <div className="px-6 py-12 text-center">
+              <div className="flex justify-center items-center">
+                <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+              </div>
+            </div>
+          ) : invoices.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <div className="flex flex-col items-center justify-center text-neutral-400">
+                <Receipt className="h-10 w-10 mb-2 opacity-50" />
+                <p>No purchase invoices found.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="block sm:hidden divide-y divide-neutral-100">
+                {invoices.map((inv) => {
+                  const total = inv.sub_total - inv.discount;
+                  const due = Math.max(total - inv.paid_amount, 0);
+
+                  return (
+                    <div
+                      key={inv.id}
+                      onClick={() => router.push(`/dashboard/invoice/purchase/${inv.invoice_id}`)}
+                      className="px-3 py-3 flex items-center justify-between hover:bg-neutral-50/60 active:bg-neutral-100 transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2 min-w-0 pr-1 flex-1">
+                        <div className="w-7 h-7 rounded-full bg-amber-50 text-amber-600 shrink-0 flex items-center justify-center text-xs font-bold">
+                          <ArrowDownToLine size={14} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-xs text-neutral-900 truncate">{inv.invoice_id}</p>
+                          <p className="text-xs text-neutral-600 truncate">{inv.vendor_name || 'Unknown Vendor'}</p>
+                          <p className="text-[10px] text-neutral-400 mt-0.5 truncate">
+                            {new Date(inv.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                ) : invoices.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center">
-                      <div className="flex flex-col items-center justify-center text-neutral-400">
-                        <Receipt className="h-10 w-10 mb-2 opacity-50" />
-                        <p>No purchase invoices found.</p>
+
+                      <div className="text-right shrink-0 flex items-center gap-1 pl-1">
+                        <div>
+                          <p className="font-bold text-xs text-neutral-900">৳ {Number(total).toLocaleString()}</p>
+                          {due > 0 ? (
+                            <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200 mt-0.5">
+                              Due ৳ {due.toLocaleString()}
+                            </span>
+                          ) : (
+                            <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200 mt-0.5">
+                              Paid
+                            </span>
+                          )}
+                        </div>
+                        <ChevronRight size={14} className="text-neutral-400 shrink-0" />
                       </div>
-                    </td>
-                  </tr>
-                ) : (
-                  invoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-neutral-50/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-neutral-900">
-                        {inv.invoice_id}
-                      </td>
-                      <td className="px-6 py-4 text-neutral-500">
-                        {new Date(inv.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 text-neutral-700">
-                        {inv.vendor_name || 'Unknown Vendor'}
-                      </td>
-                      <td className="px-6 py-4 text-right text-neutral-900 font-medium">
-                        ৳ {Number(inv.sub_total - inv.discount).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-right text-green-600">
-                        ৳ {Number(inv.paid_amount).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-right text-red-600">
-                        ৳ {Math.max((inv.sub_total - inv.discount) - inv.paid_amount, 0).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => router.push(`/dashboard/invoice/purchase/${inv.invoice_id}`)}
-                          className="inline-flex items-center justify-center p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 rounded-md transition-colors"
-                          title="View Invoice"
-                        >
-                          <Eye size={18} />
-                        </button>
-                      </td>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-neutral-50 text-neutral-600 border-b border-neutral-200">
+                    <tr>
+                      <th className="px-6 py-4 font-medium">Invoice ID</th>
+                      <th className="px-6 py-4 font-medium">Date</th>
+                      <th className="px-6 py-4 font-medium">Vendor</th>
+                      <th className="px-6 py-4 font-medium text-right">Total</th>
+                      <th className="px-6 py-4 font-medium text-right">Paid</th>
+                      <th className="px-6 py-4 font-medium text-right">Due</th>
+                      <th className="px-6 py-4 font-medium text-center">Action</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 bg-white">
+                    {invoices.map((inv) => (
+                      <tr key={inv.id} className="hover:bg-neutral-50/50 transition-colors">
+                        <td className="px-6 py-4 font-medium text-neutral-900">
+                          {inv.invoice_id}
+                        </td>
+                        <td className="px-6 py-4 text-neutral-500">
+                          {new Date(inv.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-neutral-700">
+                          {inv.vendor_name || 'Unknown Vendor'}
+                        </td>
+                        <td className="px-6 py-4 text-right text-neutral-900 font-medium">
+                          ৳ {Number(inv.sub_total - inv.discount).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-right text-green-600">
+                          ৳ {Number(inv.paid_amount).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-right text-red-600">
+                          ৳ {Math.max((inv.sub_total - inv.discount) - inv.paid_amount, 0).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <button
+                            onClick={() => router.push(`/dashboard/invoice/purchase/${inv.invoice_id}`)}
+                            className="inline-flex items-center justify-center p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 rounded-md transition-colors"
+                            title="View Invoice"
+                          >
+                            <Eye size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </CardContent>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="border-t border-neutral-100 bg-neutral-50/30">
+            <div className="flex flex-col sm:hidden p-3 gap-2.5">
+              <div className="text-xs text-neutral-500 text-center">
+                Showing <span className="font-semibold text-neutral-900">{(currentPage - 1) * limit + 1}</span>-
+                <span className="font-semibold text-neutral-900">{Math.min(currentPage * limit, totalInvoices)}</span> of{' '}
+                <span className="font-semibold text-neutral-900">{totalInvoices}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="flex-1 py-1.5 px-3 rounded-lg border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 disabled:opacity-40 flex items-center justify-center gap-1 active:bg-neutral-100"
+                >
+                  <ChevronLeft size={14} /> Prev
+                </button>
+                <span className="text-xs font-semibold text-neutral-800 px-3 py-1 bg-white border border-neutral-200 rounded-lg">
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="flex-1 py-1.5 px-3 rounded-lg border border-neutral-200 bg-white text-xs font-semibold text-neutral-700 disabled:opacity-40 flex items-center justify-center gap-1 active:bg-neutral-100"
+                >
+                  Next <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+
+            <div className="hidden sm:flex p-4 items-center justify-between">
+              <div className="text-sm text-neutral-500">
+                Showing <span className="font-medium text-neutral-900">{(currentPage - 1) * limit + 1}</span> to{' '}
+                <span className="font-medium text-neutral-900">{Math.min(currentPage * limit, totalInvoices)}</span> of{' '}
+                <span className="font-medium text-neutral-900">{totalInvoices}</span> results
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded border border-neutral-200 bg-white text-neutral-600 disabled:opacity-50 hover:bg-neutral-50"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((p) => p === 1 || p === totalPages || Math.abs(currentPage - p) <= 2)
+                  .map((p, i, arr) => (
+                    <div key={p} className="flex">
+                      {i > 0 && p - arr[i - 1] > 1 && <span className="px-2 py-1 text-neutral-400">...</span>}
+                      <button
+                        onClick={() => setCurrentPage(p)}
+                        className={`px-3 py-1.5 rounded border text-sm font-medium ${
+                          currentPage === p
+                            ? 'bg-black border-black text-white'
+                            : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    </div>
+                  ))}
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 rounded border border-neutral-200 bg-white text-neutral-600 disabled:opacity-50 hover:bg-neutral-50"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

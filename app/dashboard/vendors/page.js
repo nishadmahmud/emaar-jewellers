@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 const Card = ({ children, className }) => <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 ${className || ''}`}>{children}</div>;
-const CardContent = ({ children, className }) => <div className={`p-6 ${className || ''}`}>{children}</div>;
-import { Search, Loader2, Users, Plus } from 'lucide-react';
+const CardContent = ({ children, className = '' }) => <div className={className}>{children}</div>;
+import { Search, Loader2, Users, Plus, Store } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -76,7 +76,7 @@ export default function VendorListPage() {
               placeholder="Search vendors..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-shadow"
+              className="block w-full pl-10 pr-3 py-2 border border-neutral-200 rounded-lg text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-shadow"
             />
           </div>
           
@@ -91,56 +91,80 @@ export default function VendorListPage() {
       </div>
 
       <Card className="border-neutral-200 shadow-sm overflow-hidden">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-neutral-50 text-neutral-600 border-b border-neutral-200">
-                <tr>
-                  <th className="px-6 py-4 font-medium">Name</th>
-                  <th className="px-6 py-4 font-medium">Email</th>
-                  <th className="px-6 py-4 font-medium">Phone</th>
-                  <th className="px-6 py-4 font-medium">Address</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-100 bg-white">
-                {loading ? (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-12 text-center">
-                      <div className="flex justify-center items-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+        <CardContent>
+          {loading ? (
+            <div className="px-6 py-12 text-center">
+              <div className="flex justify-center items-center">
+                <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+              </div>
+            </div>
+          ) : vendors.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <div className="flex flex-col items-center justify-center text-neutral-400">
+                <Users className="h-10 w-10 mb-2 opacity-50" />
+                <p>No vendors found.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Mobile View: Responsive Card List (No horizontal scroll) */}
+              <div className="block sm:hidden divide-y divide-neutral-100">
+                {vendors.map((vendor) => (
+                  <div key={vendor.id} className="px-3 py-3 flex items-center justify-between hover:bg-neutral-50/60 transition-colors">
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
+                      <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 shrink-0 flex items-center justify-center text-xs font-bold">
+                        <Store size={15} />
                       </div>
-                    </td>
-                  </tr>
-                ) : vendors.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" className="px-6 py-12 text-center">
-                      <div className="flex flex-col items-center justify-center text-neutral-400">
-                        <Users className="h-10 w-10 mb-2 opacity-50" />
-                        <p>No vendors found.</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-xs text-neutral-900 truncate">{vendor.name}</p>
+                        <p className="text-xs text-neutral-500 truncate">{vendor.mobile_number || 'No Phone'}</p>
+                        {vendor.email && <p className="text-[10px] text-neutral-400 truncate">{vendor.email}</p>}
                       </div>
-                    </td>
-                  </tr>
-                ) : (
-                  vendors.map((vendor) => (
-                    <tr key={vendor.id} className="hover:bg-neutral-50/50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-neutral-900">
-                        {vendor.name}
-                      </td>
-                      <td className="px-6 py-4 text-neutral-500">
-                        {vendor.email || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-neutral-700">
-                        {vendor.mobile_number || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-neutral-500">
-                        {vendor.address || '-'}
-                      </td>
+                    </div>
+                    {vendor.address && (
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded font-medium truncate max-w-[120px] inline-block">
+                          {vendor.address}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-neutral-50 text-neutral-600 border-b border-neutral-200">
+                    <tr>
+                      <th className="px-6 py-4 font-medium">Name</th>
+                      <th className="px-6 py-4 font-medium">Email</th>
+                      <th className="px-6 py-4 font-medium">Phone</th>
+                      <th className="px-6 py-4 font-medium">Address</th>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 bg-white">
+                    {vendors.map((vendor) => (
+                      <tr key={vendor.id} className="hover:bg-neutral-50/50 transition-colors">
+                        <td className="px-6 py-4 font-medium text-neutral-900">
+                          {vendor.name}
+                        </td>
+                        <td className="px-6 py-4 text-neutral-500">
+                          {vendor.email || '-'}
+                        </td>
+                        <td className="px-6 py-4 text-neutral-700">
+                          {vendor.mobile_number || '-'}
+                        </td>
+                        <td className="px-6 py-4 text-neutral-500">
+                          {vendor.address || '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

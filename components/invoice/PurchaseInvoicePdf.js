@@ -130,6 +130,7 @@ const PurchaseInvoicePdf = ({ invoice }) => {
   const finalTotal = subTotal - discount;
   const paid = Number(data.paid_amount || 0);
   const due = Math.max(finalTotal - paid, 0);
+  const multiplePayments = data.multiple_payments || data.multiple_payment || [];
 
   return (
     <Document>
@@ -190,9 +191,34 @@ const PurchaseInvoicePdf = ({ invoice }) => {
               <Text style={styles.summaryTotalText}>{finalTotal.toLocaleString()}</Text>
             </View>
             <View style={[styles.summaryRow, { marginTop: 8 }]}>
-              <Text style={styles.summaryText}>Paid Amount</Text>
-              <Text style={styles.summaryText}>{paid.toLocaleString()}</Text>
+              <Text style={[styles.summaryText, { fontWeight: 'bold' }]}>Paid Amount</Text>
+              <Text style={[styles.summaryText, { fontWeight: 'bold' }]}>{paid.toLocaleString()}</Text>
             </View>
+            {multiplePayments.length > 0 && (
+              <View style={{ marginTop: 4, paddingTop: 4, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
+                <Text style={{ fontSize: 7, color: '#6B7280', fontWeight: 'bold', marginBottom: 3, textTransform: 'uppercase' }}>Payment Breakdown</Text>
+                {multiplePayments.map((pm, idx) => {
+                  const typeName = pm.payment_type?.type_name || 'Payment';
+                  const categoryMatch = pm.payment_type?.payment_type_category?.find(
+                    (c) => Number(c.id) === Number(pm.payment_type_category_id)
+                  );
+                  const accName = categoryMatch?.payment_category_name || '';
+                  const accNum = categoryMatch?.account_number || '';
+                  const detailLabel = [accName, accNum].filter(Boolean).join(' - ');
+
+                  return (
+                    <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
+                      <Text style={{ fontSize: 8, color: '#374151', width: '60%' }}>
+                        {typeName} {detailLabel && detailLabel.toLowerCase() !== typeName.toLowerCase() ? `(${detailLabel})` : ''}
+                      </Text>
+                      <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#059669', width: '40%', textAlign: 'right' }}>
+                        TK {Number(pm.payment_amount || 0).toLocaleString()}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
             {due > 0 && (
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryText}>Due Amount</Text>

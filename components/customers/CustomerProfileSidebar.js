@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { Phone, MessageCircle, Mail, MessageSquare } from 'lucide-react';
+import CollectDueModal from '@/components/customers/CollectDueModal';
 
-export default function CustomerProfileSidebar({ customer }) {
+export default function CustomerProfileSidebar({ customer, onRefresh }) {
     const data = customer?.data || {};
+    const [isCollectDueOpen, setIsCollectDueOpen] = useState(false);
     
     return (
         <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden mb-6 md:mb-0">
@@ -50,10 +53,23 @@ export default function CustomerProfileSidebar({ customer }) {
                     <span className="font-medium text-neutral-900">{(data.invoice_list_sum_sub_total || 0).toLocaleString("en-IN")} BDT</span>
                 </div>
                 
-                <button className="w-full mt-4 bg-black text-white py-2.5 rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors shadow-sm">
+                <button
+                    onClick={() => setIsCollectDueOpen(true)}
+                    className="w-full mt-4 bg-black text-white py-2.5 rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors shadow-sm cursor-pointer active:scale-[0.99]"
+                >
                     Collect Due Payment
                 </button>
             </div>
+
+            {/* Collect Due Modal */}
+            <CollectDueModal
+                open={isCollectDueOpen}
+                onClose={() => setIsCollectDueOpen(false)}
+                customerId={data.id}
+                customerName={data.name}
+                totalDue={data.due || 0}
+                onSuccess={onRefresh}
+            />
         </div>
     );
 }
