@@ -294,27 +294,34 @@ const DueListTable = ({ title, data, type, loading }) => {
           <>
             {/* Mobile Card List (No horizontal scroll) */}
             <div className="block sm:hidden divide-y divide-neutral-100">
-              {rows.slice(0, 7).map((r, i) => (
-                <div key={i} className="px-2.5 py-3 flex items-center justify-between hover:bg-neutral-50/60 transition-colors">
-                  <div className="flex items-center gap-2 min-w-0 pr-1.5 flex-1">
-                    <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-600 shrink-0 flex items-center justify-center font-bold text-xs">
-                      {r.name ? r.name.charAt(0).toUpperCase() : <Users size={15} />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-xs text-neutral-900 truncate">{r.name || "N/A"}</p>
-                      <p className="text-[11px] text-neutral-500 font-mono truncate">{r.invoice_id}</p>
-                      <p className="text-[10px] text-neutral-400 mt-0.5 truncate">
-                        Paid: ৳ {formatNumber(r.paid_amount, 2)} / Total: ৳ {formatNumber(r.total_amount, 2)}
-                      </p>
-                    </div>
-                  </div>
+              {rows.slice(0, 7).map((r, i) => {
+                const targetUrl = type === 'customer'
+                  ? (r.customer_id ? `/dashboard/customers/${r.customer_id}?interval=daily` : '/dashboard/customers')
+                  : (r.vendor_id ? `/dashboard/vendors` : '/dashboard/vendors');
+                return (
+                  <Link key={i} href={targetUrl} className="block group">
+                    <div className="px-2.5 py-3 flex items-center justify-between group-hover:bg-neutral-50/80 transition-colors cursor-pointer">
+                      <div className="flex items-center gap-2 min-w-0 pr-1.5 flex-1">
+                        <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-600 shrink-0 flex items-center justify-center font-bold text-xs">
+                          {r.name ? r.name.charAt(0).toUpperCase() : <Users size={15} />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-xs text-neutral-900 group-hover:text-blue-600 transition-colors truncate">{r.name || "N/A"}</p>
+                          <p className="text-[11px] text-neutral-500 font-mono truncate">{r.invoice_id}</p>
+                          <p className="text-[10px] text-neutral-400 mt-0.5 truncate">
+                            Paid: ৳ {formatNumber(r.paid_amount, 2)} / Total: ৳ {formatNumber(r.total_amount, 2)}
+                          </p>
+                        </div>
+                      </div>
 
-                  <div className="text-right shrink-0 pl-1">
-                    <p className="text-[10px] text-neutral-400 font-medium">Due</p>
-                    <p className="font-bold text-xs text-rose-600">৳ {formatNumber(r.due, 2)}</p>
-                  </div>
-                </div>
-              ))}
+                      <div className="text-right shrink-0 pl-1">
+                        <p className="text-[10px] text-neutral-400 font-medium">Due</p>
+                        <p className="font-bold text-xs text-rose-600">৳ {formatNumber(r.due, 2)}</p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
 
             {/* Desktop Table View */}
@@ -330,15 +337,20 @@ const DueListTable = ({ title, data, type, loading }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 text-xs">
-                  {rows.slice(0, 7).map((r, i) => (
-                    <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
-                      <td className="py-3 px-5 font-medium text-neutral-900">{r.invoice_id}</td>
-                      <td className="py-3 px-5 text-neutral-700">{r.name}</td>
-                      <td className="py-3 px-5 text-right font-medium">৳ {formatNumber(r.total_amount, 2)}</td>
-                      <td className="py-3 px-5 text-right font-medium">৳ {formatNumber(r.paid_amount, 2)}</td>
-                      <td className="py-3 px-5 text-right font-bold text-rose-600">৳ {formatNumber(r.due, 2)}</td>
-                    </tr>
-                  ))}
+                  {rows.slice(0, 7).map((r, i) => {
+                    const targetUrl = type === 'customer'
+                      ? (r.customer_id ? `/dashboard/customers/${r.customer_id}?interval=daily` : '/dashboard/customers')
+                      : (r.vendor_id ? `/dashboard/vendors` : '/dashboard/vendors');
+                    return (
+                      <tr key={i} className="hover:bg-neutral-50/80 transition-colors cursor-pointer group" onClick={() => window.location.href = targetUrl}>
+                        <td className="py-3 px-5 font-medium text-neutral-900">{r.invoice_id}</td>
+                        <td className="py-3 px-5 text-neutral-700 group-hover:text-blue-600 font-medium transition-colors">{r.name}</td>
+                        <td className="py-3 px-5 text-right font-medium">৳ {formatNumber(r.total_amount, 2)}</td>
+                        <td className="py-3 px-5 text-right font-medium">৳ {formatNumber(r.paid_amount, 2)}</td>
+                        <td className="py-3 px-5 text-right font-bold text-rose-600">৳ {formatNumber(r.due, 2)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

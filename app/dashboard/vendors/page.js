@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 const Card = ({ children, className }) => <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 ${className || ''}`}>{children}</div>;
 const CardContent = ({ children, className = '' }) => <div className={className}>{children}</div>;
-import { Search, Loader2, Users, Plus, Store } from 'lucide-react';
+import { Search, Loader2, Users, Plus, Store, Eye } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -58,7 +58,7 @@ export default function VendorListPage() {
   }, [search, session?.accessToken]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6 text-black">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Vendors</h1>
@@ -110,25 +110,30 @@ export default function VendorListPage() {
               {/* Mobile View: Responsive Card List (No horizontal scroll) */}
               <div className="block sm:hidden divide-y divide-neutral-100">
                 {vendors.map((vendor) => (
-                  <div key={vendor.id} className="px-3 py-3 flex items-center justify-between hover:bg-neutral-50/60 transition-colors">
-                    <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
-                      <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 shrink-0 flex items-center justify-center text-xs font-bold">
-                        <Store size={15} />
+                  <Link key={vendor.id} href={`/dashboard/vendors/${vendor.id}?interval=daily`} className="block group">
+                    <div className="px-3 py-3 flex items-center justify-between group-hover:bg-neutral-50/80 transition-colors cursor-pointer">
+                      <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
+                        <div className="w-8 h-8 rounded-full bg-amber-50 text-amber-600 shrink-0 flex items-center justify-center text-xs font-bold">
+                          <Store size={15} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-xs text-neutral-900 group-hover:text-amber-600 transition-colors truncate">{vendor.name}</p>
+                          <p className="text-xs text-neutral-500 truncate">{vendor.mobile_number || 'No Phone'}</p>
+                          {vendor.email && <p className="text-[10px] text-neutral-400 truncate">{vendor.email}</p>}
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-xs text-neutral-900 truncate">{vendor.name}</p>
-                        <p className="text-xs text-neutral-500 truncate">{vendor.mobile_number || 'No Phone'}</p>
-                        {vendor.email && <p className="text-[10px] text-neutral-400 truncate">{vendor.email}</p>}
-                      </div>
-                    </div>
-                    {vendor.address && (
-                      <div className="text-right shrink-0">
-                        <span className="text-[10px] bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded font-medium truncate max-w-[120px] inline-block">
-                          {vendor.address}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {vendor.address && (
+                          <span className="text-[10px] bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded font-medium truncate max-w-[100px] inline-block">
+                            {vendor.address}
+                          </span>
+                        )}
+                        <span className="p-1.5 text-blue-600 bg-blue-50 border border-blue-200 rounded group-hover:bg-blue-100 transition-colors">
+                          <Eye size={14} />
                         </span>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  </Link>
                 ))}
               </div>
 
@@ -141,12 +146,13 @@ export default function VendorListPage() {
                       <th className="px-6 py-4 font-medium">Email</th>
                       <th className="px-6 py-4 font-medium">Phone</th>
                       <th className="px-6 py-4 font-medium">Address</th>
+                      <th className="px-6 py-4 font-medium text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 bg-white">
                     {vendors.map((vendor) => (
-                      <tr key={vendor.id} className="hover:bg-neutral-50/50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-neutral-900">
+                      <tr key={vendor.id} className="hover:bg-neutral-50/80 transition-colors cursor-pointer group" onClick={() => window.location.href = `/dashboard/vendors/${vendor.id}?interval=daily`}>
+                        <td className="px-6 py-4 font-medium text-neutral-900 group-hover:text-amber-600 transition-colors">
                           {vendor.name}
                         </td>
                         <td className="px-6 py-4 text-neutral-500">
@@ -157,6 +163,13 @@ export default function VendorListPage() {
                         </td>
                         <td className="px-6 py-4 text-neutral-500">
                           {vendor.address || '-'}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <Link href={`/dashboard/vendors/${vendor.id}?interval=daily`}>
+                            <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                              <Eye size={14} /> View
+                            </button>
+                          </Link>
                         </td>
                       </tr>
                     ))}

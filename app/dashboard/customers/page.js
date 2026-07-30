@@ -257,37 +257,37 @@ export default function CustomerListPage() {
                   const due = c.total_due_amount || 0;
 
                   return (
-                    <div key={c.id} className="px-3 py-3 flex items-center justify-between hover:bg-neutral-50/60 transition-colors">
-                      <div className="min-w-0 pr-2 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-xs text-neutral-900 truncate">{c.name || 'Unnamed'}</span>
-                          <span className="text-[10px] text-neutral-400 font-mono">#{c.id}</span>
+                    <Link key={c.id} href={`/dashboard/customers/${c.id}?interval=daily`} className="block group">
+                      <div className="px-3 py-3 flex items-center justify-between group-hover:bg-neutral-50/80 transition-colors cursor-pointer">
+                        <div className="min-w-0 pr-2 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-xs text-neutral-900 group-hover:text-blue-600 transition-colors truncate">{c.name || 'Unnamed'}</span>
+                            <span className="text-[10px] text-neutral-400 font-mono">#{c.id}</span>
+                          </div>
+                          <p className="text-xs text-neutral-500 truncate mt-0.5">{c.mobile_number || 'No phone'}</p>
+                          <p className="text-[10px] text-neutral-400 mt-0.5">
+                            Total: {Number(c.total_purchase_amount || 0).toLocaleString("en-IN")} BDT • Purchases: {c.invoice_list_count || 0}
+                          </p>
                         </div>
-                        <p className="text-xs text-neutral-500 truncate mt-0.5">{c.mobile_number || 'No phone'}</p>
-                        <p className="text-[10px] text-neutral-400 mt-0.5">
-                          Total: {Number(c.total_purchase_amount || 0).toLocaleString("en-IN")} BDT • Purchases: {c.invoice_list_count || 0}
-                        </p>
-                      </div>
 
-                      <div className="text-right shrink-0 flex items-center gap-2">
-                        <div>
-                          {due > 0 ? (
-                            <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200">
-                              Due ৳ {due.toLocaleString("en-IN")}
-                            </span>
-                          ) : (
-                            <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200">
-                              No Due
-                            </span>
-                          )}
-                        </div>
-                        <Link href={`/dashboard/customers/${c.id}?interval=daily`}>
-                          <button className="p-1.5 text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                        <div className="text-right shrink-0 flex items-center gap-2">
+                          <div>
+                            {due > 0 ? (
+                              <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200">
+                                Due ৳ {due.toLocaleString("en-IN")}
+                              </span>
+                            ) : (
+                              <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200">
+                                No Due
+                              </span>
+                            )}
+                          </div>
+                          <span className="p-1.5 text-blue-600 bg-blue-50 border border-blue-200 rounded group-hover:bg-blue-100 transition-colors">
                             <Eye size={14} />
-                          </button>
-                        </Link>
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -307,9 +307,9 @@ export default function CustomerListPage() {
                   </thead>
                   <tbody className="divide-y divide-neutral-100">
                     {customers.map((c) => (
-                      <tr key={c.id} className="hover:bg-neutral-50/50 transition-colors">
+                      <tr key={c.id} className="hover:bg-neutral-50/80 transition-colors cursor-pointer group" onClick={() => window.location.href = `/dashboard/customers/${c.id}?interval=daily`}>
                         <td className="py-3 px-6 border-r border-neutral-100">
-                          <div className="font-medium text-neutral-900">#{c.id}</div>
+                          <div className="font-medium text-neutral-900 group-hover:text-blue-600 transition-colors">#{c.id}</div>
                           <div className="text-xs text-neutral-500">{c.name || 'Unnamed'}</div>
                         </td>
                         <td className="py-3 px-6 border-r border-neutral-100 text-neutral-600">

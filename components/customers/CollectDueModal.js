@@ -130,39 +130,56 @@ function SalesDetailsModal({ invoiceId, onClose, token, API_URL }) {
       setItems(list);
     };
 
-    // Attempt 1: POST /invoice-details { invoice_id }
-    axios
-      .post(`${API_URL}/invoice-details`, { invoice_id: invoiceId }, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then((res) => {
-        const productList = extractItems(res.data);
-        if (productList.length > 0) {
-          cacheAndSet(productList);
-        } else {
-          // Attempt 2 Fallback: GET /get-invoice-details/{invoiceId}
+    const isPurchaseInv = String(invoiceId).toUpperCase().startsWith('PUR');
+
+    const fetchViaGet = () => {
+      axios
+        .get(`${API_URL}/get-invoice-details/${encodeURIComponent(invoiceId)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then((res) => {
+          const list = extractItems(res.data);
+          if (list.length > 0) {
+            cacheAndSet(list);
+          } else {
+            axios
+              .post(`${API_URL}/invoice-details`, { invoice_id: invoiceId }, {
+                headers: { Authorization: `Bearer ${token}` }
+              })
+              .then((res2) => cacheAndSet(extractItems(res2.data)))
+              .catch(() => cacheAndSet([]));
+          }
+        })
+        .catch(() => {
           axios
-            .get(`${API_URL}/get-invoice-details/${encodeURIComponent(invoiceId)}`, {
+            .post(`${API_URL}/invoice-details`, { invoice_id: invoiceId }, {
               headers: { Authorization: `Bearer ${token}` }
             })
-            .then((res2) => {
-              cacheAndSet(extractItems(res2.data));
-            })
+            .then((res2) => cacheAndSet(extractItems(res2.data)))
             .catch(() => cacheAndSet([]));
-        }
-      })
-      .catch(() => {
-        // Attempt 2 Fallback: GET /get-invoice-details/{invoiceId}
-        axios
-          .get(`${API_URL}/get-invoice-details/${encodeURIComponent(invoiceId)}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          .then((res2) => {
-            cacheAndSet(extractItems(res2.data));
-          })
-          .catch(() => cacheAndSet([]));
-      })
-      .finally(() => setLoading(false));
+        })
+        .finally(() => setLoading(false));
+    };
+
+    if (isPurchaseInv) {
+      fetchViaGet();
+    } else {
+      // Attempt 1 for sales invoices: POST /invoice-details { invoice_id }
+      axios
+        .post(`${API_URL}/invoice-details`, { invoice_id: invoiceId }, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then((res) => {
+          const productList = extractItems(res.data);
+          if (productList.length > 0) {
+            cacheAndSet(productList);
+          } else {
+            fetchViaGet();
+          }
+        })
+        .catch(() => fetchViaGet())
+        .finally(() => setLoading(false));
+    }
   }, [invoiceId, token, API_URL]);
 
   if (!invoiceId) return null;
