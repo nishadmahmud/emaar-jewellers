@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   ShoppingCart,
+  ShoppingBag,
   History,
   LogOut,
   Search,
@@ -258,23 +259,21 @@ export default function DashboardLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-neutral-100 p-1 rounded-lg">
-              <button
-                onClick={() => setCurrency('AED')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                  currency === 'AED' ? 'bg-white text-black shadow-xs' : 'text-neutral-500 hover:text-black'
-                }`}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Link
+                href="/pos"
+                className="bg-black hover:bg-neutral-800 text-white rounded-lg text-xs flex items-center gap-1.5 px-3 py-2 font-semibold shadow-sm transition-all"
               >
-                AED
-              </button>
-              <button
-                onClick={() => setCurrency('GRAM')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-                  currency === 'GRAM' ? 'bg-white text-black shadow-xs' : 'text-neutral-500 hover:text-black'
-                }`}
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span className="inline">POS</span>
+              </Link>
+              <Link
+                href="/dashboard/purchase"
+                className="bg-black hover:bg-neutral-800 text-white rounded-lg text-xs flex items-center gap-1.5 px-3 py-2 font-semibold shadow-sm transition-all"
               >
-                GRAM (g)
-              </button>
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span className="inline">Purchase</span>
+              </Link>
             </div>
 
             <button

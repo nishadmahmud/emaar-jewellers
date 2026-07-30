@@ -602,6 +602,7 @@ export default function DashboardPage() {
       <FinancialOverviewModal
         open={isFinancialModalOpen}
         onClose={() => setIsFinancialModalOpen(false)}
+        dashboardData={dash}
       />
     </div>
   );

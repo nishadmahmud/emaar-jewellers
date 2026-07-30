@@ -1,424 +1,571 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { X, Download, TrendingUp, DollarSign, Package, Scale, Store, Users, Loader2 } from 'lucide-react';
-import axios from 'axios';
+import React, { useState, useMemo } from 'react';
+import {
+  TrendingUp,
+  Landmark,
+  Package,
+  UserX,
+  Store,
+  Wallet,
+  Coins,
+  Building2,
+  Receipt,
+  Scale,
+  Download,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  ShoppingCart,
+  ShoppingBag,
+} from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import axios from 'axios';
+import Link from 'next/link';
+import useSWR from 'swr';
+import { pdf } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
+import FinancialOverviewPDF from './financial-overview-pdf';
 
-const fmtAED = (num) => {
-  if (num === null || num === undefined) return '0.00';
-  return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
+const fmt = (n) =>
+  Number(n ?? 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
-// Module-level cache valid for 5 minutes (300,000 ms)
-const CACHE_TTL_MS = 5 * 60 * 1000;
-let financialDataCache = null;
-let financialDataCacheTimestamp = 0;
+// Shimmer placeholder matching CMS Skeleton pattern
+const Shimmer = ({ className = '' }) => (
+  <div className={`animate-pulse bg-neutral-200 rounded-xl ${className}`} />
+);
 
-export default function FinancialOverviewModal({ open, onClose }) {
+export default function FinancialOverviewModal({ open, onClose, dashboardData }) {
   const { data: session } = useSession();
   const token = session?.accessToken;
-  const API_URL = process.env.NEXT_PUBLIC_API;
+  const API = process.env.NEXT_PUBLIC_API;
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
 
-  const [loading, setLoading] = useState(false);
-  const [dashData, setDashData] = useState(null);
-  const [balanceSheetData, setBalanceSheetData] = useState(null);
-  const [profitLossData, setProfitLossData] = useState(null);
-  const [cashStatementData, setCashStatementData] = useState(null);
+  // --- SWR fetchers ---
+  const getFetcher = useMemo(
+    () => (url) =>
+      axios
+        .get(url, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.data),
+    [token]
+  );
+  const postFetcher = useMemo(
+    () => ([url, body]) =>
+      axios
+        .post(url, body, { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.data),
+    [token]
+  );
 
-  useEffect(() => {
-    // DO NOT call APIs unless modal is opened by user
-    if (!open || !token) return;
+  const swrOpts = { dedupingInterval: 120000, revalidateOnFocus: false };
+  const canFetch = open && !!token;
 
-    const now = Date.now();
-    // Check if cache exists and is within 5 minutes TTL
-    if (financialDataCache && (now - financialDataCacheTimestamp) < CACHE_TTL_MS) {
-      setDashData(financialDataCache.dashData);
-      setBalanceSheetData(financialDataCache.balanceSheetData);
-      setProfitLossData(financialDataCache.profitLossData);
-      setCashStatementData(financialDataCache.cashStatementData);
-      setLoading(false);
-      return;
-    }
-
-    const fetchAllData = async () => {
-      if (!financialDataCache) {
-        setLoading(true);
-      }
-
-      try {
-        const monthStart = new Date();
-        monthStart.setDate(1);
-        monthStart.setHours(0, 0, 0, 0);
-
-        const todayEnd = new Date();
-        todayEnd.setHours(23, 59, 59, 999);
-
-        const payload = {
-          start_date: monthStart.toISOString(),
-          end_date: todayEnd.toISOString()
-        };
-
-        const [dashRes, balanceRes, profitRes, cashRes] = await Promise.all([
-          axios.get(`${API_URL}/web-dashboard?interval=monthly`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }).catch(() => null),
-          axios.post(`${API_URL}/balance-Sheet-report-history`, payload, {
-            headers: { Authorization: `Bearer ${token}` }
-          }).catch(() => null),
-          axios.post(`${API_URL}/profit-loss-report`, payload, {
-            headers: { Authorization: `Bearer ${token}` }
-          }).catch(() => null),
-          axios.post(`${API_URL}/cash-statement-report`, payload, {
-            headers: { Authorization: `Bearer ${token}` }
-          }).catch(() => null)
-        ]);
-
-        const freshDash = dashRes?.data?.data || dashRes?.data || {};
-        const freshBalance = balanceRes?.data?.data || balanceRes?.data || {};
-        const freshProfit = profitRes?.data?.data || profitRes?.data || {};
-        const freshCash = cashRes?.data?.data || cashRes?.data || {};
-
-        setDashData(freshDash);
-        setBalanceSheetData(freshBalance);
-        setProfitLossData(freshProfit);
-        setCashStatementData(freshCash);
-
-        financialDataCache = {
-          dashData: freshDash,
-          balanceSheetData: freshBalance,
-          profitLossData: freshProfit,
-          cashStatementData: freshCash
-        };
-        financialDataCacheTimestamp = Date.now();
-      } catch (err) {
-        console.error('Financial overview load error:', err);
-      } finally {
-        setLoading(false);
-      }
+  // Current Month Date Range for Expense Report (1st of month to today)
+  const monthRange = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    return {
+      start_date: start.toISOString(),
+      end_date: now.toISOString(),
+      displayStr: `${start.toLocaleDateString()} - ${now.toLocaleDateString()}`,
     };
+  }, []);
 
-    fetchAllData();
-  }, [open, token, API_URL]);
+  // --- 1. Quick Payment List & Categories (Investment, Fixed Asset) ---
+  const { data: qpListRes, isLoading: qpLoading } = useSWR(
+    canFetch ? `${API}/get-payment-expense` : null,
+    getFetcher,
+    swrOpts
+  );
+  const { data: qpTypesRes } = useSWR(
+    canFetch ? `${API}/get-payment-expense-type-list` : null,
+    getFetcher,
+    swrOpts
+  );
+
+  const { investment, fixedAsset } = useMemo(() => {
+    const list = qpListRes?.data?.data || [];
+    const types = qpTypesRes?.data || [];
+
+    let invSum = 0;
+    let assetSum = 0;
+
+    list.forEach((item) => {
+      const amount = Number(item?.amount || 0);
+      let catType = (item?.transaction_category || '').toLowerCase();
+
+      if (!catType) {
+        const matchedType = types.find(
+          (t) =>
+            String(t.id) === String(item.expense_type_id) ||
+            (item?.catogory_name &&
+              t.expense_name?.toLowerCase() === item.catogory_name.toLowerCase())
+        );
+        if (matchedType?.transaction_category) {
+          catType = matchedType.transaction_category.toLowerCase();
+        }
+      }
+
+      if (catType.includes('credit')) {
+        invSum += amount;
+      } else if (catType.includes('debit')) {
+        assetSum += amount;
+      } else {
+        invSum += amount;
+      }
+    });
+
+    return { investment: invSum, fixedAsset: assetSum };
+  }, [qpListRes, qpTypesRes]);
+
+  // --- 2. Current Month Expense Report ---
+  const expenseKey = useMemo(
+    () =>
+      canFetch
+        ? [`${API}/expense-type-wise-report`, { start_date: monthRange.start_date, end_date: monthRange.end_date }]
+        : null,
+    [canFetch, API, monthRange]
+  );
+  const { data: expReportRes, isLoading: expLoading } = useSWR(
+    expenseKey,
+    postFetcher,
+    swrOpts
+  );
+  const monthlyExpense = Number(expReportRes?.grand_total ?? 0);
+
+  // --- 3. Total Stock Value (from parent dashboardData prop) ---
+  const totalStockValue = Number(dashboardData?.total_accessories_stock_value || 0);
+
+  // --- 4. Customer Due & Vendor Due ---
+  const dueParamsCustomer = useMemo(
+    () => ({
+      start_date: '2000-01-01T00:00:00.000Z',
+      end_date: new Date().toISOString(),
+      due: 'customer',
+    }),
+    []
+  );
+  const dueParamsVendor = useMemo(
+    () => ({
+      start_date: '2000-01-01T00:00:00.000Z',
+      end_date: new Date().toISOString(),
+      due: 'vendor',
+    }),
+    []
+  );
+
+  const { data: custDueRes, isLoading: custDueLoading } = useSWR(
+    canFetch ? [`${API}/date-wise-due-list`, dueParamsCustomer] : null,
+    postFetcher,
+    swrOpts
+  );
+  const { data: vendDueRes, isLoading: vendDueLoading } = useSWR(
+    canFetch ? [`${API}/date-wise-due-list`, dueParamsVendor] : null,
+    postFetcher,
+    swrOpts
+  );
+
+  const customerDue = Number(custDueRes?.total_due ?? 0);
+  const vendorDue = Number(vendDueRes?.total_due ?? 0);
+
+  // --- 5. Cash & Bank Balances ---
+  const { data: payTypesRes, isLoading: payTypesLoading } = useSWR(
+    canFetch ? `${API}/payment-type-list?page=1&limit=100` : null,
+    getFetcher,
+    swrOpts
+  );
+  const paymentTypes = payTypesRes?.data?.data || [];
+
+  const cashType = useMemo(
+    () => paymentTypes.find((p) => p.type_name?.toLowerCase().includes('cash')),
+    [paymentTypes]
+  );
+  const bankType = useMemo(
+    () => paymentTypes.find((p) => p.type_name?.toLowerCase().includes('bank')),
+    [paymentTypes]
+  );
+
+  const cashBookParams = useMemo(
+    () => ({
+      start_date: '2000-01-01T00:00:00.000Z',
+      end_date: new Date().toISOString(),
+      view_order: 'asc',
+    }),
+    []
+  );
+
+  const { data: cashBookRes, isLoading: cashBookLoading } = useSWR(
+    canFetch && cashType?.id
+      ? [`${API}/cash-book-report`, { ...cashBookParams, payment_type_id: String(cashType.id) }]
+      : null,
+    postFetcher,
+    swrOpts
+  );
+  const { data: bankBookRes, isLoading: bankBookLoading } = useSWR(
+    canFetch && bankType?.id
+      ? [`${API}/cash-book-report`, { ...cashBookParams, payment_type_id: String(bankType.id) }]
+      : null,
+    postFetcher,
+    swrOpts
+  );
+
+  const cashBalance = Number(cashBookRes?.closing_balance ?? 0);
+  const bankBalance = Number(bankBookRes?.closing_balance ?? 0);
+  const totalBalance = cashBalance + bankBalance;
+  const balanceLoading = payTypesLoading || cashBookLoading || bankBookLoading;
+
+  // --- Accounts Formula ---
+  // Total = Fixed Asset + Expense + Stock Value + Customer Due + Total Balance - Vendor Due
+  const totalAssetAndLiquidity =
+    fixedAsset + monthlyExpense + totalStockValue + customerDue + totalBalance - vendorDue;
+
+  // Net Profit / Loss = Total Asset & Liquidity - Investment
+  const netProfitLoss = totalAssetAndLiquidity - investment;
+  const isProfit = netProfitLoss >= 0;
+
+  // --- PDF Export ---
+  const handleDownloadPdf = async () => {
+    try {
+      setIsPdfGenerating(true);
+      const blob = await pdf(
+        <FinancialOverviewPDF
+          data={{
+            investment,
+            fixedAsset,
+            monthlyExpense,
+            totalStockValue,
+            customerDue,
+            vendorDue,
+            cashBalance,
+            bankBalance,
+            totalBalance,
+            totalAssetAndLiquidity,
+            netProfitLoss,
+            isProfit,
+            monthPeriodStr: monthRange.displayStr,
+          }}
+          user={session?.user}
+        />
+      ).toBlob();
+      saveAs(
+        blob,
+        `financial-overview-${new Date().toISOString().split('T')[0]}.pdf`
+      );
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
 
   if (!open) return null;
 
-  // Extract financial metrics
-  const currentMonthExpense = Number(dashData?.expense || profitLossData?.total_expenses || 0);
-  const totalStockValue = Number(dashData?.total_accessories_stock_value || balanceSheetData?.total_closing_stock_value || 0);
-  const totalStockPcs = Number(dashData?.total_accessories_stock || dashData?.current_stock || 0);
-  
-  const customerDue = Number(balanceSheetData?.total_customer_due || 0);
-  const vendorDue = Number(balanceSheetData?.total_vendor_ || 0);
-  
-  const grossProfit = Number(profitLossData?.gross_profit || 0);
-  const netProfit = Number(profitLossData?.net_profit || 0);
-  const totalExpenses = Number(profitLossData?.total_expenses || currentMonthExpense);
-
-  const creditExpenseCreditList = Array.isArray(cashStatementData?.inflow_of_fund?.expense_credit)
-    ? cashStatementData.inflow_of_fund.expense_credit
-    : [];
-
-  const creditPaymentInflow = creditExpenseCreditList.length > 0
-    ? creditExpenseCreditList.reduce((s, r) => s + (Number(r.amount) || Number(r.payment_amount) || Number(r.total_amount) || 0), 0)
-    : Number(dashData?.credit_payment || dashData?.total_credit_payment || 0);
-
-  const debitExpenseDebitList = Array.isArray(cashStatementData?.outflow_of_fund?.expense_debit)
-    ? cashStatementData.outflow_of_fund.expense_debit
-    : [];
-
-  const debitPaymentOutflow = debitExpenseDebitList.length > 0
-    ? debitExpenseDebitList.reduce((s, r) => s + (Number(r.amount) || Number(r.payment_amount) || Number(r.total_amount) || 0), 0)
-    : Number(dashData?.debit_payment || dashData?.total_debit_payment || 0);
-
-  const monthStartStr = `01/${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
-  const todayStr = `${String(new Date().getDate()).padStart(2, '0')}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`;
-
-  // Clean, single-page dedicated PDF export
-  const handleDownloadPDF = () => {
-    const printWindow = window.open('', '_blank', 'width=800,height=950');
-    if (!printWindow) return;
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Financial Overview Report</title>
-          <style>
-            @page { size: A4 portrait; margin: 10mm; }
-            * { box-sizing: border-box; }
-            body { font-family: 'Segoe UI', system-ui, sans-serif; color: #0f172a; margin: 0; padding: 10px; background: #fff; font-size: 12px; }
-            .header { border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
-            .title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
-            .subtitle { font-size: 11px; color: #64748b; margin-top: 2px; }
-            .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-            .card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #f8fafc; }
-            .card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-bottom: 4px; }
-            .amount { font-size: 16px; font-weight: 800; color: #0f172a; }
-            .text-emerald { color: #059669; }
-            .text-rose { color: #dc2626; }
-            .text-amber { color: #d97706; }
-            .text-purple { color: #7c3aed; }
-            .text-blue { color: #2563eb; }
-            .table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-            .table th, .table td { padding: 6px 10px; border: 1px solid #e2e8f0; text-align: left; }
-            .table th { background: #f1f5f9; font-weight: 700; font-size: 11px; }
-            .footer { margin-top: 24px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <h1 class="title">Financial Overview Report</h1>
-              <p class="subtitle">Real-time financial metrics & P/L calculation</p>
-            </div>
-            <div style="text-align: right; font-size: 11px; color: #64748b;">
-              <p style="margin:0;">Date: ${todayStr}</p>
-              <p style="margin:2px 0 0 0;">Period: ${monthStartStr} - ${todayStr}</p>
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-title text-emerald">Credit Payment / Investment</div>
-              <div class="amount">AED {fmtAED(creditPaymentInflow)}</div>
-            </div>
-            <div class="card">
-              <div class="card-title text-blue">Debit Payment / Fixed Asset</div>
-              <div class="amount">AED {fmtAED(debitPaymentOutflow)}</div>
-            </div>
-          </div>
-
-          <div class="card" style="margin-bottom: 12px;">
-            <div class="card-title text-amber">Current Month Expense (${monthStartStr} - ${todayStr})</div>
-            <div class="amount text-amber">AED {fmtAED(currentMonthExpense)}</div>
-          </div>
-
-          <div class="card" style="margin-bottom: 12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <div class="card-title text-purple">Total Stock Value</div>
-                <div style="font-size:11px; color:#64748b;">Jewelry Stock Value (${totalStockPcs} pcs)</div>
-              </div>
-              <div class="amount text-purple">AED {fmtAED(totalStockValue)}</div>
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div class="card">
-              <div class="card-title text-emerald">Customer Due (Receivable)</div>
-              <div class="amount text-emerald">AED {fmtAED(customerDue)}</div>
-            </div>
-            <div class="card">
-              <div class="card-title text-rose">Vendor Due (Payable)</div>
-              <div class="amount text-rose">AED {fmtAED(vendorDue)}</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-title" style="margin-bottom:8px;">Profit / Loss Summary</div>
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Particulars</th>
-                  <th style="text-align:right;">Amount (AED)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Gross Profit</td>
-                  <td style="text-align:right;" class="text-emerald">AED {fmtAED(grossProfit)}</td>
-                </tr>
-                <tr>
-                  <td>Total Expenses</td>
-                  <td style="text-align:right;" class="text-rose">AED {fmtAED(totalExpenses)}</td>
-                </tr>
-                <tr style="font-weight:bold; background:#f8fafc;">
-                  <td>Net Profit</td>
-                  <td style="text-align:right;" class="text-blue">AED {fmtAED(netProfit)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="footer">
-            Generated automatically on ${new Date().toLocaleString()} | Emaar Jewellers CMS
-          </div>
-
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 400);
-            }
-          </script>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-  };
-
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 animate-in fade-in duration-150">
-      <div className="bg-slate-50 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-neutral-200 flex flex-col max-h-[92vh]">
-        {/* Dark Header */}
-        <div className="px-3.5 py-3 sm:px-5 sm:py-4 bg-[#0f172a] text-white flex items-center justify-between shadow-md">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="p-1.5 sm:p-2 bg-blue-600/30 text-blue-400 rounded-xl border border-blue-500/30 shrink-0">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
+      <div className="bg-slate-50 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-neutral-200 flex flex-col max-h-[88vh]">
+        {/* Fixed Header */}
+        <div className="shrink-0 bg-slate-900 text-white px-4 py-3.5 sm:px-5 sm:py-4 border-b border-slate-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-bold tracking-tight leading-none text-white">
+                  Financial Overview
+                </h2>
+                <p className="text-[11px] text-slate-400 font-normal mt-1">
+                  Real-time financial metrics & P/L calculation
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h3 className="font-bold text-sm sm:text-base text-white tracking-tight truncate">Financial Overview</h3>
-              <p className="hidden sm:block text-xs text-slate-400">Real-time financial metrics & P/L calculation</p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                disabled={isPdfGenerating}
+                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg text-xs flex items-center gap-1.5 px-3 py-1.5 font-medium shadow-sm transition-all cursor-pointer"
+              >
+                {isPdfGenerating ? (
+                  <FileText className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                <span>{isPdfGenerating ? 'PDF...' : 'Download PDF'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
             </div>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            <button
-              type="button"
-              onClick={handleDownloadPDF}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-[11px] sm:text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1 sm:gap-1.5 shadow-sm transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Download PDF</span>
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-            >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
           </div>
         </div>
 
-        {/* Modal Scrollable Body */}
-        <div className="p-4 sm:p-5 overflow-y-auto flex-1 custom-scrollbar space-y-4 text-slate-900">
-          {loading && !dashData ? (
-            <div className="py-16 text-center text-slate-400">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-slate-400" />
-              <p className="text-xs">Loading financial overview...</p>
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto min-h-0 p-3.5 sm:p-4 space-y-3">
+          {/* Row 1: Investment & Fixed Asset */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {qpLoading ? (
+              <Shimmer className="h-24" />
+            ) : (
+              <div className="bg-white border border-gray-200/80 rounded-xl p-3.5 shadow-sm hover:border-emerald-200 transition-all">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                    Credit Payment
+                  </span>
+                  <div className="p-1.5 bg-emerald-50 text-emerald-600 rounded-md">
+                    <Landmark className="w-4 h-4" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-500 font-medium">Investment</p>
+                <p className="text-xl font-bold text-gray-900 mt-0.5">
+                  AED {fmt(investment)}
+                </p>
+              </div>
+            )}
+
+            {qpLoading ? (
+              <Shimmer className="h-24" />
+            ) : (
+              <div className="bg-white border border-gray-200/80 rounded-xl p-3.5 shadow-sm hover:border-blue-200 transition-all">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                    Debit Payment
+                  </span>
+                  <div className="p-1.5 bg-blue-50 text-blue-600 rounded-md">
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-500 font-medium">Fixed Asset</p>
+                <p className="text-xl font-bold text-gray-900 mt-0.5">
+                  AED {fmt(fixedAsset)}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Row 2: Monthly Expense Report */}
+          <div className="bg-white border border-orange-200/80 rounded-xl p-3.5 shadow-sm">
+            {expLoading ? (
+              <Shimmer className="h-16" />
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
+                    <Receipt className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-900">
+                      Current Month Expense
+                    </p>
+                    <p className="text-[10px] text-gray-500">
+                      {monthRange.displayStr}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-orange-600">
+                  AED {fmt(monthlyExpense)}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Row 3: Total Stock Value */}
+          <div className="bg-white border border-purple-100 rounded-xl p-3.5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                  <Package className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-900">
+                    Total Stock Value
+                  </p>
+                  <p className="text-[10px] text-gray-500">Current inventory value</p>
+                </div>
+              </div>
+              <p className="text-xl font-bold text-purple-700">
+                AED {fmt(totalStockValue)}
+              </p>
             </div>
+          </div>
+
+          {/* Row 4: Customer Due & Vendor Due */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {custDueLoading ? (
+              <Shimmer className="h-24" />
+            ) : (
+              <div className="bg-white border border-gray-200/80 rounded-xl p-3.5 shadow-sm hover:border-amber-200 transition-all">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
+                    Receivable
+                  </span>
+                  <div className="p-1.5 bg-amber-50 text-amber-600 rounded-md">
+                    <UserX className="w-4 h-4" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-500 font-medium">Customer Due</p>
+                <p className="text-xl font-bold text-amber-600 mt-0.5">
+                  AED {fmt(customerDue)}
+                </p>
+              </div>
+            )}
+
+            {vendDueLoading ? (
+              <Shimmer className="h-24" />
+            ) : (
+              <div className="bg-white border border-gray-200/80 rounded-xl p-3.5 shadow-sm hover:border-rose-200 transition-all">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-2 py-0.5 rounded">
+                    Payable
+                  </span>
+                  <div className="p-1.5 bg-rose-50 text-rose-600 rounded-md">
+                    <Store className="w-4 h-4" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-500 font-medium">Vendor Due</p>
+                <p className="text-xl font-bold text-rose-600 mt-0.5">
+                  AED {fmt(vendorDue)}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Row 5: Balance Overview (Cash vs Bank) */}
+          {balanceLoading ? (
+            <Shimmer className="h-28" />
           ) : (
-            <>
-              {/* Row 1: Credit Payment (Investment) & Debit Payment (Fixed Asset) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-2xs relative">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] sm:text-[11px] font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                      CREDIT PAYMENT
-                    </span>
-                    <span className="text-emerald-500 text-sm sm:text-base">📊</span>
+            <div className="bg-slate-900 text-white rounded-xl p-4 shadow-md">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-indigo-500/20 text-indigo-300 rounded-lg border border-indigo-500/30">
+                    <Wallet className="w-4 h-4" />
                   </div>
-                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">Investment</p>
-                  <p className="text-xs sm:text-base font-bold text-slate-900 mt-1 break-all sm:break-normal">AED {fmtAED(creditPaymentInflow)}</p>
-                </div>
-
-                <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-2xs relative">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] sm:text-[11px] font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
-                      DEBIT PAYMENT
-                    </span>
-                    <span className="text-blue-500 text-sm sm:text-base">💳</span>
-                  </div>
-                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">Fixed Asset</p>
-                  <p className="text-xs sm:text-base font-bold text-slate-900 mt-1 break-all sm:break-normal">AED {fmtAED(debitPaymentOutflow)}</p>
-                </div>
-              </div>
-
-              {/* Row 2: Current Month Expense */}
-              <div className="bg-white border border-amber-200/80 rounded-xl p-3.5 sm:p-4 shadow-2xs flex items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 shrink-0">
-                    <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="text-[11px] sm:text-xs font-bold text-slate-900 truncate">Current Month Expense</h4>
-                    <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5">{monthStartStr} - {todayStr}</p>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-100">
+                      Balance Overview
+                    </p>
+                    <p className="text-[10px] text-slate-400">Cash Book Closing</p>
                   </div>
                 </div>
-                <div className="text-right shrink-0 max-w-[50%]">
-                  <p className="text-xs sm:text-base font-bold text-[#ea580c] break-all sm:break-normal">AED {fmtAED(currentMonthExpense)}</p>
-                </div>
-              </div>
-
-              {/* Row 3: Total Stock Value (Jewelry) */}
-              <div className="bg-white border border-purple-200/80 rounded-xl p-3.5 sm:p-4 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
-                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100 shrink-0">
-                      <Package className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-[11px] sm:text-xs font-bold text-slate-900 truncate">Total Stock Value</h4>
-                      <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium mt-0.5">Jewelry Stock</p>
-                    </div>
-                  </div>
-                  <p className="text-xs sm:text-base font-bold text-[#7c3aed] break-all sm:break-normal shrink-0 max-w-[50%] text-right">AED {fmtAED(totalStockValue)}</p>
-                </div>
-
-                <div className="bg-purple-50/40 border border-purple-100 rounded-lg p-2.5 sm:p-3">
-                  <p className="text-[11px] sm:text-xs font-medium text-slate-500">Jewelry Stock Value</p>
-                  <p className="text-xs sm:text-sm font-bold text-purple-900 mt-0.5 break-all sm:break-normal">
-                    AED {fmtAED(totalStockValue)}{' '}
-                    <span className="text-[10px] sm:text-xs font-normal text-purple-600">({totalStockPcs} pcs)</span>
+                <div className="text-right">
+                  <p className="text-[10px] text-slate-400 font-medium">Total Balance</p>
+                  <p className="text-xl font-bold text-white">
+                    AED {fmt(totalBalance)}
                   </p>
                 </div>
               </div>
 
-              {/* Row 4: Customer Due (Receivable) & Vendor Due (Payable) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-2xs flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[9px] sm:text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-wider border border-emerald-200">
-                      RECEIVABLE
-                    </span>
-                    <span className="p-1.5 sm:p-2 rounded-lg bg-emerald-50 text-emerald-600">
-                      <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </span>
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-[11px]">
+                <div className="bg-slate-950/70 p-2 rounded-lg border border-slate-800">
+                  <div className="flex items-center gap-1.5 text-slate-300 mb-0.5">
+                    <Coins className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="font-semibold text-[11px]">Cash Balance</span>
                   </div>
-                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium">Customer Due</p>
-                  <p className="text-xs sm:text-base font-bold text-emerald-700 mt-1 break-all sm:break-normal">AED {fmtAED(customerDue)}</p>
+                  <p className="text-sm font-bold text-white">AED {fmt(cashBalance)}</p>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-2xs flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[9px] sm:text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded uppercase tracking-wider border border-rose-200">
-                      PAYABLE
-                    </span>
-                    <span className="p-1.5 sm:p-2 rounded-lg bg-rose-50 text-rose-600">
-                      <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </span>
+                <div className="bg-slate-950/70 p-2 rounded-lg border border-slate-800">
+                  <div className="flex items-center gap-1.5 text-slate-300 mb-0.5">
+                    <Building2 className="w-3.5 h-3.5 text-blue-400" />
+                    <span className="font-semibold text-[11px]">Bank Balance</span>
                   </div>
-                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium">Vendor Due</p>
-                  <p className="text-xs sm:text-base font-bold text-rose-600 mt-1 break-all sm:break-normal">AED {fmtAED(vendorDue)}</p>
+                  <p className="text-sm font-bold text-white">AED {fmt(bankBalance)}</p>
                 </div>
               </div>
-
-              {/* Row 5: Profit / Loss Card */}
-              <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 shadow-2xs space-y-3">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
-                  <Scale className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
-                  <h4 className="text-[11px] sm:text-xs font-bold text-slate-900 uppercase tracking-wider">Profit / Loss Summary</h4>
-                </div>
-
-                <div className="grid grid-cols-3 gap-1.5 sm:gap-3 text-center">
-                  <div className="bg-slate-50 p-1.5 sm:p-2.5 rounded-lg border border-slate-200/80 overflow-hidden">
-                    <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 truncate">Gross Profit</p>
-                    <p className="text-[10px] sm:text-xs md:text-sm font-bold text-emerald-600 mt-0.5 break-all sm:break-normal leading-tight">AED {fmtAED(grossProfit)}</p>
-                  </div>
-                  <div className="bg-slate-50 p-1.5 sm:p-2.5 rounded-lg border border-slate-200/80 overflow-hidden">
-                    <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 truncate">Total Expenses</p>
-                    <p className="text-[10px] sm:text-xs md:text-sm font-bold text-rose-600 mt-0.5 break-all sm:break-normal leading-tight">AED {fmtAED(totalExpenses)}</p>
-                  </div>
-                  <div className="bg-slate-50 p-1.5 sm:p-2.5 rounded-lg border border-slate-200/80 overflow-hidden">
-                    <p className="text-[10px] sm:text-[11px] font-medium text-slate-500 truncate">Net Profit</p>
-                    <p className="text-[10px] sm:text-xs md:text-sm font-bold text-blue-600 mt-0.5 break-all sm:break-normal leading-tight">AED {fmtAED(netProfit)}</p>
-                  </div>
-                </div>
-              </div>
-            </>
+            </div>
           )}
+
+          {/* Row 6: Profit / Loss Calculation Section */}
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-3">
+            <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+              <Scale className="w-5 h-5 text-indigo-600" />
+              <div>
+                <h3 className="text-sm font-bold text-gray-900">Profit / Loss</h3>
+                <p className="text-[10px] text-gray-500">
+                  Formula: Fixed Asset + Expense + Stock Value + Customer Due + Total Balance - Vendor Due
+                </p>
+              </div>
+            </div>
+
+            {/* Formula Breakdown */}
+            <div className="space-y-1.5 text-xs text-gray-600">
+              <div className="flex justify-between">
+                <span>Fixed Asset (Debit Amount)</span>
+                <span className="font-mono">+ AED {fmt(fixedAsset)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Current Month Expense</span>
+                <span className="font-mono">+ AED {fmt(monthlyExpense)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total Stock Value</span>
+                <span className="font-mono">+ AED {fmt(totalStockValue)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Customer Due</span>
+                <span className="font-mono">+ AED {fmt(customerDue)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total Balance (Cash + Bank)</span>
+                <span className="font-mono">+ AED {fmt(totalBalance)}</span>
+              </div>
+              <div className="flex justify-between text-rose-600">
+                <span>Less: Supplier Balance (Vendor Due)</span>
+                <span className="font-mono">- AED {fmt(vendorDue)}</span>
+              </div>
+              <div className="flex justify-between pt-1.5 border-t border-gray-200 font-semibold text-gray-900">
+                <span>Total Asset & Liquidity</span>
+                <span className="font-mono">AED {fmt(totalAssetAndLiquidity)}</span>
+              </div>
+              <div className="flex justify-between text-gray-500">
+                <span>Less: Total Investment</span>
+                <span className="font-mono">- AED {fmt(investment)}</span>
+              </div>
+            </div>
+
+            {/* Net Result Verdict Card */}
+            <div
+              className={`p-3.5 rounded-xl border flex items-center justify-between ${
+                isProfit
+                  ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                  : 'bg-rose-50/80 border-rose-200 text-rose-950'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                {isProfit ? (
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-6 h-6 text-rose-600 shrink-0" />
+                )}
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider">
+                    {isProfit ? 'Net Profit' : 'Net Loss'}
+                  </p>
+                  <p className="text-[10px] text-gray-600 mt-0.5">
+                    {isProfit
+                      ? 'Assets exceed Investment'
+                      : 'Investment exceeds Assets'}
+                  </p>
+                </div>
+              </div>
+              <p
+                className={`text-xl font-bold ${
+                  isProfit ? 'text-emerald-700' : 'text-rose-700'
+                }`}
+              >
+                AED {fmt(Math.abs(netProfitLoss))}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
