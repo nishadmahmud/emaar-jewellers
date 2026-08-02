@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Loader2, UserPlus, Scale, Receipt, Search, CreditCard, Banknote, ChevronDown, Trash2, Plus, Minus } from 'lucide-react';
@@ -17,22 +17,6 @@ function normalizeBdMobileInput(raw) {
   if (d.length >= 11) return d.slice(-11);
   return d;
 }
-
-const CurrencyDropdown = ({ value, onChange }) => {
-  return (
-    <div className="relative w-full min-w-[65px]">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-2 py-1 pr-6 bg-white border border-neutral-200 rounded text-xs sm:text-sm focus:ring-1 focus:ring-black outline-none font-medium h-[26px] sm:h-[30px] appearance-none cursor-pointer"
-      >
-        <option value="BDT">BDT</option>
-        <option value="AED">AED</option>
-      </select>
-      <ChevronDown size={14} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
-    </div>
-  );
-};
 
 export default function SellPage() {
   const { data: session } = useSession();
@@ -244,15 +228,14 @@ export default function SellPage() {
     if (existing) {
       setCart(cart.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item));
     } else {
-      const initialQty = 1;
-      const initialGram = (initialQty * 11.664).toFixed(3);
-      setCart([...cart, { 
-        ...product, 
-        qty: initialQty, 
-        goldGram: initialGram,
-        ratePerVori: product.retails_price || product.sell_price || 0,
-        currency: 'BDT',
-        aedRate: '' 
+      setCart([...cart, {
+        id: product.id,
+        name: product.name,
+        have_variant: product.have_variant ? 1 : 0,
+        qty: 1,
+        goldVori: '',
+        goldGram: '',
+        ratePerVori: product.retails_price || product.sell_price || 0
       }]);
     }
     setProductSearch('');
@@ -263,13 +246,13 @@ export default function SellPage() {
     setCart(cart.map(item => {
       if (item.id === id) {
         const updated = { ...item, [field]: value };
-        if (field === 'qty') {
+        if (field === 'goldVori') {
            const vori = parseFloat(value);
            updated.goldGram = isNaN(vori) ? '' : (vori * 11.664).toFixed(3);
         }
         if (field === 'goldGram') {
            const gram = parseFloat(value);
-           updated.qty = isNaN(gram) ? '' : (gram / 11.664).toFixed(3);
+           updated.goldVori = isNaN(gram) ? '' : (gram / 11.664).toFixed(3);
         }
         return updated;
       }
@@ -283,32 +266,21 @@ export default function SellPage() {
 
 
   // --- Calculations ---
-  const calculateTotalBdt = () => {
-    return cart.reduce((total, item) => {
-      const qty = parseFloat(item.qty) || 0;
-      const rate = parseFloat(item.ratePerVori) || 0;
-      return total + (rate * qty);
-    }, 0);
-  };
+  const subtotal = cart.reduce((acc, item) => {
+    const vori = parseFloat(item.goldVori) || 0;
+    const rate = parseFloat(item.ratePerVori) || 0;
+    const qty = parseFloat(item.qty) || 1;
+    const weightMultiplier = vori > 0 ? vori : 1;
+    return acc + (weightMultiplier * rate * qty);
+  }, 0);
   
-  const subtotalBdt = calculateTotalBdt();
   const discountNum = parseFloat(formData.discount) || 0;
-  const grandTotalBdt = subtotalBdt - discountNum;
-
-  const displayCurrency = cart.some(item => item.currency === 'AED') ? 'AED' : 'BDT';
-  const displayAedRate = cart.find(item => item.currency === 'AED')?.aedRate || 1;
-  const displaySubtotal = displayCurrency === 'AED' && displayAedRate > 0 ? subtotalBdt / displayAedRate : subtotalBdt;
-  const displayGrandTotal = displayCurrency === 'AED' && displayAedRate > 0 ? grandTotalBdt / displayAedRate : grandTotalBdt;
-
-  const effectivePaidAmountDisplay =
+  const grandTotal = subtotal - discountNum;
+  const effectivePaidAmount =
     formData.paidAmount !== '' && formData.paidAmount !== null && formData.paidAmount !== undefined
       ? parseFloat(formData.paidAmount) || 0
-      : displayGrandTotal;
-      
-  const dueAmountDisplay = Math.max(0, displayGrandTotal - effectivePaidAmountDisplay);
-
-  const effectivePaidAmountBdt = displayCurrency === 'AED' ? effectivePaidAmountDisplay * displayAedRate : effectivePaidAmountDisplay;
-  const dueAmountBdt = Math.max(0, grandTotalBdt - effectivePaidAmountBdt);
+      : grandTotal;
+  const dueAmount = Math.max(0, grandTotal - effectivePaidAmount);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -316,7 +288,7 @@ export default function SellPage() {
       toast.error('Please select a customer.');
       return;
     }
-    if (dueAmountBdt > 0 && formData.customerId === 'walk-in') {
+    if (dueAmount > 0 && formData.customerId === 'walk-in') {
       toast.error('Please select or add a specific customer to record a due sale.');
       return;
     }
@@ -326,30 +298,25 @@ export default function SellPage() {
     }
     setLoading(true);
     try {
-      const token = session?.accessToken;
-
-      const basePayMode = paymentSummaryText || formData.paymentMethodName || 'Cash';
-      const finalPayMode = displayCurrency === 'AED' ? `${basePayMode} (AED @ ${displayAedRate})` : basePayMode;
-
       const finalPaymentMethods = (savedPaymentMethods && savedPaymentMethods.length > 0)
         ? savedPaymentMethods.map(m => ({
             payment_type_id: Number(m.payment_type_id) || 1,
             payment_type_category_id: Number(m.payment_type_category_id) || 1,
-            payment_amount: displayCurrency === 'AED' ? Number(m.payment_amount) * displayAedRate : Number(m.payment_amount) || 0,
+            payment_amount: Number(m.payment_amount) || 0,
           }))
         : [{
             payment_type_id: formData.paymentMethodId || 1,
             payment_type_category_id: 1,
-            payment_amount: effectivePaidAmountBdt,
+            payment_amount: effectivePaidAmount,
           }];
 
       const payload = {
         customer_id: formData.customerId === 'walk-in' ? null : formData.customerId,
         customer_name: formData.customerName,
         customer_phone: "", 
-        pay_mode: finalPayMode,
-        paid_amount: effectivePaidAmountBdt,
-        sub_total: subtotalBdt,
+        pay_mode: paymentSummaryText || formData.paymentMethodName || 'Cash',
+        paid_amount: effectivePaidAmount,
+        sub_total: subtotal,
         discount: discountNum,
         vat: 0,
         tax: 0,
@@ -363,8 +330,6 @@ export default function SellPage() {
           have_variant: item.have_variant || 0,
           mode: 1,
           size: 1,
-          currency: item.currency,
-          aed_rate: parseFloat(item.aedRate) || 0
         })),
         payment_method: finalPaymentMethods,
       };
@@ -398,7 +363,11 @@ export default function SellPage() {
   };
 
   const getCurrencySymbol = () => {
-    return '৳';
+    switch(formData.currency) {
+      case 'USD': return '$';
+      case 'AED': return 'Ï».ÏÑ';
+      default: return 'Óº│';
+    }
   };
 
   const getPaymentIcon = (name) => {
@@ -415,10 +384,9 @@ export default function SellPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-20">
-        
-        {/* Left Column - Product Search (7 cols) */}
-        <div className="lg:col-span-7 space-y-6 sticky top-20 min-w-0">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left Column: Form */}
+        <div className="flex-1 space-y-6">
           <form id="sell-form" onSubmit={handleSubmit} className="space-y-6">
             
             {/* Customer Section */}
@@ -567,14 +535,14 @@ export default function SellPage() {
               {/* Cart Items View */}
               {cart.length > 0 && (
                 <div>
-                  {/* Universal Stacked Card View (No horizontal scrolling) */}
-                  <div className="border border-neutral-200 rounded-lg overflow-hidden divide-y divide-neutral-200 bg-white">
+                  {/* Mobile Stacked Card View (No horizontal scrolling) */}
+                  <div className="block sm:hidden border border-neutral-200 rounded-lg overflow-hidden divide-y divide-neutral-200 bg-white">
                     {cart.map((item) => {
+                      const vori = parseFloat(item.goldVori) || 0;
                       const qty = parseFloat(item.qty) || 1;
                       const rate = parseFloat(item.ratePerVori) || 0;
-                      const aedRate = parseFloat(item.aedRate) || 0;
-                      const itemTotalBdt = rate * qty;
-                      const itemDisplayTotal = item.currency === 'AED' && aedRate > 0 ? itemTotalBdt / aedRate : itemTotalBdt;
+                      const weightMultiplier = vori > 0 ? vori : 1;
+                      const itemTotal = weightMultiplier * rate * qty;
 
                       return (
                         <div key={item.id} className="p-3 space-y-2.5">
@@ -585,15 +553,15 @@ export default function SellPage() {
                             </button>
                           </div>
 
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 text-xs">
+                          <div className="grid grid-cols-2 gap-2 text-xs">
                             <div>
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Wt (Vori)</label>
                               <input
                                 type="number"
                                 step="0.001"
                                 placeholder="0"
-                                value={item.qty}
-                                onChange={(e) => updateCartItem(item.id, 'qty', e.target.value)}
+                                value={item.goldVori}
+                                onChange={(e) => updateCartItem(item.id, 'goldVori', e.target.value)}
                                 className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                               />
                             </div>
@@ -611,6 +579,25 @@ export default function SellPage() {
                             </div>
 
                             <div>
+                              <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Qty</label>
+                              <div className="flex items-center gap-1">
+                                <button type="button" onClick={() => updateCartItem(item.id, 'qty', Math.max(1, qty - 1))} className="p-1 bg-neutral-100 rounded text-neutral-600">
+                                  <Minus size={12} />
+                                </button>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={item.qty}
+                                  onChange={(e) => updateCartItem(item.id, 'qty', e.target.value)}
+                                  className="w-12 text-center py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
+                                />
+                                <button type="button" onClick={() => updateCartItem(item.id, 'qty', qty + 1)} className="p-1 bg-neutral-100 rounded text-neutral-600">
+                                  <Plus size={12} />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div>
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Rate / Vori</label>
                               <input
                                 type="number"
@@ -620,36 +607,102 @@ export default function SellPage() {
                                 className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                               />
                             </div>
-                            
-                            <div>
-                              <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Currency</label>
-                              <CurrencyDropdown
-                                value={item.currency || 'BDT'}
-                                onChange={(val) => updateCartItem(item.id, 'currency', val)}
-                              />
-                            </div>
-                            
-                            {item.currency === 'AED' && (
-                              <div>
-                                <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">AED Rate</label>
-                                <input
-                                  type="number"
-                                  placeholder="0"
-                                  value={item.aedRate || ''}
-                                  onChange={(e) => updateCartItem(item.id, 'aedRate', e.target.value)}
-                                  className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
-                                />
-                              </div>
-                            )}
                           </div>
 
-                          <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
-                            <span className="text-[10px] font-medium text-neutral-500 uppercase">Subtotal:</span>
-                            <span className="font-bold text-neutral-900">{item.currency === 'AED' ? 'AED' : '৳'} {itemDisplayTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                          <div className="flex justify-between items-center pt-1 border-t border-neutral-100 text-xs">
+                            <span className="text-neutral-500 font-medium">Subtotal:</span>
+                            <span className="font-bold text-neutral-900">Óº│ {itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                           </div>
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden sm:block overflow-x-auto border border-neutral-200 rounded-lg">
+                    <table className="w-full text-left text-sm whitespace-nowrap">
+                      <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 uppercase text-xs tracking-wider">
+                        <tr>
+                          <th className="px-4 py-3 font-medium">Item</th>
+                          <th className="px-4 py-3 font-medium w-32">Qty</th>
+                          <th className="px-4 py-3 font-medium w-24">Wt(Vori)</th>
+                          <th className="px-4 py-3 font-medium w-24">Wt(Gram)</th>
+                          <th className="px-4 py-3 font-medium w-32">Rate</th>
+                          <th className="px-4 py-3 font-medium w-32">Total</th>
+                          <th className="px-4 py-3 font-medium w-12 text-center"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100">
+                        {cart.map((item) => {
+                          const vori = parseFloat(item.goldVori) || 0;
+                          const qty = parseFloat(item.qty) || 1;
+                          const rate = parseFloat(item.ratePerVori) || 0;
+                          const weightMultiplier = vori > 0 ? vori : 1;
+                          const itemTotal = weightMultiplier * rate * qty;
+                          
+                          return (
+                            <tr key={item.id} className="hover:bg-neutral-50/50">
+                              <td className="px-4 py-3">
+                                <div className="font-medium text-neutral-900 truncate max-w-[150px]">{item.name}</div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <button type="button" onClick={() => updateCartItem(item.id, 'qty', Math.max(1, qty - 1))} className="p-1 bg-neutral-100 rounded hover:bg-neutral-200 text-neutral-600">
+                                    <Minus size={14} />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={item.qty}
+                                    onChange={(e) => updateCartItem(item.id, 'qty', e.target.value)}
+                                    className="w-12 text-center px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                                  />
+                                  <button type="button" onClick={() => updateCartItem(item.id, 'qty', qty + 1)} className="p-1 bg-neutral-100 rounded hover:bg-neutral-200 text-neutral-600">
+                                    <Plus size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  step="0.001"
+                                  value={item.goldVori}
+                                  onChange={(e) => updateCartItem(item.id, 'goldVori', e.target.value)}
+                                  className="w-20 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                                  placeholder="0"
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  step="0.001"
+                                  value={item.goldGram}
+                                  onChange={(e) => updateCartItem(item.id, 'goldGram', e.target.value)}
+                                  className="w-20 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                                  placeholder="0"
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  value={item.ratePerVori}
+                                  onChange={(e) => updateCartItem(item.id, 'ratePerVori', e.target.value)}
+                                  className="w-24 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
+                                />
+                              </td>
+                              <td className="px-4 py-3 font-medium text-neutral-900">
+                                {getCurrencySymbol()}{itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <button type="button" onClick={() => removeCartItem(item.id)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors">
+                                  <Trash2 size={16} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
@@ -678,49 +731,49 @@ export default function SellPage() {
                 <span className="text-neutral-500">
                   Cart Items ({cart.length})
                 </span>
-                <span className="font-medium">{displayCurrency === 'AED' ? 'AED ' : '৳'}{displaySubtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                <span className="font-medium">{getCurrencySymbol()}{subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
               </div>
               
               <div className="pt-4 border-t border-neutral-100 flex justify-between items-center">
                 <span className="text-sm font-medium text-neutral-700">Subtotal</span>
-                <span className="font-medium">{displayCurrency === 'AED' ? 'AED ' : '৳'}{displaySubtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                <span className="font-medium">{getCurrencySymbol()}{subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
               </div>
               
               <div className="pt-4 border-t border-neutral-100">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
                   <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">Paid Amount</label>
                   <div className="flex items-center gap-1.5">
-                    <button 
-                      type="button" 
-                      onClick={() => setFormData({...formData, paidAmount: displayGrandTotal.toString()})}
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, paidAmount: grandTotal})}
                       className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-semibold hover:bg-emerald-200 transition border border-emerald-200"
                     >
                       Full Pay
                     </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setFormData({...formData, paidAmount: (displayGrandTotal / 2).toString()})}
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, paidAmount: (grandTotal / 2).toFixed(2)})}
                       className="text-[11px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-semibold hover:bg-amber-200 transition border border-amber-200"
                     >
                       50%
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setFormData({...formData, paidAmount: '0'})}
                       className="text-[11px] px-2 py-0.5 rounded-md bg-red-100 text-red-800 font-semibold hover:bg-red-200 transition border border-red-200"
                     >
-                      Full Due ({displayCurrency === 'AED' ? 'AED ' : '৳'}0)
+                      Full Due (Óº│0)
                     </button>
                   </div>
                 </div>
                 <div className="flex items-center">
                   <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3 py-2 rounded-l-lg text-neutral-500 text-sm font-medium">
-                    {displayCurrency === 'AED' ? 'AED' : '৳'}
+                    {getCurrencySymbol()}
                   </span>
                   <input
                     type="number"
                     value={formData.paidAmount ?? ''}
-                    placeholder={displayGrandTotal.toFixed(2)}
+                    placeholder={grandTotal.toFixed(2)}
                     onChange={(e) => setFormData({...formData, paidAmount: e.target.value})}
                     className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-r-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm font-medium"
                   />
@@ -730,24 +783,24 @@ export default function SellPage() {
               <div className="pt-4 mt-4 border-t border-neutral-200 space-y-2">
                 <div className="flex justify-between items-end">
                   <span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">Grand Total</span>
-                  <span className="text-neutral-900 font-semibold">{displayCurrency === 'AED' ? 'AED ' : '৳'}{displayGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="text-2xl font-light tracking-tight">{getCurrencySymbol()}{Math.max(0, grandTotal).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm pt-1">
                   <span className="font-medium text-neutral-500">Due Amount</span>
-                  <span className={`font-bold ${dueAmountDisplay > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {displayCurrency === 'AED' ? 'AED ' : '৳'}{dueAmountDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                  <span className={`font-bold ${dueAmount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                    {getCurrencySymbol()}{dueAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}
                   </span>
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-xs text-neutral-400 font-medium">Payment Status:</span>
                   <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                    dueAmountDisplay === 0 && displayGrandTotal > 0
+                    dueAmount === 0 && grandTotal > 0
                       ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                      : effectivePaidAmountDisplay > 0 && dueAmountDisplay > 0
+                      : effectivePaidAmount > 0 && dueAmount > 0
                       ? 'bg-amber-100 text-amber-800 border-amber-300'
                       : 'bg-red-100 text-red-800 border-red-300'
                   }`}>
-                    {dueAmountDisplay === 0 && displayGrandTotal > 0 ? 'Paid' : effectivePaidAmountDisplay > 0 ? 'Partial Due' : 'Full Due'}
+                    {dueAmount === 0 && grandTotal > 0 ? 'Paid' : effectivePaidAmount > 0 ? 'Partial Due' : 'Full Due'}
                   </span>
                 </div>
               </div>
@@ -801,7 +854,7 @@ export default function SellPage() {
       <PaymentMethodsModal
         open={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
-        total={displayGrandTotal}
+        total={grandTotal}
         paymentGateways={paymentMethods}
         savedMethods={savedPaymentMethods}
         onSave={({ totalPaid, summaryText, methods }) => {
@@ -854,7 +907,7 @@ export default function SellPage() {
                     </div>
                     {existingCustList.slice(0, 2).map((c) => (
                       <div key={c.id} className="text-xs text-amber-700 ml-6">
-                        • {c.name || c.customer_name}
+                        ÔÇó {c.name || c.customer_name}
                       </div>
                     ))}
                     {existingCustList.length > 2 && (

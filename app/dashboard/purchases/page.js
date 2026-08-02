@@ -112,8 +112,16 @@ export default function PurchaseHistoryPage() {
             <>
               <div className="block sm:hidden divide-y divide-neutral-100">
                 {invoices.map((inv) => {
-                  const total = inv.sub_total - inv.discount;
-                  const due = Math.max(total - inv.paid_amount, 0);
+                  const payModeString = inv.pay_mode || '';
+                  const isAed = payModeString.includes('(AED @');
+                  const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+                  const aedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+                  const currency = isAed ? 'AED' : 'BDT';
+
+                  const totalBdt = inv.sub_total - inv.discount;
+                  const totalDisplay = isAed ? totalBdt / aedRate : totalBdt;
+                  const dueBdt = Math.max(totalBdt - inv.paid_amount, 0);
+                  const dueDisplay = isAed ? dueBdt / aedRate : dueBdt;
 
                   return (
                     <div
@@ -136,10 +144,10 @@ export default function PurchaseHistoryPage() {
 
                       <div className="text-right shrink-0 flex items-center gap-1 pl-1">
                         <div>
-                          <p className="font-bold text-xs text-neutral-900">BDT {Number(total).toLocaleString()}</p>
-                          {due > 0 ? (
+                          <p className="font-bold text-xs text-neutral-900">{currency} {Number(totalDisplay).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}</p>
+                          {dueBdt > 0 ? (
                             <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200 mt-0.5">
-                              Due BDT {due.toLocaleString()}
+                              Due {currency} {dueDisplay.toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
                             </span>
                           ) : (
                             <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200 mt-0.5">
@@ -168,37 +176,52 @@ export default function PurchaseHistoryPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 bg-white">
-                    {invoices.map((inv) => (
-                      <tr key={inv.id} className="hover:bg-neutral-50/50 transition-colors">
-                        <td className="px-6 py-4 font-medium text-neutral-900">
-                          {inv.invoice_id}
-                        </td>
-                        <td className="px-6 py-4 text-neutral-500">
-                          {new Date(inv.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 text-neutral-700">
-                          {inv.vendor_name || 'Unknown Vendor'}
-                        </td>
-                        <td className="px-6 py-4 text-right text-neutral-900 font-medium">
-                          BDT {Number(inv.sub_total - inv.discount).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 text-right text-green-600">
-                          BDT {Number(inv.paid_amount).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 text-right text-red-600">
-                          BDT {Math.max((inv.sub_total - inv.discount) - inv.paid_amount, 0).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <button
-                            onClick={() => router.push(`/dashboard/invoice/purchase/${inv.invoice_id}`)}
-                            className="inline-flex items-center justify-center p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 rounded-md transition-colors"
-                            title="View Invoice"
-                          >
-                            <Eye size={18} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {invoices.map((inv) => {
+                      const payModeString = inv.pay_mode || '';
+                      const isAed = payModeString.includes('(AED @');
+                      const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+                      const aedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+                      const currency = isAed ? 'AED' : 'BDT';
+
+                      const totalBdt = inv.sub_total - inv.discount;
+                      const totalDisplay = isAed ? totalBdt / aedRate : totalBdt;
+                      const paidBdt = inv.paid_amount;
+                      const paidDisplay = isAed ? paidBdt / aedRate : paidBdt;
+                      const dueBdt = Math.max(totalBdt - paidBdt, 0);
+                      const dueDisplay = isAed ? dueBdt / aedRate : dueBdt;
+
+                      return (
+                        <tr key={inv.id} className="hover:bg-neutral-50/50 transition-colors">
+                          <td className="px-6 py-4 font-medium text-neutral-900">
+                            {inv.invoice_id}
+                          </td>
+                          <td className="px-6 py-4 text-neutral-500">
+                            {new Date(inv.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 text-neutral-700">
+                            {inv.vendor_name || 'Unknown Vendor'}
+                          </td>
+                          <td className="px-6 py-4 text-right text-neutral-900 font-medium">
+                            {currency} {Number(totalDisplay).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
+                          </td>
+                          <td className="px-6 py-4 text-right text-green-600">
+                            {currency} {Number(paidDisplay).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
+                          </td>
+                          <td className="px-6 py-4 text-right text-red-600">
+                            {currency} {Number(dueDisplay).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <button
+                              onClick={() => router.push(`/dashboard/invoice/purchase/${inv.invoice_id}`)}
+                              className="inline-flex items-center justify-center p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 rounded-md transition-colors"
+                              title="View Invoice"
+                            >
+                              <Eye size={18} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

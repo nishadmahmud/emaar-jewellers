@@ -67,11 +67,24 @@ export default function SaleInvoicePage() {
   const invoiceData = invoice.data || {};
   const salesDetails = invoiceData.sales_details || [];
   
-  const subTotal = Number(invoiceData.sub_total || 0);
-  const discount = Number(invoiceData.discount || 0);
-  const finalTotal = subTotal - discount;
-  const paid = Number(invoiceData.paid_amount || 0);
-  const due = Math.max(finalTotal - paid, 0);
+  const payModeString = invoiceData.pay_mode || '';
+  const isAed = payModeString.includes('(AED @');
+  const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+  const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+  const displayCurrency = isAed ? 'AED' : 'BDT';
+  
+  const subTotalBdt = Number(invoiceData.sub_total || 0);
+  const discountBdt = Number(invoiceData.discount || 0);
+  const finalTotalBdt = subTotalBdt - discountBdt;
+  const paidBdt = Number(invoiceData.paid_amount || 0);
+  const dueBdt = Math.max(finalTotalBdt - paidBdt, 0);
+  
+  const subTotalDisplay = isAed ? subTotalBdt / invoiceAedRate : subTotalBdt;
+  const discountDisplay = isAed ? discountBdt / invoiceAedRate : discountBdt;
+  const finalTotalDisplay = isAed ? finalTotalBdt / invoiceAedRate : finalTotalBdt;
+  const paidDisplay = isAed ? paidBdt / invoiceAedRate : paidBdt;
+  const dueDisplay = isAed ? dueBdt / invoiceAedRate : dueBdt;
+  
   const multiplePayments = invoiceData.multiple_payment || invoiceData.multiple_payments || [];
 
   return (
@@ -165,6 +178,11 @@ export default function SaleInvoicePage() {
                 <tbody className="divide-y divide-neutral-100">
                   {salesDetails.map((item, index) => {
                     const itemName = item.product_info?.name || 'Unnamed Item';
+                    const itemQty = Number(item.qty || 1);
+                    const itemRateBdt = Number(item.price || 0);
+                    const itemRateDisplay = isAed ? itemRateBdt / invoiceAedRate : itemRateBdt;
+                    const itemTotalDisplay = isAed ? (itemRateBdt * itemQty) / invoiceAedRate : (itemRateBdt * itemQty);
+                    
                     return (
                       <tr key={item.id || index} className="group">
                         <td className="px-4 py-4">
@@ -174,10 +192,10 @@ export default function SaleInvoicePage() {
                           )}
                         </td>
                         <td className="px-4 py-4 text-center text-neutral-600">{item.qty || 1}</td>
-                        <td className="px-4 py-4 text-center text-neutral-600">{((item.qty || 1) * 11.664).toFixed(3)}</td>
-                        <td className="px-4 py-4 text-right text-neutral-600">BDT {Number(item.price || 0).toLocaleString()}</td>
+                        <td className="px-4 py-4 text-center text-neutral-600">{(itemQty * 11.664).toFixed(3)}</td>
+                        <td className="px-4 py-4 text-right text-neutral-600">{displayCurrency} {itemRateDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                         <td className="px-4 py-4 text-right font-medium text-neutral-900">
-                          BDT {(Number(item.price || 0) * Number(item.qty || 1)).toLocaleString()}
+                          {displayCurrency} {itemTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}
                         </td>
                       </tr>
                     );
@@ -191,21 +209,21 @@ export default function SaleInvoicePage() {
               <div className="w-full sm:w-[350px] space-y-3 bg-neutral-50 p-6 rounded-xl">
                 <div className="flex justify-between text-sm text-neutral-600">
                   <span>Subtotal</span>
-                  <span>BDT {subTotal.toLocaleString()}</span>
+                  <span>{displayCurrency} {subTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
-                {discount > 0 && (
+                {discountDisplay > 0 && (
                   <div className="flex justify-between text-sm text-red-500">
                     <span>Discount</span>
-                    <span>- BDT {discount.toLocaleString()}</span>
+                    <span>- {displayCurrency} {discountDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                   </div>
                 )}
                 <div className="pt-3 border-t border-neutral-200 flex justify-between font-semibold text-base text-black">
                   <span>Total Amount</span>
-                  <span>BDT {finalTotal.toLocaleString()}</span>
+                  <span>{displayCurrency} {finalTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
                 <div className="flex justify-between text-sm text-green-600 pt-1 font-semibold">
                   <span>Paid Amount</span>
-                  <span>BDT {paid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span>{displayCurrency} {paidDisplay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
 
                 {/* Individual Payment Methods Breakdown */}
@@ -220,6 +238,9 @@ export default function SaleInvoicePage() {
                       const accName = categoryMatch?.payment_category_name || '';
                       const accNum = categoryMatch?.account_number || '';
                       const detailLabel = [accName, accNum].filter(Boolean).join(' - ');
+                      
+                      const pmAmountBdt = Number(pm.payment_amount || 0);
+                      const pmAmountDisplay = isAed ? pmAmountBdt / invoiceAedRate : pmAmountBdt;
 
                       return (
                         <div key={pm.id || idx} className="flex justify-between items-center bg-white px-2.5 py-1.5 rounded border border-neutral-200/80 shadow-2xs">
@@ -230,17 +251,17 @@ export default function SaleInvoicePage() {
                             )}
                           </div>
                           <div className="font-semibold text-emerald-700">
-                            BDT {Number(pm.payment_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            {displayCurrency} {pmAmountDisplay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 )}
-                {due > 0 && (
+                {dueDisplay > 0 && (
                   <div className="flex justify-between text-sm font-medium text-red-600 pt-1">
                     <span>Due Amount</span>
-                    <span>BDT {due.toLocaleString()}</span>
+                    <span>{displayCurrency} {dueDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                   </div>
                 )}
               </div>

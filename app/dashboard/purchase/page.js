@@ -216,19 +216,19 @@ export default function PurchasePage() {
 
   // Calculate totals
   const goldValue = cart.reduce((acc, item) => {
-    const qtyNum = parseFloat(item.qty) || 1;
+    const qtyNum = parseFloat(item.qty) || 0;
     const rateNum = parseFloat(item.ratePerVori) || 0;
-    const aedRate = parseFloat(item.aedRate) || 0;
-    const itemTotal = item.currency === 'AED' ? (rateNum * qtyNum * aedRate) : (rateNum * qtyNum);
-    return acc + itemTotal;
+    const aedRate = parseFloat(item.aedRate) || 1;
+    const itemTotalBdt = item.currency === 'AED' ? (rateNum * qtyNum * aedRate) : (rateNum * qtyNum);
+    return acc + itemTotalBdt;
   }, 0);
   
-  const grandTotal = goldValue;
-  const effectivePaidAmount =
-    formData.paidAmount !== '' && formData.paidAmount !== null && formData.paidAmount !== undefined
-      ? parseFloat(formData.paidAmount) || 0
-      : grandTotal;
-  const dueAmount = Math.max(0, grandTotal - effectivePaidAmount);
+  const displayCurrency = cart.length > 0 ? cart[0].currency : 'BDT';
+  const displayAedRate = cart.length > 0 ? parseFloat(cart[0].aedRate) || 1 : 1;
+  const displayGrandTotal = displayCurrency === 'AED' ? (goldValue / displayAedRate) : goldValue;
+  
+  const effectivePaidAmount = parseFloat(formData.paidAmount) || 0;
+  const dueAmount = Math.max(0, displayGrandTotal - effectivePaidAmount);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -242,24 +242,27 @@ export default function PurchasePage() {
     }
     setLoading(true);
     try {
+      const basePayMode = paymentSummaryText || formData.paymentMethodName || 'Cash';
+      const finalPayMode = displayCurrency === 'AED' ? `${basePayMode} (AED @ ${displayAedRate})` : basePayMode;
+
       const finalPaymentMethods = (savedPaymentMethods && savedPaymentMethods.length > 0)
         ? savedPaymentMethods.map(m => ({
             payment_type_id: Number(m.payment_type_id) || 1,
             payment_type_category_id: Number(m.payment_type_category_id) || 1,
-            payment_amount: Number(m.payment_amount) || 0,
+            payment_amount: displayCurrency === 'AED' ? Number(m.payment_amount) * displayAedRate : Number(m.payment_amount) || 0,
           }))
         : [{
             payment_type_id: formData.paymentMethodId || 1,
             payment_type_category_id: 1,
-            payment_amount: effectivePaidAmount,
+            payment_amount: displayCurrency === 'AED' ? effectivePaidAmount * displayAedRate : effectivePaidAmount,
           }];
 
       const payload = {
         vendor_id: formData.vendorId,
         vendor_name: formData.vendorName,
-        pay_mode: paymentSummaryText || formData.paymentMethodName || 'Cash',
-        paid_amount: effectivePaidAmount,
-        sub_total: grandTotal,
+        pay_mode: finalPayMode,
+        paid_amount: displayCurrency === 'AED' ? effectivePaidAmount * displayAedRate : effectivePaidAmount,
+        sub_total: goldValue,
         discount: 0,
         vat: 0,
         tax: 0,
@@ -267,7 +270,7 @@ export default function PurchasePage() {
         product: cart.map(item => {
           const qtyNum = parseFloat(item.qty) || 1;
           const rateNum = parseFloat(item.ratePerVori) || 0;
-          const aedRate = parseFloat(item.aedRate) || 0;
+          const aedRate = parseFloat(item.aedRate) || 1;
           const finalPrice = item.currency === 'AED' ? (rateNum * aedRate) : rateNum;
           
           return {
@@ -295,7 +298,8 @@ export default function PurchasePage() {
           itemType: 'Gold Bar (99.99%)',
           paymentMethodId: null,
           paymentMethodName: 'Cash',
-          currency: 'TK'
+          currency: 'TK',
+          paidAmount: ''
         });
         
         if (res.data.data?.invoice_id) {
@@ -405,14 +409,6 @@ export default function PurchasePage() {
                   <Scale size={18} />
                   <h3 className="font-medium">Stock Details</h3>
                 </div>
-                {formData.productName && (
-                  <button type="button" onClick={() => {
-                    setFormData(prev => ({...prev, productId: null, productName: ''}));
-                    setProductSearch('');
-                  }} className="text-xs text-red-500 hover:underline">
-                    Clear Item
-                  </button>
-                )}
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -428,9 +424,6 @@ export default function PurchasePage() {
                       onChange={(e) => {
                         setProductSearch(e.target.value);
                         setIsProductDropdownOpen(true);
-                        if(formData.productId) {
-                          setFormData(prev => ({...prev, productId: null, productName: ''}));
-                        }
                       }}
                       onFocus={() => setIsProductDropdownOpen(true)}
                       className="w-full pl-9 pr-10 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
@@ -453,7 +446,6 @@ export default function PurchasePage() {
                               className="px-4 py-3 hover:bg-neutral-50 cursor-pointer border-b border-neutral-100 last:border-0"
                             >
                               <div className="font-medium text-sm text-neutral-900">{product.name}</div>
-                              {product.sku && <div className="text-xs text-neutral-500">SKU: {product.sku}</div>}
                             </li>
                           ))}
                         </ul>
@@ -470,13 +462,13 @@ export default function PurchasePage() {
               {/* Cart Items View */}
               {cart.length > 0 && (
                 <div>
-                  {/* Universal Stacked Card View (No horizontal scrolling) */}
                   <div className="border border-neutral-200 rounded-lg overflow-hidden divide-y divide-neutral-200 bg-white">
                     {cart.map((item) => {
                       const qty = parseFloat(item.qty) || 1;
                       const rate = parseFloat(item.ratePerVori) || 0;
-                      const aedRate = parseFloat(item.aedRate) || 0;
-                      const itemTotal = item.currency === 'AED' ? (rate * qty * aedRate) : (rate * qty);
+                      const aedRate = parseFloat(item.aedRate) || 1;
+                      const itemTotalBdt = rate * qty * (item.currency === 'AED' ? aedRate : 1);
+                      const itemDisplayTotal = item.currency === 'AED' ? itemTotalBdt / aedRate : itemTotalBdt;
 
                       return (
                         <div key={item.id} className="p-3 space-y-2.5">
@@ -499,7 +491,6 @@ export default function PurchasePage() {
                                 className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                               />
                             </div>
-
                             <div>
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">WT (GRAM)</label>
                               <input
@@ -511,7 +502,6 @@ export default function PurchasePage() {
                                 className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                               />
                             </div>
-
                             <div>
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Rate / Vori</label>
                               <input
@@ -522,7 +512,6 @@ export default function PurchasePage() {
                                 className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                               />
                             </div>
-                            
                             <div>
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Currency</label>
                               <CurrencyDropdown
@@ -530,7 +519,6 @@ export default function PurchasePage() {
                                 onChange={(val) => updateCartItem(item.id, 'currency', val)}
                               />
                             </div>
-                            
                             {item.currency === 'AED' ? (
                               <div>
                                 <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">AED Rate</label>
@@ -544,10 +532,9 @@ export default function PurchasePage() {
                               </div>
                             ) : <div></div>}
                           </div>
-
                           <div className="flex justify-between items-center pt-1 border-t border-neutral-100 text-xs">
                             <span className="text-neutral-500 font-medium">Subtotal:</span>
-                            <span className="font-bold text-neutral-900">{getCurrencySymbol()}{itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            <span className="font-bold text-neutral-900">{item.currency === 'AED' ? 'AED ' : '৳ '}{itemDisplayTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                           </div>
                         </div>
                       );
@@ -561,7 +548,6 @@ export default function PurchasePage() {
                 </div>
               )}
             </div>
-
           </form>
         </div>
 
@@ -578,44 +564,24 @@ export default function PurchasePage() {
             <div className="p-6 space-y-4">
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-500">Cart Items ({cart.length})</span>
-                <span className="font-medium">{getCurrencySymbol()}{goldValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                <span className="font-medium">{displayCurrency === 'AED' ? 'AED ' : '৳ '}{displayGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
               </div>
               
               <div className="pt-4 border-t border-neutral-100">
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider">Paid Amount</label>
                   <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({...formData, paidAmount: grandTotal})}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold hover:bg-emerald-200 transition border border-emerald-200"
-                    >
-                      Full Pay
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({...formData, paidAmount: (grandTotal / 2).toFixed(2)})}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold hover:bg-amber-200 transition border border-amber-200"
-                    >
-                      50%
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({...formData, paidAmount: '0'})}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-800 font-semibold hover:bg-red-200 transition border border-red-200"
-                    >
-                      Full Due (৳0)
-                    </button>
+                    <button type="button" onClick={() => setFormData({...formData, paidAmount: displayGrandTotal.toString()})} className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold hover:bg-emerald-200 transition border border-emerald-200">Full Pay</button>
+                    <button type="button" onClick={() => setFormData({...formData, paidAmount: (displayGrandTotal / 2).toString()})} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold hover:bg-amber-200 transition border border-amber-200">50%</button>
+                    <button type="button" onClick={() => setFormData({...formData, paidAmount: '0'})} className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-800 font-semibold hover:bg-red-200 transition border border-red-200">Full Due ({displayCurrency === 'AED' ? 'AED ' : '৳'}0)</button>
                   </div>
                 </div>
                 <div className="flex items-center">
-                  <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3 py-2 rounded-l-lg text-neutral-500 text-sm">
-                    {getCurrencySymbol()}
-                  </span>
+                  <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3 py-2 rounded-l-lg text-neutral-500 text-sm">{displayCurrency === 'AED' ? 'AED' : '৳'}</span>
                   <input
                     type="number"
-                    value={formData.paidAmount ?? ''}
-                    placeholder={grandTotal.toFixed(2)}
+                    value={formData.paidAmount}
+                    placeholder={displayGrandTotal.toFixed(2)}
                     onChange={(e) => setFormData({...formData, paidAmount: e.target.value})}
                     className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-r-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm font-medium"
                   />
@@ -623,26 +589,26 @@ export default function PurchasePage() {
               </div>
 
               <div className="pt-4 mt-4 border-t border-neutral-200 space-y-2">
-                <div className="flex justify-between items-end mb-1">
+                <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">Net Payable</span>
-                  <span className="text-2xl font-light tracking-tight text-black">{getCurrencySymbol()}{Math.max(0, grandTotal).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="text-neutral-900 font-semibold">{displayCurrency === 'AED' ? 'AED ' : '৳ '}{displayGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm pt-1">
                   <span className="font-medium text-neutral-500">Due Amount</span>
                   <span className={`font-bold ${dueAmount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {getCurrencySymbol()}{dueAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                    {displayCurrency === 'AED' ? 'AED ' : '৳ '}{dueAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}
                   </span>
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-xs text-neutral-400 font-medium">Payment Status:</span>
                   <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                    dueAmount === 0 && grandTotal > 0
+                    dueAmount === 0 && displayGrandTotal > 0
                       ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                       : effectivePaidAmount > 0 && dueAmount > 0
                       ? 'bg-amber-100 text-amber-800 border-amber-300'
                       : 'bg-red-100 text-red-800 border-red-300'
                   }`}>
-                    {dueAmount === 0 && grandTotal > 0 ? 'Paid' : effectivePaidAmount > 0 ? 'Partial Due' : 'Full Due'}
+                    {dueAmount === 0 && displayGrandTotal > 0 ? 'Paid' : effectivePaidAmount > 0 ? 'Partial Due' : 'Full Due'}
                   </span>
                 </div>
               </div>
@@ -696,7 +662,7 @@ export default function PurchasePage() {
       <PaymentMethodsModal
         open={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
-        total={grandTotal}
+        total={displayGrandTotal}
         paymentGateways={paymentMethods}
         savedMethods={savedPaymentMethods}
         onSave={({ totalPaid, summaryText, methods }) => {

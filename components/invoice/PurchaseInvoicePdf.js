@@ -125,11 +125,24 @@ const PurchaseInvoicePdf = ({ invoice }) => {
   const data = invoice?.data || invoice || {};
   const purchaseDetails = data.purchase_details || data.sales_details || []; // Handling both in case backend varies
   
-  const subTotal = Number(data.sub_total || 0);
-  const discount = Number(data.discount || 0);
-  const finalTotal = subTotal - discount;
-  const paid = Number(data.paid_amount || 0);
-  const due = Math.max(finalTotal - paid, 0);
+  const payModeString = data.pay_mode || '';
+  const isAed = payModeString.includes('(AED @');
+  const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+  const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+  const displayCurrency = isAed ? 'AED' : 'TK';
+
+  const subTotalBdt = Number(data.sub_total || 0);
+  const discountBdt = Number(data.discount || 0);
+  const finalTotalBdt = subTotalBdt - discountBdt;
+  const paidBdt = Number(data.paid_amount || 0);
+  const dueBdt = Math.max(finalTotalBdt - paidBdt, 0);
+
+  const subTotalDisplay = isAed ? subTotalBdt / invoiceAedRate : subTotalBdt;
+  const discountDisplay = isAed ? discountBdt / invoiceAedRate : discountBdt;
+  const finalTotalDisplay = isAed ? finalTotalBdt / invoiceAedRate : finalTotalBdt;
+  const paidDisplay = isAed ? paidBdt / invoiceAedRate : paidBdt;
+  const dueDisplay = isAed ? dueBdt / invoiceAedRate : dueBdt;
+
   const multiplePayments = data.multiple_payments || data.multiple_payment || [];
 
   return (
@@ -160,39 +173,46 @@ const PurchaseInvoicePdf = ({ invoice }) => {
           <View style={styles.tableHeader}>
             <Text style={[styles.colDesc, styles.headerText]}>Item Description</Text>
             <Text style={[styles.colQty, styles.headerText]}>Qty</Text>
-            <Text style={[styles.colRate, styles.headerText]}>Rate (TK)</Text>
-            <Text style={[styles.colTotal, styles.headerText]}>Total (TK)</Text>
+            <Text style={[styles.colRate, styles.headerText]}>Rate ({displayCurrency})</Text>
+            <Text style={[styles.colTotal, styles.headerText]}>Total ({displayCurrency})</Text>
           </View>
           
-          {purchaseDetails.map((item, i) => (
-            <View key={i} style={styles.tableRow}>
-              <Text style={styles.colDesc}>{item.product_info?.name || 'Item'}</Text>
-              <Text style={styles.colQty}>{item.qty || 1}</Text>
-              <Text style={styles.colRate}>{Number(item.price || 0).toLocaleString()}</Text>
-              <Text style={styles.colTotal}>{(Number(item.price || 0) * Number(item.qty || 1)).toLocaleString()}</Text>
-            </View>
-          ))}
+          {purchaseDetails.map((item, i) => {
+            const itemQty = Number(item.qty || 1);
+            const itemRateBdt = Number(item.price || 0);
+            const itemRateDisplay = isAed ? itemRateBdt / invoiceAedRate : itemRateBdt;
+            const itemTotalDisplay = isAed ? (itemRateBdt * itemQty) / invoiceAedRate : (itemRateBdt * itemQty);
+
+            return (
+              <View key={i} style={styles.tableRow}>
+                <Text style={styles.colDesc}>{item.product_info?.name || 'Item'}</Text>
+                <Text style={styles.colQty}>{itemQty}</Text>
+                <Text style={styles.colRate}>{itemRateDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
+                <Text style={styles.colTotal}>{itemTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
+              </View>
+            );
+          })}
         </View>
 
         <View style={styles.summaryContainer}>
           <View style={styles.summaryBox}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryText}>Subtotal</Text>
-              <Text style={styles.summaryText}>{subTotal.toLocaleString()}</Text>
+              <Text style={styles.summaryText}>{displayCurrency} {subTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
             </View>
-            {discount > 0 && (
+            {discountDisplay > 0 && (
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryText}>Discount</Text>
-                <Text style={styles.summaryText}>- {discount.toLocaleString()}</Text>
+                <Text style={styles.summaryText}>- {displayCurrency} {discountDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
               </View>
             )}
             <View style={styles.summaryTotalRow}>
               <Text style={styles.summaryTotalText}>Total Amount</Text>
-              <Text style={styles.summaryTotalText}>{finalTotal.toLocaleString()}</Text>
+              <Text style={styles.summaryTotalText}>{displayCurrency} {finalTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
             </View>
             <View style={[styles.summaryRow, { marginTop: 8 }]}>
               <Text style={[styles.summaryText, { fontWeight: 'bold' }]}>Paid Amount</Text>
-              <Text style={[styles.summaryText, { fontWeight: 'bold' }]}>{paid.toLocaleString()}</Text>
+              <Text style={[styles.summaryText, { fontWeight: 'bold' }]}>{displayCurrency} {paidDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
             </View>
             {multiplePayments.length > 0 && (
               <View style={{ marginTop: 4, paddingTop: 4, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
@@ -205,6 +225,9 @@ const PurchaseInvoicePdf = ({ invoice }) => {
                   const accName = categoryMatch?.payment_category_name || '';
                   const accNum = categoryMatch?.account_number || '';
                   const detailLabel = [accName, accNum].filter(Boolean).join(' - ');
+                  
+                  const pmAmountBdt = Number(pm.payment_amount || 0);
+                  const pmAmountDisplay = isAed ? pmAmountBdt / invoiceAedRate : pmAmountBdt;
 
                   return (
                     <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
@@ -212,17 +235,17 @@ const PurchaseInvoicePdf = ({ invoice }) => {
                         {typeName} {detailLabel && detailLabel.toLowerCase() !== typeName.toLowerCase() ? `(${detailLabel})` : ''}
                       </Text>
                       <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#059669', width: '40%', textAlign: 'right' }}>
-                        TK {Number(pm.payment_amount || 0).toLocaleString()}
+                        {displayCurrency} {pmAmountDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}
                       </Text>
                     </View>
                   );
                 })}
               </View>
             )}
-            {due > 0 && (
+            {dueDisplay > 0 && (
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryText}>Due Amount</Text>
-                <Text style={styles.summaryText}>{due.toLocaleString()}</Text>
+                <Text style={styles.summaryText}>{displayCurrency} {dueDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
               </View>
             )}
           </View>

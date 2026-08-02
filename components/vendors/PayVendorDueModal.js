@@ -271,9 +271,11 @@ export default function PayVendorDueModal({ open, onClose, vendorId, vendorName,
 
   const [viewingInvoiceId, setViewingInvoiceId] = useState(null);
 
-  // Form states
+  // Pay Vendor Due Form State
   const [selectedInvoice, setSelectedInvoice] = useState('');
   const [payAmount, setPayAmount] = useState('');
+  const [paymentCurrency, setPaymentCurrency] = useState('BDT');
+  const [exchangeRate, setExchangeRate] = useState(1);
   const [selectedGatewayId, setSelectedGatewayId] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -355,15 +357,17 @@ export default function PayVendorDueModal({ open, onClose, vendorId, vendorName,
 
     setSubmitting(true);
     try {
+      const finalAmount = Number(payAmount) * Number(exchangeRate);
+      
       const payload = {
         vendor_id: Number(vendorId),
         purchase_invoice_id: selectedInvoice || null,
-        paid_amount: Number(payAmount),
+        paid_amount: finalAmount,
         payment_method: [
           {
             payment_type_id: Number(selectedGatewayId) || 1,
             payment_type_category_id: Number(selectedCategoryId) || 1,
-            payment_amount: Number(payAmount),
+            payment_amount: finalAmount,
           }
         ],
         custom_date: date,
@@ -462,13 +466,54 @@ export default function PayVendorDueModal({ open, onClose, vendorId, vendorName,
                   />
                 )}
 
+                {/* Currency Toggle */}
+                <div className="flex bg-neutral-100 p-1.5 rounded-xl gap-1 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => { setPaymentCurrency('BDT'); setExchangeRate(1); }}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                      paymentCurrency === 'BDT' ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-black'
+                    }`}
+                  >
+                    BDT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentCurrency('AED')}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                      paymentCurrency === 'AED' ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-black'
+                    }`}
+                  >
+                    AED
+                  </button>
+                </div>
+
+                {paymentCurrency === 'AED' && (
+                  <div className="mb-4">
+                    <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
+                      Exchange Rate (1 AED = ? BDT)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      value={exchangeRate}
+                      onChange={(e) => setExchangeRate(e.target.value)}
+                      placeholder="e.g. 33.5"
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-base sm:text-sm font-semibold outline-none focus:ring-2 focus:ring-black transition-all"
+                    />
+                  </div>
+                )}
+
                 {/* Pay Amount */}
                 <div>
                   <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
-                    Paid Amount (BDT)
+                    Paid Amount ({paymentCurrency})
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">৳</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">
+                      {paymentCurrency === 'AED' ? 'د.إ' : '৳'}
+                    </span>
                     <input
                       type="number"
                       step="any"
@@ -476,9 +521,14 @@ export default function PayVendorDueModal({ open, onClose, vendorId, vendorName,
                       value={payAmount}
                       onChange={(e) => setPayAmount(e.target.value)}
                       placeholder="Enter paid amount"
-                      className="w-full pl-8 pr-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-base sm:text-sm font-semibold outline-none focus:ring-2 focus:ring-black transition-all"
+                      className="w-full pl-9 pr-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-base sm:text-sm font-semibold outline-none focus:ring-2 focus:ring-black transition-all"
                     />
                   </div>
+                  {paymentCurrency === 'AED' && payAmount > 0 && (
+                    <div className="text-xs text-neutral-500 mt-1">
+                      Equivalent to BDT {(Number(payAmount) * Number(exchangeRate)).toLocaleString()}
+                    </div>
+                  )}
                 </div>
 
                 {/* Date */}
