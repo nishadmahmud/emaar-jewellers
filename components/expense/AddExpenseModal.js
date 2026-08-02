@@ -239,10 +239,10 @@ export default function AddExpenseModal({ open, onClose, onSuccess }) {
               {/* Amount */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
-                  Amount (AED)
+                  Amount (BDT)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">AED</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">৳</span>
                   <input
                     type="number"
                     step="any"

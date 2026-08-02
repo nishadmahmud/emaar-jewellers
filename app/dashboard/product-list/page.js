@@ -105,10 +105,10 @@ export default function ProductListPage() {
                       {product.sku || '-'}
                     </td>
                     <td className="py-4 px-6 text-sm font-medium text-neutral-900 text-right">
-                      {product.purchase_price ? `AED ${parseFloat(product.purchase_price).toLocaleString()}` : '-'}
+                      {product.purchase_price ? `BDT ${parseFloat(product.purchase_price).toLocaleString()}` : '-'}
                     </td>
                     <td className="py-4 px-6 text-sm font-medium text-neutral-900 text-right">
-                       {product.retails_price || product.sell_price ? `AED ${parseFloat(product.retails_price || product.sell_price).toLocaleString()}` : '-'}
+                       {product.retails_price || product.sell_price ? `BDT ${parseFloat(product.retails_price || product.sell_price).toLocaleString()}` : '-'}
                     </td>
                   </tr>
                 ))

@@ -150,7 +150,7 @@ export default function EditExpenseModal({ open, expense, onClose, onSuccess }) 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-neutral-700 flex items-center gap-1.5">
                   <DollarSign size={14} className="text-neutral-500" />
-                  Amount (AED) <span className="text-rose-500">*</span>
+                  Amount (BDT) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="number"

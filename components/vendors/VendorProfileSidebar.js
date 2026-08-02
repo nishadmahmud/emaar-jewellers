@@ -47,7 +47,7 @@ export default function VendorProfileSidebar({ vendor, onRefresh }) {
       <div className="bg-rose-50/70 border border-rose-100 rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">REMAINING DUE</span>
-          <span className="text-base font-extrabold text-rose-600">AED {totalDue.toLocaleString('en-US')}</span>
+          <span className="text-base font-extrabold text-rose-600">BDT {totalDue.toLocaleString('en-US')}</span>
         </div>
 
         <button

@@ -18,6 +18,22 @@ function normalizeBdMobileInput(raw) {
   return d;
 }
 
+const CurrencyDropdown = ({ value, onChange }) => {
+  return (
+    <div className="relative w-full min-w-[65px]">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-2 py-1 pr-6 bg-white border border-neutral-200 rounded text-xs sm:text-sm focus:ring-1 focus:ring-black outline-none font-medium h-[26px] sm:h-[30px] appearance-none cursor-pointer"
+      >
+        <option value="BDT">BDT</option>
+        <option value="AED">AED</option>
+      </select>
+      <ChevronDown size={14} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+    </div>
+  );
+};
+
 export default function SellPage() {
   const { data: session } = useSession();
   const token = session?.accessToken;
@@ -228,14 +244,15 @@ export default function SellPage() {
     if (existing) {
       setCart(cart.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item));
     } else {
-      setCart([...cart, {
-        id: product.id,
-        name: product.name,
-        have_variant: product.have_variant ? 1 : 0,
-        qty: 1,
-        goldVori: '',
-        goldGram: '',
-        ratePerVori: product.retails_price || product.sell_price || 0
+      const initialQty = 1;
+      const initialGram = (initialQty * 11.664).toFixed(3);
+      setCart([...cart, { 
+        ...product, 
+        qty: initialQty, 
+        goldGram: initialGram,
+        ratePerVori: product.retails_price || product.sell_price || 0,
+        currency: 'BDT',
+        aedRate: '' 
       }]);
     }
     setProductSearch('');
@@ -246,13 +263,13 @@ export default function SellPage() {
     setCart(cart.map(item => {
       if (item.id === id) {
         const updated = { ...item, [field]: value };
-        if (field === 'goldVori') {
+        if (field === 'qty') {
            const vori = parseFloat(value);
            updated.goldGram = isNaN(vori) ? '' : (vori * 11.664).toFixed(3);
         }
         if (field === 'goldGram') {
            const gram = parseFloat(value);
-           updated.goldVori = isNaN(gram) ? '' : (gram / 11.664).toFixed(3);
+           updated.qty = isNaN(gram) ? '' : (gram / 11.664).toFixed(3);
         }
         return updated;
       }
@@ -266,14 +283,21 @@ export default function SellPage() {
 
 
   // --- Calculations ---
-  const subtotal = cart.reduce((acc, item) => {
-    const vori = parseFloat(item.goldVori) || 0;
-    const rate = parseFloat(item.ratePerVori) || 0;
-    const qty = parseFloat(item.qty) || 1;
-    const weightMultiplier = vori > 0 ? vori : 1;
-    return acc + (weightMultiplier * rate * qty);
-  }, 0);
+  const calculateTotal = () => {
+    return cart.reduce((total, item) => {
+      const qty = parseFloat(item.qty) || 0;
+      const rate = parseFloat(item.ratePerVori) || 0;
+      const aedRate = parseFloat(item.aedRate) || 0;
+      
+      let itemTotal = rate * qty;
+      if (item.currency === 'AED') {
+        itemTotal = rate * qty * aedRate;
+      }
+      return total + itemTotal;
+    }, 0);
+  };
   
+  const subtotal = calculateTotal();
   const discountNum = parseFloat(formData.discount) || 0;
   const grandTotal = subtotal - discountNum;
   const effectivePaidAmount =
@@ -309,6 +333,26 @@ export default function SellPage() {
             payment_type_category_id: 1,
             payment_amount: effectivePaidAmount,
           }];
+
+      const saleItems = cart.map(item => {
+        const itemQty = parseFloat(item.qty) || 1;
+        const itemRate = parseFloat(item.ratePerVori) || 0;
+        const aedRate = parseFloat(item.aedRate) || 0;
+        
+        let finalRate = itemRate;
+        if (item.currency === 'AED') {
+          finalRate = itemRate * aedRate;
+        }
+
+        return {
+          productId: item.id,
+          productName: item.name,
+          quantity: itemQty,
+          weightGram: item.goldGram ? parseFloat(item.goldGram) : null,
+          rate: finalRate,
+          subtotal: finalRate * itemQty
+        };
+      });
 
       const payload = {
         customer_id: formData.customerId === 'walk-in' ? null : formData.customerId,
@@ -363,11 +407,7 @@ export default function SellPage() {
   };
 
   const getCurrencySymbol = () => {
-    switch(formData.currency) {
-      case 'USD': return '$';
-      case 'AED': return 'AED';
-      default: return 'AED';
-    }
+    return '৳';
   };
 
   const getPaymentIcon = (name) => {
@@ -384,9 +424,10 @@ export default function SellPage() {
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left Column: Form */}
-        <div className="flex-1 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-20">
+        
+        {/* Left Column - Product Search (7 cols) */}
+        <div className="lg:col-span-7 space-y-6 sticky top-20 min-w-0">
           <form id="sell-form" onSubmit={handleSubmit} className="space-y-6">
             
             {/* Customer Section */}
@@ -535,14 +576,13 @@ export default function SellPage() {
               {/* Cart Items View */}
               {cart.length > 0 && (
                 <div>
-                  {/* Mobile Stacked Card View (No horizontal scrolling) */}
-                  <div className="block sm:hidden border border-neutral-200 rounded-lg overflow-hidden divide-y divide-neutral-200 bg-white">
+                  {/* Universal Stacked Card View (No horizontal scrolling) */}
+                  <div className="border border-neutral-200 rounded-lg overflow-hidden divide-y divide-neutral-200 bg-white">
                     {cart.map((item) => {
-                      const vori = parseFloat(item.goldVori) || 0;
                       const qty = parseFloat(item.qty) || 1;
                       const rate = parseFloat(item.ratePerVori) || 0;
-                      const weightMultiplier = vori > 0 ? vori : 1;
-                      const itemTotal = weightMultiplier * rate * qty;
+                      const aedRate = parseFloat(item.aedRate) || 0;
+                      const itemTotal = item.currency === 'AED' ? (rate * qty * aedRate) : (rate * qty);
 
                       return (
                         <div key={item.id} className="p-3 space-y-2.5">
@@ -553,15 +593,15 @@ export default function SellPage() {
                             </button>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 text-xs">
                             <div>
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Wt (Vori)</label>
                               <input
                                 type="number"
                                 step="0.001"
                                 placeholder="0"
-                                value={item.goldVori}
-                                onChange={(e) => updateCartItem(item.id, 'goldVori', e.target.value)}
+                                value={item.qty}
+                                onChange={(e) => updateCartItem(item.id, 'qty', e.target.value)}
                                 className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                               />
                             </div>
@@ -579,25 +619,6 @@ export default function SellPage() {
                             </div>
 
                             <div>
-                              <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Qty</label>
-                              <div className="flex items-center gap-1">
-                                <button type="button" onClick={() => updateCartItem(item.id, 'qty', Math.max(1, qty - 1))} className="p-1 bg-neutral-100 rounded text-neutral-600">
-                                  <Minus size={12} />
-                                </button>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={item.qty}
-                                  onChange={(e) => updateCartItem(item.id, 'qty', e.target.value)}
-                                  className="w-12 text-center py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
-                                />
-                                <button type="button" onClick={() => updateCartItem(item.id, 'qty', qty + 1)} className="p-1 bg-neutral-100 rounded text-neutral-600">
-                                  <Plus size={12} />
-                                </button>
-                              </div>
-                            </div>
-
-                            <div>
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Rate / Vori</label>
                               <input
                                 type="number"
@@ -607,102 +628,36 @@ export default function SellPage() {
                                 className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                               />
                             </div>
+                            
+                            <div>
+                              <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Currency</label>
+                              <CurrencyDropdown
+                                value={item.currency || 'BDT'}
+                                onChange={(val) => updateCartItem(item.id, 'currency', val)}
+                              />
+                            </div>
+                            
+                            {item.currency === 'AED' && (
+                              <div>
+                                <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">AED Rate</label>
+                                <input
+                                  type="number"
+                                  placeholder="0"
+                                  value={item.aedRate || ''}
+                                  onChange={(e) => updateCartItem(item.id, 'aedRate', e.target.value)}
+                                  className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
+                                />
+                              </div>
+                            )}
                           </div>
 
-                          <div className="flex justify-between items-center pt-1 border-t border-neutral-100 text-xs">
-                            <span className="text-neutral-500 font-medium">Subtotal:</span>
-                            <span className="font-bold text-neutral-900">AED {itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                          <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
+                            <span className="text-[10px] font-medium text-neutral-500 uppercase">Subtotal:</span>
+                            <span className="font-semibold text-sm text-black">৳{itemTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
                         </div>
                       );
                     })}
-                  </div>
-
-                  {/* Desktop Table View */}
-                  <div className="hidden sm:block overflow-x-auto border border-neutral-200 rounded-lg">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
-                      <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 uppercase text-xs tracking-wider">
-                        <tr>
-                          <th className="px-4 py-3 font-medium">Item</th>
-                          <th className="px-4 py-3 font-medium w-32">Qty</th>
-                          <th className="px-4 py-3 font-medium w-24">Wt(Vori)</th>
-                          <th className="px-4 py-3 font-medium w-24">Wt(Gram)</th>
-                          <th className="px-4 py-3 font-medium w-32">Rate</th>
-                          <th className="px-4 py-3 font-medium w-32">Total</th>
-                          <th className="px-4 py-3 font-medium w-12 text-center"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-neutral-100">
-                        {cart.map((item) => {
-                          const vori = parseFloat(item.goldVori) || 0;
-                          const qty = parseFloat(item.qty) || 1;
-                          const rate = parseFloat(item.ratePerVori) || 0;
-                          const weightMultiplier = vori > 0 ? vori : 1;
-                          const itemTotal = weightMultiplier * rate * qty;
-                          
-                          return (
-                            <tr key={item.id} className="hover:bg-neutral-50/50">
-                              <td className="px-4 py-3">
-                                <div className="font-medium text-neutral-900 truncate max-w-[150px]">{item.name}</div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                  <button type="button" onClick={() => updateCartItem(item.id, 'qty', Math.max(1, qty - 1))} className="p-1 bg-neutral-100 rounded hover:bg-neutral-200 text-neutral-600">
-                                    <Minus size={14} />
-                                  </button>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={item.qty}
-                                    onChange={(e) => updateCartItem(item.id, 'qty', e.target.value)}
-                                    className="w-12 text-center px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
-                                  />
-                                  <button type="button" onClick={() => updateCartItem(item.id, 'qty', qty + 1)} className="p-1 bg-neutral-100 rounded hover:bg-neutral-200 text-neutral-600">
-                                    <Plus size={14} />
-                                  </button>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  step="0.001"
-                                  value={item.goldVori}
-                                  onChange={(e) => updateCartItem(item.id, 'goldVori', e.target.value)}
-                                  className="w-20 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
-                                  placeholder="0"
-                                />
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  step="0.001"
-                                  value={item.goldGram}
-                                  onChange={(e) => updateCartItem(item.id, 'goldGram', e.target.value)}
-                                  className="w-20 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
-                                  placeholder="0"
-                                />
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  value={item.ratePerVori}
-                                  onChange={(e) => updateCartItem(item.id, 'ratePerVori', e.target.value)}
-                                  className="w-24 px-2 py-1 bg-white border border-neutral-200 rounded text-sm focus:ring-1 focus:ring-black outline-none"
-                                />
-                              </td>
-                              <td className="px-4 py-3 font-medium text-neutral-900">
-                                {getCurrencySymbol()}{itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <button type="button" onClick={() => removeCartItem(item.id)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors">
-                                  <Trash2 size={16} />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
                   </div>
                 </div>
               )}
@@ -762,7 +717,7 @@ export default function SellPage() {
                       onClick={() => setFormData({...formData, paidAmount: '0'})}
                       className="text-[11px] px-2 py-0.5 rounded-md bg-red-100 text-red-800 font-semibold hover:bg-red-200 transition border border-red-200"
                     >
-                      Full Due (AED 0)
+                      Full Due (৳0)
                     </button>
                   </div>
                 </div>

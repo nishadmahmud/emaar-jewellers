@@ -327,7 +327,7 @@ export default function FinancialOverviewModal({ open, onClose, dashboardData })
                 </div>
                 <p className="text-[11px] text-gray-500 font-medium">Investment</p>
                 <p className="text-xl font-bold text-gray-900 mt-0.5">
-                  AED {fmt(investment)}
+                  BDT {fmt(investment)}
                 </p>
               </div>
             )}
@@ -346,7 +346,7 @@ export default function FinancialOverviewModal({ open, onClose, dashboardData })
                 </div>
                 <p className="text-[11px] text-gray-500 font-medium">Fixed Asset</p>
                 <p className="text-xl font-bold text-gray-900 mt-0.5">
-                  AED {fmt(fixedAsset)}
+                  BDT {fmt(fixedAsset)}
                 </p>
               </div>
             )}
@@ -372,7 +372,7 @@ export default function FinancialOverviewModal({ open, onClose, dashboardData })
                   </div>
                 </div>
                 <p className="text-xl font-bold text-orange-600">
-                  AED {fmt(monthlyExpense)}
+                  BDT {fmt(monthlyExpense)}
                 </p>
               </div>
             )}
@@ -393,7 +393,7 @@ export default function FinancialOverviewModal({ open, onClose, dashboardData })
                 </div>
               </div>
               <p className="text-xl font-bold text-purple-700">
-                AED {fmt(totalStockValue)}
+                BDT {fmt(totalStockValue)}
               </p>
             </div>
           </div>
@@ -414,7 +414,7 @@ export default function FinancialOverviewModal({ open, onClose, dashboardData })
                 </div>
                 <p className="text-[11px] text-gray-500 font-medium">Customer Due</p>
                 <p className="text-xl font-bold text-amber-600 mt-0.5">
-                  AED {fmt(customerDue)}
+                  BDT {fmt(customerDue)}
                 </p>
               </div>
             )}
@@ -433,7 +433,7 @@ export default function FinancialOverviewModal({ open, onClose, dashboardData })
                 </div>
                 <p className="text-[11px] text-gray-500 font-medium">Vendor Due</p>
                 <p className="text-xl font-bold text-rose-600 mt-0.5">
-                  AED {fmt(vendorDue)}
+                  BDT {fmt(vendorDue)}
                 </p>
               </div>
             )}
@@ -459,7 +459,7 @@ export default function FinancialOverviewModal({ open, onClose, dashboardData })
                 <div className="text-right">
                   <p className="text-[10px] text-slate-400 font-medium">Total Balance</p>
                   <p className="text-xl font-bold text-white">
-                    AED {fmt(totalBalance)}
+                    BDT {fmt(totalBalance)}
                   </p>
                 </div>
               </div>
@@ -470,7 +470,7 @@ export default function FinancialOverviewModal({ open, onClose, dashboardData })
                     <Coins className="w-3.5 h-3.5 text-amber-400" />
                     <span className="font-semibold text-[11px]">Cash Balance</span>
                   </div>
-                  <p className="text-sm font-bold text-white">AED {fmt(cashBalance)}</p>
+                  <p className="text-sm font-bold text-white">BDT {fmt(cashBalance)}</p>
                 </div>
 
                 <div className="bg-slate-950/70 p-2 rounded-lg border border-slate-800">
@@ -478,7 +478,7 @@ export default function FinancialOverviewModal({ open, onClose, dashboardData })
                     <Building2 className="w-3.5 h-3.5 text-blue-400" />
                     <span className="font-semibold text-[11px]">Bank Balance</span>
                   </div>
-                  <p className="text-sm font-bold text-white">AED {fmt(bankBalance)}</p>
+                  <p className="text-sm font-bold text-white">BDT {fmt(bankBalance)}</p>
                 </div>
               </div>
             </div>
@@ -500,35 +500,35 @@ export default function FinancialOverviewModal({ open, onClose, dashboardData })
             <div className="space-y-1.5 text-xs text-gray-600">
               <div className="flex justify-between">
                 <span>Fixed Asset (Debit Amount)</span>
-                <span className="font-mono">+ AED {fmt(fixedAsset)}</span>
+                <span className="font-mono">+ BDT {fmt(fixedAsset)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Current Month Expense</span>
-                <span className="font-mono">+ AED {fmt(monthlyExpense)}</span>
+                <span className="font-mono">+ BDT {fmt(monthlyExpense)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Total Stock Value</span>
-                <span className="font-mono">+ AED {fmt(totalStockValue)}</span>
+                <span className="font-mono">+ BDT {fmt(totalStockValue)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Customer Due</span>
-                <span className="font-mono">+ AED {fmt(customerDue)}</span>
+                <span className="font-mono">+ BDT {fmt(customerDue)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Total Balance (Cash + Bank)</span>
-                <span className="font-mono">+ AED {fmt(totalBalance)}</span>
+                <span className="font-mono">+ BDT {fmt(totalBalance)}</span>
               </div>
               <div className="flex justify-between text-rose-600">
                 <span>Less: Supplier Balance (Vendor Due)</span>
-                <span className="font-mono">- AED {fmt(vendorDue)}</span>
+                <span className="font-mono">- BDT {fmt(vendorDue)}</span>
               </div>
               <div className="flex justify-between pt-1.5 border-t border-gray-200 font-semibold text-gray-900">
                 <span>Total Asset & Liquidity</span>
-                <span className="font-mono">AED {fmt(totalAssetAndLiquidity)}</span>
+                <span className="font-mono">BDT {fmt(totalAssetAndLiquidity)}</span>
               </div>
               <div className="flex justify-between text-gray-500">
                 <span>Less: Total Investment</span>
-                <span className="font-mono">- AED {fmt(investment)}</span>
+                <span className="font-mono">- BDT {fmt(investment)}</span>
               </div>
             </div>
 
@@ -562,7 +562,7 @@ export default function FinancialOverviewModal({ open, onClose, dashboardData })
                   isProfit ? 'text-emerald-700' : 'text-rose-700'
                 }`}
               >
-                AED {fmt(Math.abs(netProfitLoss))}
+                BDT {fmt(Math.abs(netProfitLoss))}
               </p>
             </div>
           </div>

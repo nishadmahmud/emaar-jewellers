@@ -12,7 +12,7 @@ import AddExpenseModal from '@/components/expense/AddExpenseModal';
 import EditExpenseModal from '@/components/expense/EditExpenseModal';
 import ViewExpenseModal from '@/components/expense/ViewExpenseModal';
 
-const formatAED = (num) => {
+const formatBDT = (num) => {
   if (num === null || num === undefined) return '0.00';
   return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
@@ -91,7 +91,7 @@ export default function ExpenseListPage() {
         <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Total Expenses</p>
-            <p className="text-xl font-extrabold text-rose-600 mt-1">AED {formatAED(totalExpenseSum)}</p>
+            <p className="text-xl font-extrabold text-rose-600 mt-1">BDT {formatBDT(totalExpenseSum)}</p>
           </div>
           <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
             <DollarSign size={20} />
@@ -168,7 +168,7 @@ export default function ExpenseListPage() {
                         <Tag size={12} />
                         {catName}
                       </span>
-                      <span className="font-extrabold text-sm text-rose-600">AED {formatAED(expense.amount)}</span>
+                      <span className="font-extrabold text-sm text-rose-600">BDT {formatBDT(expense.amount)}</span>
                     </div>
 
                     <div className="flex justify-between items-end text-xs text-neutral-500 pt-1">
@@ -219,7 +219,7 @@ export default function ExpenseListPage() {
                     <th className="py-3.5 px-5">Category</th>
                     <th className="py-3.5 px-5">Date</th>
                     <th className="py-3.5 px-5">Remarks / Note</th>
-                    <th className="py-3.5 px-5 text-right">Amount (AED)</th>
+                    <th className="py-3.5 px-5 text-right">Amount (BDT)</th>
                     <th className="py-3.5 px-5 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -238,7 +238,7 @@ export default function ExpenseListPage() {
                         </td>
                         <td className="py-3.5 px-5 font-medium text-neutral-700">{dateStr}</td>
                         <td className="py-3.5 px-5 text-neutral-600 max-w-xs truncate">{note}</td>
-                        <td className="py-3.5 px-5 text-right font-extrabold text-rose-600">AED {formatAED(expense.amount)}</td>
+                        <td className="py-3.5 px-5 text-right font-extrabold text-rose-600">BDT {formatBDT(expense.amount)}</td>
                         <td className="py-3.5 px-5 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <button

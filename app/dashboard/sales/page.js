@@ -138,10 +138,10 @@ export default function SalesHistoryPage() {
 
                       <div className="text-right shrink-0 flex items-center gap-1 pl-1">
                         <div>
-                          <p className="font-bold text-xs text-neutral-900">AED {Number(total).toLocaleString()}</p>
+                          <p className="font-bold text-xs text-neutral-900">BDT {Number(total).toLocaleString()}</p>
                           {due > 0 ? (
                             <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200 mt-0.5">
-                              Due AED {due.toLocaleString()}
+                              Due BDT {due.toLocaleString()}
                             </span>
                           ) : (
                             <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200 mt-0.5">
@@ -184,13 +184,13 @@ export default function SalesHistoryPage() {
                           {inv.customer_phone && <span className="block text-xs text-neutral-400">{inv.customer_phone}</span>}
                         </td>
                         <td className="px-6 py-4 text-right text-neutral-900 font-medium">
-                          AED {Number(inv.sub_total - inv.discount).toLocaleString()}
+                          BDT {Number(inv.sub_total - inv.discount).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-right text-green-600">
-                          AED {Number(inv.paid_amount).toLocaleString()}
+                          BDT {Number(inv.paid_amount).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-right text-red-600">
-                          AED {Math.max((inv.sub_total - inv.discount) - inv.paid_amount, 0).toLocaleString()}
+                          BDT {Math.max((inv.sub_total - inv.discount) - inv.paid_amount, 0).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <button

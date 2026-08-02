@@ -4,7 +4,7 @@ import React from 'react';
 import { Receipt, Eye } from 'lucide-react';
 import Link from 'next/link';
 
-const formatAED = (num) => {
+const formatBDT = (num) => {
   if (num === null || num === undefined) return '0.00';
   return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
@@ -50,10 +50,10 @@ export default function VendorInvoiceHistory({ vendorWiseInvoice }) {
                     <p className="text-[11px] text-neutral-400 mt-0.5">{dateStr}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-xs text-neutral-900">AED {formatAED(totalAmt)}</p>
+                    <p className="font-bold text-xs text-neutral-900">BDT {formatBDT(totalAmt)}</p>
                     {dueAmt > 0 ? (
                       <span className="text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200">
-                        Due AED {formatAED(dueAmt)}
+                        Due BDT {formatBDT(dueAmt)}
                       </span>
                     ) : (
                       <span className="text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200">
@@ -91,9 +91,9 @@ export default function VendorInvoiceHistory({ vendorWiseInvoice }) {
                     <tr key={idx} className="hover:bg-neutral-50/50 transition-colors">
                       <td className="py-3 px-4 font-mono font-bold text-neutral-900">{invId}</td>
                       <td className="py-3 px-4 text-neutral-600">{dateStr}</td>
-                      <td className="py-3 px-4 text-right font-semibold">AED {formatAED(totalAmt)}</td>
-                      <td className="py-3 px-4 text-right text-emerald-600 font-semibold">AED {formatAED(paidAmt)}</td>
-                      <td className="py-3 px-4 text-right text-rose-600 font-extrabold">AED {formatAED(dueAmt)}</td>
+                      <td className="py-3 px-4 text-right font-semibold">BDT {formatBDT(totalAmt)}</td>
+                      <td className="py-3 px-4 text-right text-emerald-600 font-semibold">BDT {formatBDT(paidAmt)}</td>
+                      <td className="py-3 px-4 text-right text-rose-600 font-extrabold">BDT {formatBDT(dueAmt)}</td>
                       <td className="py-3 px-4 text-center">
                         {dueAmt > 0 ? (
                           <span className="text-[10px] bg-rose-50 text-rose-700 font-bold px-2 py-0.5 rounded-full border border-rose-200">

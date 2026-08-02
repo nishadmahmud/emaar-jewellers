@@ -230,7 +230,7 @@ export default function QuickPaymentModal({ open, onClose, initialMode = 'custom
     setSubmitting(true);
     try {
       const isCustomer = mode === 'customer';
-      const endpoint = isCustomer ? `${API_URL}/due-collection` : `${API_URL}/save-vendor-due-collection`;
+      const endpoint = `${API_URL}/due-collection`;
 
       const payload = isCustomer
         ? {
@@ -283,7 +283,7 @@ export default function QuickPaymentModal({ open, onClose, initialMode = 'custom
     ...dueInvoices.map((inv) => {
       const invId = inv.sale_invoice_id || inv.purchase_invoice_id || inv.invoice_id;
       const dueVal = Number(inv.total_due || inv.due_amount || inv.due || 0).toLocaleString();
-      return { id: invId, name: `${invId} (Due: AED ${dueVal})` };
+      return { id: invId, name: `${invId} (Due: BDT ${dueVal})` };
     })
   ];
 
@@ -393,7 +393,7 @@ export default function QuickPaymentModal({ open, onClose, initialMode = 'custom
                           {pPhone && <p className="text-[11px] text-neutral-400">{pPhone}</p>}
                         </div>
                         {person.due !== undefined && (
-                          <span className="text-xs font-bold text-rose-600">AED {Number(person.due).toLocaleString()}</span>
+                          <span className="text-xs font-bold text-rose-600">BDT {Number(person.due).toLocaleString()}</span>
                         )}
                       </button>
                     );
@@ -411,7 +411,7 @@ export default function QuickPaymentModal({ open, onClose, initialMode = 'custom
                 <p className="text-xs text-rose-600 font-medium">{selectedPerson.name || selectedPerson.customer_name || selectedPerson.vendor_name}</p>
               </div>
               <p className="text-xl font-extrabold text-rose-600">
-                {loadingInvoices ? <Loader2 size={16} className="animate-spin inline" /> : `AED ${totalPersonDue.toLocaleString()}`}
+                {loadingInvoices ? <Loader2 size={16} className="animate-spin inline" /> : `BDT ${totalPersonDue.toLocaleString()}`}
               </p>
             </div>
           )}
@@ -446,10 +446,10 @@ export default function QuickPaymentModal({ open, onClose, initialMode = 'custom
           {/* Amount Paid */}
           <div>
             <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
-              Amount Paid (AED)
+              Amount Paid (BDT)
             </label>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">AED</span>
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">৳</span>
               <input
                 type="number"
                 step="any"

@@ -167,7 +167,7 @@ function Header({ user, genStr }) {
       </View>
       <View style={styles.rightInfo}>
         <Text style={styles.rightLine}>Report: Financial Overview</Text>
-        <Text style={styles.rightLine}>Currency: AED</Text>
+        <Text style={styles.rightLine}>Currency: BDT</Text>
         <Text style={styles.rightLine}>Generated: {genStr}</Text>
       </View>
     </View>
@@ -205,7 +205,7 @@ export default function FinancialOverviewPDF({ data = {}, user }) {
         <View style={styles.table}>
           <View style={styles.row}>
             <View style={[styles.th, styles.colLabel]}><Text style={styles.head}>Metric Description</Text></View>
-            <View style={[styles.th, styles.colValue]}><Text style={[styles.head, styles.right]}>Amount (AED)</Text></View>
+            <View style={[styles.th, styles.colValue]}><Text style={[styles.head, styles.right]}>Amount (BDT)</Text></View>
           </View>
           <View style={styles.row}>
             <View style={[styles.td, styles.colLabel]}><Text style={styles.cell}>Investment (Credit Quick Payments)</Text></View>
@@ -286,7 +286,7 @@ export default function FinancialOverviewPDF({ data = {}, user }) {
             </Text>
           </View>
           <Text style={[styles.verdictValue, { color: isProfit ? "#047857" : "#B91C1C" }]}>
-            AED {fmt2(Math.abs(netProfitLoss))}
+            BDT {fmt2(Math.abs(netProfitLoss))}
           </Text>
         </View>
 

@@ -340,14 +340,14 @@ export default function PaymentMethodsModal({
                   onClick={handleFullDue}
                   className="flex-1 text-[11px] py-1.5 rounded-lg font-semibold bg-red-100 text-red-800 hover:bg-red-200 border border-red-300 transition-colors active:scale-95 text-center whitespace-nowrap"
                 >
-                  Full Due (AED 0)
+                  Full Due (BDT 0)
                 </button>
               </div>
 
               {/* Amount Input Box */}
               <div className="flex items-center">
                 <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3.5 py-2.5 rounded-l-xl text-neutral-500 text-sm font-medium">
-                  AED
+                  BDT
                 </span>
                 <input
                   type="number"
@@ -410,7 +410,7 @@ export default function PaymentMethodsModal({
                   <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">Amount</label>
                   <div className="flex items-center">
                     <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3.5 py-2.5 rounded-l-xl text-neutral-500 text-sm font-medium">
-                      AED
+                      BDT
                     </span>
                     <input
                       type="number"
@@ -453,18 +453,18 @@ export default function PaymentMethodsModal({
             <div className="grid grid-cols-3 gap-2 text-center pt-1">
               <div>
                 <span className="block text-[11px] text-neutral-400 uppercase tracking-wider">Total Payable</span>
-                <span className="font-semibold text-sm text-neutral-200">AED {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="font-semibold text-sm text-neutral-200">BDT {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
               <div className="border-x border-neutral-800">
                 <span className="block text-[11px] text-neutral-400 uppercase tracking-wider">Total Paid</span>
-                <span className="font-semibold text-sm text-blue-400">AED {totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="font-semibold text-sm text-blue-400">BDT {totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
               <div>
                 <span className="block text-[11px] text-neutral-400 uppercase tracking-wider">
                   {totalPaid < total ? 'Due' : 'Change'}
                 </span>
                 <span className={`font-semibold text-sm ${totalPaid < total ? 'text-red-400' : 'text-emerald-400'}`}>
-                  AED {(totalPaid < total ? dueAmount : changeAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  BDT {(totalPaid < total ? dueAmount : changeAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
             </div>

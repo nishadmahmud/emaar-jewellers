@@ -3,7 +3,7 @@
 import React from 'react';
 import { X, Receipt, Tag, Calendar, DollarSign, FileText, Hash, CreditCard } from 'lucide-react';
 
-const formatAED = (num) => {
+const formatBDT = (num) => {
   if (num === null || num === undefined) return '0.00';
   return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
@@ -63,7 +63,7 @@ export default function ViewExpenseModal({ open, expense, onClose }) {
               <span className="text-neutral-500 flex items-center gap-1.5 font-medium">
                 <DollarSign size={14} /> Amount
               </span>
-              <span className="font-extrabold text-rose-600 text-sm">AED {formatAED(amount)}</span>
+              <span className="font-extrabold text-rose-600 text-sm">BDT {formatBDT(amount)}</span>
             </div>
 
             <div className="flex items-center justify-between border-b border-neutral-200/60 pb-2.5">

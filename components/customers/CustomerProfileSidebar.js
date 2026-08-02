@@ -46,11 +46,11 @@ export default function CustomerProfileSidebar({ customer, onRefresh }) {
                 <h3 className="font-semibold text-neutral-900 mb-3 text-sm tracking-wide uppercase">Financial Overview</h3>
                 <div className="flex justify-between items-center py-2">
                     <span className="text-neutral-500 text-sm">Total Due</span>
-                    <span className="font-bold text-red-600">{(data.due || 0).toLocaleString("en-US")} AED</span>
+                    <span className="font-bold text-red-600">{(data.due || 0).toLocaleString("en-US")} BDT</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
                     <span className="text-neutral-500 text-sm">Total Purchased</span>
-                    <span className="font-medium text-neutral-900">{(data.invoice_list_sum_sub_total || 0).toLocaleString("en-US")} AED</span>
+                    <span className="font-medium text-neutral-900">{(data.invoice_list_sum_sub_total || 0).toLocaleString("en-US")} BDT</span>
                 </div>
                 
                 <button

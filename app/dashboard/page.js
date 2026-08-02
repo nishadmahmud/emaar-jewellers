@@ -68,8 +68,8 @@ const calculatePayment = (inv) => {
 };
 
 const getDueStatus = (due) => {
-  if (due > 0) return { label: `${due.toLocaleString()} AED`, color: "bg-red-100 text-red-800" };
-  if (due < 0) return { label: `${Math.abs(due).toLocaleString()} AED`, color: "bg-blue-100 text-blue-800" };
+  if (due > 0) return { label: `${due.toLocaleString()} BDT`, color: "bg-red-100 text-red-800" };
+  if (due < 0) return { label: `${Math.abs(due).toLocaleString()} BDT`, color: "bg-blue-100 text-blue-800" };
   return { label: "Paid", color: "bg-green-100 text-green-800" };
 };
 
@@ -111,15 +111,15 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
 
                 if (isSelling) {
                   const { total, due, changeAmount } = calculatePayment(invoice);
-                  amountDisplay = `AED ${total.toLocaleString()}`;
+                  amountDisplay = `BDT ${total.toLocaleString()}`;
                   
                   dueBadge = changeAmount > 0 ? (
                     <span className="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">
-                      Change AED {changeAmount.toLocaleString()}
+                      Change BDT {changeAmount.toLocaleString()}
                     </span>
                   ) : due > 0 ? (
                     <span className="text-[10px] bg-rose-50 text-rose-700 font-semibold px-2 py-0.5 rounded-full border border-rose-200">
-                      Due AED {due.toLocaleString()}
+                      Due BDT {due.toLocaleString()}
                     </span>
                   ) : (
                     <span className="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">
@@ -129,7 +129,7 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
                 } else {
                   const dueAmount = Number.parseFloat(invoice.sub_total || 0) - Number.parseFloat(invoice.paid_amount || 0);
                   const status = getDueStatus(dueAmount);
-                  amountDisplay = `AED ${Number(invoice.sub_total || 0).toLocaleString()}`;
+                  amountDisplay = `BDT ${Number(invoice.sub_total || 0).toLocaleString()}`;
                   dueBadge = (
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${status.color}`}>
                       {status.label}
@@ -179,15 +179,15 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
 
                     if (isSelling) {
                       const { total, due, changeAmount } = calculatePayment(invoice);
-                      amountDisplay = `AED ${total.toLocaleString()}`;
+                      amountDisplay = `BDT ${total.toLocaleString()}`;
                       
                       dueBadge = changeAmount > 0 ? (
                         <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold px-2 py-0.5 rounded-full">
-                          Change AED {changeAmount.toLocaleString()}
+                          Change BDT {changeAmount.toLocaleString()}
                         </span>
                       ) : due > 0 ? (
                         <span className="text-xs bg-rose-50 text-rose-700 border border-rose-200 font-semibold px-2 py-0.5 rounded-full">
-                          Due AED {due.toLocaleString()}
+                          Due BDT {due.toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold px-2 py-0.5 rounded-full">
@@ -197,7 +197,7 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
                     } else {
                       const dueAmount = Number.parseFloat(invoice.sub_total || 0) - Number.parseFloat(invoice.paid_amount || 0);
                       const status = getDueStatus(dueAmount);
-                      amountDisplay = `AED ${Number(invoice.sub_total || 0).toLocaleString()}`;
+                      amountDisplay = `BDT ${Number(invoice.sub_total || 0).toLocaleString()}`;
                       dueBadge = (
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${status.color}`}>
                           {status.label}
@@ -309,14 +309,14 @@ const DueListTable = ({ title, data, type, loading }) => {
                           <p className="font-semibold text-xs text-neutral-900 group-hover:text-blue-600 transition-colors truncate">{r.name || "N/A"}</p>
                           <p className="text-[11px] text-neutral-500 font-mono truncate">{r.invoice_id}</p>
                           <p className="text-[10px] text-neutral-400 mt-0.5 truncate">
-                            Paid: AED {formatNumber(r.paid_amount, 2)} / Total: AED {formatNumber(r.total_amount, 2)}
+                            Paid: BDT {formatNumber(r.paid_amount, 2)} / Total: BDT {formatNumber(r.total_amount, 2)}
                           </p>
                         </div>
                       </div>
 
                       <div className="text-right shrink-0 pl-1">
                         <p className="text-[10px] text-neutral-400 font-medium">Due</p>
-                        <p className="font-bold text-xs text-rose-600">AED {formatNumber(r.due, 2)}</p>
+                        <p className="font-bold text-xs text-rose-600">BDT {formatNumber(r.due, 2)}</p>
                       </div>
                     </div>
                   </Link>
@@ -345,9 +345,9 @@ const DueListTable = ({ title, data, type, loading }) => {
                       <tr key={i} className="hover:bg-neutral-50/80 transition-colors cursor-pointer group" onClick={() => window.location.href = targetUrl}>
                         <td className="py-3 px-5 font-medium text-neutral-900">{r.invoice_id}</td>
                         <td className="py-3 px-5 text-neutral-700 group-hover:text-blue-600 font-medium transition-colors">{r.name}</td>
-                        <td className="py-3 px-5 text-right font-medium">AED {formatNumber(r.total_amount, 2)}</td>
-                        <td className="py-3 px-5 text-right font-medium">AED {formatNumber(r.paid_amount, 2)}</td>
-                        <td className="py-3 px-5 text-right font-bold text-rose-600">AED {formatNumber(r.due, 2)}</td>
+                        <td className="py-3 px-5 text-right font-medium">BDT {formatNumber(r.total_amount, 2)}</td>
+                        <td className="py-3 px-5 text-right font-medium">BDT {formatNumber(r.paid_amount, 2)}</td>
+                        <td className="py-3 px-5 text-right font-bold text-rose-600">BDT {formatNumber(r.due, 2)}</td>
                       </tr>
                     );
                   })}

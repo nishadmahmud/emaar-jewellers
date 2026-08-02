@@ -261,7 +261,7 @@ export default function DashboardLayout({ children }) {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Link
-                href="/pos"
+                href="/dashboard/sell"
                 className="bg-black hover:bg-neutral-800 text-white rounded-lg text-xs flex items-center gap-1.5 px-3 py-2 font-semibold shadow-sm transition-all"
               >
                 <ShoppingCart className="w-3.5 h-3.5" />

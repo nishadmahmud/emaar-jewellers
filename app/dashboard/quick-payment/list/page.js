@@ -12,7 +12,7 @@ import QuickPaymentModal from '@/components/quick-payment/QuickPaymentModal';
 import EditExpenseModal from '@/components/expense/EditExpenseModal';
 import ViewExpenseModal from '@/components/expense/ViewExpenseModal';
 
-const formatAED = (num) => {
+const formatBDT = (num) => {
   if (num === null || num === undefined) return '0.00';
   return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
@@ -103,7 +103,7 @@ export default function QuickPaymentListPage() {
         <div className="bg-white border border-neutral-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Total Payments</p>
-            <p className="text-xl font-extrabold text-blue-600 mt-1">AED {formatAED(totalSum)}</p>
+            <p className="text-xl font-extrabold text-blue-600 mt-1">BDT {formatBDT(totalSum)}</p>
           </div>
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
             <DollarSign size={20} />
@@ -180,7 +180,7 @@ export default function QuickPaymentListPage() {
                         <Tag size={12} />
                         {catName}
                       </span>
-                      <span className="font-extrabold text-sm text-blue-600">AED {formatAED(payment.amount)}</span>
+                      <span className="font-extrabold text-sm text-blue-600">BDT {formatBDT(payment.amount)}</span>
                     </div>
 
                     <div className="flex justify-between items-end text-xs text-neutral-500 pt-1">
@@ -231,7 +231,7 @@ export default function QuickPaymentListPage() {
                     <th className="py-3.5 px-5">Category</th>
                     <th className="py-3.5 px-5">Date</th>
                     <th className="py-3.5 px-5">Remarks / Note</th>
-                    <th className="py-3.5 px-5 text-right">Amount (AED)</th>
+                    <th className="py-3.5 px-5 text-right">Amount (BDT)</th>
                     <th className="py-3.5 px-5 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -250,7 +250,7 @@ export default function QuickPaymentListPage() {
                         </td>
                         <td className="py-3.5 px-5 font-medium text-neutral-700">{dateStr}</td>
                         <td className="py-3.5 px-5 text-neutral-600 max-w-xs truncate">{note}</td>
-                        <td className="py-3.5 px-5 text-right font-extrabold text-blue-600">AED {formatAED(payment.amount)}</td>
+                        <td className="py-3.5 px-5 text-right font-extrabold text-blue-600">BDT {formatBDT(payment.amount)}</td>
                         <td className="py-3.5 px-5 text-center">
                           <div className="flex items-center justify-center gap-1">
                             <button

@@ -234,7 +234,7 @@ function SalesDetailsModal({ invoiceId, onClose, token, API_URL }) {
                       <tr key={idx} className="hover:bg-neutral-50">
                         <td className="py-2.5 px-3 text-neutral-900">{name}</td>
                         <td className="py-2.5 px-3 text-center text-neutral-700 font-semibold">{qty}</td>
-                        <td className="py-2.5 px-3 text-right text-neutral-900 font-bold">AED {rate.toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right text-neutral-900 font-bold">BDT {rate.toLocaleString()}</td>
                       </tr>
                     );
                   })}
@@ -470,7 +470,7 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
       const dueVal = Number(inv.total_due || inv.due_amount || 0).toLocaleString();
       return {
         id: idVal,
-        name: `${idVal} (Due: AED ${dueVal})`
+        name: `${idVal} (Due: BDT ${dueVal})`
       };
     })
   ];
@@ -482,7 +482,7 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
       const dueVal = Number(inv.total_due || inv.due_amount || 0).toLocaleString();
       return {
         id: idVal,
-        name: `${idVal} (Due: AED ${dueVal})`
+        name: `${idVal} (Due: BDT ${dueVal})`
       };
     })
   ];
@@ -549,7 +549,7 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
                 {/* Total Customer Due Header Card */}
                 <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-4 mb-5 flex items-center justify-between">
                   <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">TOTAL CUSTOMER DUE</span>
-                  <span className="text-xl font-extrabold text-rose-600">AED {Number(totalDue).toLocaleString()}</span>
+                  <span className="text-xl font-extrabold text-rose-600">BDT {Number(totalDue).toLocaleString()}</span>
                 </div>
 
                 {/* TAB 1: PAY DUE */}
@@ -582,10 +582,10 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
 
                     <div>
                       <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
-                        Amount Paid (AED)
+                        Amount Paid (BDT)
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">AED</span>
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">৳</span>
                         <input
                           type="number"
                           step="any"
@@ -644,10 +644,10 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
 
                     <div>
                       <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
-                        Discount Amount (AED)
+                        Discount Amount (BDT)
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">AED</span>
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">৳</span>
                         <input
                           type="number"
                           step="any"
@@ -685,10 +685,10 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
                   <form onSubmit={handleAdvanceSubmit} className="space-y-4">
                     <div>
                       <label className="block text-xs font-semibold text-neutral-600 mb-1 uppercase tracking-wider">
-                        Advance / Opening Due Amount (AED)
+                        Advance / Opening Due Amount (BDT)
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">AED</span>
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">৳</span>
                         <input
                           type="number"
                           step="any"
