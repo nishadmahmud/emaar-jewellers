@@ -35,8 +35,13 @@ export default function PaymentsPage() {
   }, [searchTerm]);
 
   const fetcher = async (url) => {
-    const res = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}` },
+    const cacheBustedUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
+    const res = await axios.get(cacheBustedUrl, {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
     });
     return res.data;
   };

@@ -21,6 +21,7 @@ import {
   CreditCard,
   Tags,
   ChevronDown,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useState, useEffect } from 'react';
@@ -61,6 +62,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Vendors', href: '/dashboard/vendors', icon: Users },
     { name: 'Balance Sheet', href: '/dashboard/balance-sheet', icon: FileText },
     { name: 'Customers', href: '/dashboard/customers', icon: Users },
+    { name: 'Fund Transfer', href: '/dashboard/finance/fund-transfer', icon: ArrowRightLeft },
     {
       name: 'Expense',
       icon: Receipt,
