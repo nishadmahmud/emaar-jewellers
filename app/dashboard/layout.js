@@ -41,6 +41,9 @@ export default function DashboardLayout({ children }) {
     if (pathname?.includes('/quick-payment')) {
       setOpenDropdowns((prev) => ({ ...prev, 'Quick Payment': true }));
     }
+    if (pathname?.includes('/settings')) {
+      setOpenDropdowns((prev) => ({ ...prev, Settings: true }));
+    }
   }, [pathname]);
 
   const toggleDropdown = (name) => {
@@ -72,6 +75,13 @@ export default function DashboardLayout({ children }) {
       children: [
         { name: 'Quick Payment List', href: '/dashboard/quick-payment/list', icon: CreditCard },
         { name: 'Payment Category List', href: '/dashboard/quick-payment/categories', icon: Tags },
+      ],
+    },
+    {
+      name: 'Settings',
+      icon: Settings,
+      children: [
+        { name: 'Payments', href: '/dashboard/settings/payments', icon: CreditCard },
       ],
     },
   ];
