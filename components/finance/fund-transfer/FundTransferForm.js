@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import SearchableSelect from "./SearchableSelect";
 
 export default function FundTransferForm({ accounts = [], onSuccess }) {
   const { data: session } = useSession();
@@ -62,36 +63,30 @@ export default function FundTransferForm({ accounts = [], onSuccess }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-lg font-semibold text-slate-800">Fund Transfer</h2>
       <div className="flex flex-col md:flex-row md:items-end gap-4">
-        <div className="flex-1 space-y-1.5">
+        <div className="flex-1 space-y-1.5 min-w-[200px]">
           <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">From</label>
-          <select
-            className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-black/5"
+          <SearchableSelect
+            options={accounts?.map(acc => ({
+              value: acc.id,
+              label: `${acc.payment_category_name}${acc.account_number ? ` — ${acc.account_number}` : ''}`
+            }))}
             value={from}
-            onChange={(e) => setFrom(e.target.value)}
-          >
-            <option value="">Select Account...</option>
-            {accounts?.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.payment_category_name} {acc.account_number ? `— ${acc.account_number}` : ''}
-              </option>
-            ))}
-          </select>
+            onChange={setFrom}
+            placeholder="Select Account..."
+          />
         </div>
 
-        <div className="flex-1 space-y-1.5">
+        <div className="flex-1 space-y-1.5 min-w-[200px]">
           <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">To</label>
-          <select
-            className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-black/5"
+          <SearchableSelect
+            options={accounts?.map(acc => ({
+              value: acc.id,
+              label: `${acc.payment_category_name}${acc.account_number ? ` — ${acc.account_number}` : ''}`
+            }))}
             value={to}
-            onChange={(e) => setTo(e.target.value)}
-          >
-            <option value="">Select Account...</option>
-            {accounts?.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.payment_category_name} {acc.account_number ? `— ${acc.account_number}` : ''}
-              </option>
-            ))}
-          </select>
+            onChange={setTo}
+            placeholder="Select Account..."
+          />
         </div>
 
         <div className="flex-1 space-y-1.5">
@@ -101,7 +96,7 @@ export default function FundTransferForm({ accounts = [], onSuccess }) {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-black/5"
+            className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-[16px] md:text-sm text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-black/5"
           />
         </div>
 
