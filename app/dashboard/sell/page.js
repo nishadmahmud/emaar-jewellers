@@ -242,15 +242,13 @@ export default function SellPage() {
   const selectProduct = (product) => {
     const existing = cart.find(item => item.id === product.id);
     if (existing) {
-      setCart(cart.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item));
+      toast.info("Product is already in the list.");
     } else {
-      const initialQty = 1;
-      const initialGram = (initialQty * 11.664).toFixed(3);
       setCart([...cart, { 
         ...product, 
-        qty: initialQty, 
-        goldGram: initialGram,
-        ratePerVori: product.retails_price || product.sell_price || 0,
+        qty: '', 
+        goldGram: '',
+        ratePerVori: '',
         currency: 'BDT',
         aedRate: '' 
       }]);
@@ -262,16 +260,7 @@ export default function SellPage() {
   const updateCartItem = (id, field, value) => {
     setCart(cart.map(item => {
       if (item.id === id) {
-        const updated = { ...item, [field]: value };
-        if (field === 'qty') {
-           const vori = parseFloat(value);
-           updated.goldGram = isNaN(vori) ? '' : (vori * 11.664).toFixed(3);
-        }
-        if (field === 'goldGram') {
-           const gram = parseFloat(value);
-           updated.qty = isNaN(gram) ? '' : (gram / 11.664).toFixed(3);
-        }
-        return updated;
+        return { ...item, [field]: value };
       }
       return item;
     }));

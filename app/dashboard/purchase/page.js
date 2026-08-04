@@ -174,15 +174,15 @@ export default function PurchasePage() {
   const selectProduct = (product) => {
     const existing = cart.find(item => item.id === product.id);
     if (existing) {
-      setCart(cart.map(item => item.id === product.id ? { ...item, qty: parseFloat(item.qty) + 1 } : item));
+      toast.info("Product is already in the list.");
     } else {
       setCart([...cart, {
         id: product.id,
         name: product.name,
         have_variant: product.have_variant ? 1 : 0,
-        qty: 1,
-        netWeightGram: (1 * 11.664).toFixed(3),
-        ratePerVori: product.purchase_price || product.retails_price || product.sell_price || 0,
+        qty: '',
+        netWeightGram: '',
+        ratePerVori: '',
         currency: 'BDT',
         aedRate: ''
       }]);
@@ -194,16 +194,7 @@ export default function PurchasePage() {
   const updateCartItem = (id, field, value) => {
     setCart(cart.map(item => {
       if (item.id === id) {
-        const updated = { ...item, [field]: value };
-        if (field === 'qty') {
-           const val = parseFloat(value);
-           updated.netWeightGram = isNaN(val) ? '' : (val * 11.664).toFixed(3);
-        }
-        if (field === 'netWeightGram') {
-           const val = parseFloat(value);
-           updated.qty = isNaN(val) ? '' : (val / 11.664).toFixed(3);
-        }
-        return updated;
+        return { ...item, [field]: value };
       }
       return item;
     }));
@@ -218,17 +209,16 @@ export default function PurchasePage() {
   const goldValue = cart.reduce((acc, item) => {
     const qtyNum = parseFloat(item.qty) || 0;
     const rateNum = parseFloat(item.ratePerVori) || 0;
-    const aedRate = parseFloat(item.aedRate) || 1;
-    const itemTotalBdt = item.currency === 'AED' ? (rateNum * qtyNum * aedRate) : (rateNum * qtyNum);
-    return acc + itemTotalBdt;
+    return acc + (rateNum * qtyNum);
   }, 0);
   
-  const displayCurrency = cart.length > 0 ? cart[0].currency : 'BDT';
-  const displayAedRate = cart.length > 0 ? parseFloat(cart[0].aedRate) || 1 : 1;
-  const displayGrandTotal = displayCurrency === 'AED' ? (goldValue / displayAedRate) : goldValue;
+  const displayCurrency = cart.some(item => item.currency === 'AED') ? 'AED' : 'BDT';
+  const displayAedRate = cart.find(item => item.currency === 'AED')?.aedRate || 1;
+  const displayGrandTotal = displayCurrency === 'AED' && displayAedRate > 0 ? (goldValue / displayAedRate) : goldValue;
   
   const effectivePaidAmount = parseFloat(formData.paidAmount) || 0;
-  const dueAmount = Math.max(0, displayGrandTotal - effectivePaidAmount);
+  const effectivePaidAmountBdt = displayCurrency === 'AED' ? effectivePaidAmount * displayAedRate : effectivePaidAmount;
+  const dueAmountDisplay = Math.max(0, displayGrandTotal - effectivePaidAmount);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -254,14 +244,14 @@ export default function PurchasePage() {
         : [{
             payment_type_id: formData.paymentMethodId || 1,
             payment_type_category_id: 1,
-            payment_amount: displayCurrency === 'AED' ? effectivePaidAmount * displayAedRate : effectivePaidAmount,
+            payment_amount: effectivePaidAmountBdt,
           }];
 
       const payload = {
         vendor_id: formData.vendorId,
         vendor_name: formData.vendorName,
         pay_mode: finalPayMode,
-        paid_amount: displayCurrency === 'AED' ? effectivePaidAmount * displayAedRate : effectivePaidAmount,
+        paid_amount: effectivePaidAmountBdt,
         sub_total: goldValue,
         discount: 0,
         vat: 0,
@@ -270,14 +260,12 @@ export default function PurchasePage() {
         product: cart.map(item => {
           const qtyNum = parseFloat(item.qty) || 1;
           const rateNum = parseFloat(item.ratePerVori) || 0;
-          const aedRate = parseFloat(item.aedRate) || 1;
-          const finalPrice = item.currency === 'AED' ? (rateNum * aedRate) : rateNum;
           
           return {
             product_id: item.id,
             qty: qtyNum,
-            price: finalPrice,
-            purchase_price: finalPrice,
+            price: rateNum,
+            purchase_price: rateNum,
             retails_price: 0,
             have_variant: item.have_variant || 0,
             mode: 1,
@@ -466,9 +454,9 @@ export default function PurchasePage() {
                     {cart.map((item) => {
                       const qty = parseFloat(item.qty) || 1;
                       const rate = parseFloat(item.ratePerVori) || 0;
-                      const aedRate = parseFloat(item.aedRate) || 1;
-                      const itemTotalBdt = rate * qty * (item.currency === 'AED' ? aedRate : 1);
-                      const itemDisplayTotal = item.currency === 'AED' ? itemTotalBdt / aedRate : itemTotalBdt;
+                      const aedRate = parseFloat(item.aedRate) || 0;
+                      const itemTotalBdt = rate * qty;
+                      const itemDisplayTotal = item.currency === 'AED' && aedRate > 0 ? itemTotalBdt / aedRate : itemTotalBdt;
 
                       return (
                         <div key={item.id} className="p-3 space-y-2.5">
@@ -534,7 +522,9 @@ export default function PurchasePage() {
                           </div>
                           <div className="flex justify-between items-center pt-1 border-t border-neutral-100 text-xs">
                             <span className="text-neutral-500 font-medium">Subtotal:</span>
-                            <span className="font-bold text-neutral-900">{item.currency === 'AED' ? 'AED ' : '৳ '}{itemDisplayTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            <div className="text-right">
+                              <span className="font-bold text-neutral-900">{item.currency === 'AED' ? 'AED ' : '৳ '}{itemDisplayTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -564,7 +554,9 @@ export default function PurchasePage() {
             <div className="p-6 space-y-4">
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-500">Cart Items ({cart.length})</span>
-                <span className="font-medium">{displayCurrency === 'AED' ? 'AED ' : '৳ '}{displayGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                <div className="text-right">
+                  <span className="font-medium">{displayCurrency === 'AED' ? 'AED ' : '৳ '}{displayGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                </div>
               </div>
               
               <div className="pt-4 border-t border-neutral-100">
@@ -591,24 +583,28 @@ export default function PurchasePage() {
               <div className="pt-4 mt-4 border-t border-neutral-200 space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">Net Payable</span>
-                  <span className="text-neutral-900 font-semibold">{displayCurrency === 'AED' ? 'AED ' : '৳ '}{displayGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <div className="text-right">
+                    <span className="text-neutral-900 font-semibold">{displayCurrency === 'AED' ? 'AED ' : '৳ '}{displayGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  </div>
                 </div>
                 <div className="flex justify-between items-center text-sm pt-1">
                   <span className="font-medium text-neutral-500">Due Amount</span>
-                  <span className={`font-bold ${dueAmount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {displayCurrency === 'AED' ? 'AED ' : '৳ '}{dueAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                  </span>
+                  <div className="text-right">
+                    <span className={`font-bold ${dueAmountDisplay > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      {displayCurrency === 'AED' ? 'AED ' : '৳ '}{dueAmountDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-xs text-neutral-400 font-medium">Payment Status:</span>
                   <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                    dueAmount === 0 && displayGrandTotal > 0
+                    dueAmountDisplay === 0 && displayGrandTotal > 0
                       ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                      : effectivePaidAmount > 0 && dueAmount > 0
+                      : effectivePaidAmount > 0 && dueAmountDisplay > 0
                       ? 'bg-amber-100 text-amber-800 border-amber-300'
                       : 'bg-red-100 text-red-800 border-red-300'
                   }`}>
-                    {dueAmount === 0 && displayGrandTotal > 0 ? 'Paid' : effectivePaidAmount > 0 ? 'Partial Due' : 'Full Due'}
+                    {dueAmountDisplay === 0 && displayGrandTotal > 0 ? 'Paid' : effectivePaidAmount > 0 ? 'Partial Due' : 'Full Due'}
                   </span>
                 </div>
               </div>
