@@ -64,6 +64,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Balance Sheet', href: '/dashboard/balance-sheet', icon: FileText },
     { name: 'Customers', href: '/dashboard/customers', icon: Users },
     { name: 'Due Report', href: '/dashboard/due-report', icon: AlertCircle },
+    { name: 'Profit/Loss Report', href: '/dashboard/profit-loss-report', icon: FileText },
     { name: 'Fund Transfer', href: '/dashboard/finance/fund-transfer', icon: ArrowRightLeft },
     {
       name: 'Expense',

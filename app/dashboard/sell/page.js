@@ -345,18 +345,24 @@ const discountNum = parseFloat(formData.discount) || 0;
         order_type: 'shop',
         total_amount: displayGrandTotal,
         due_amount: dueAmountDisplay,
-        product: cart.map(item => ({
-          product_id: item.id,
-          qty: parseFloat(item.qty) || 1,
-          price: parseFloat(item.ratePerVori) || 0,
-          purchase_price: 0,
-          retails_price: parseFloat(item.ratePerVori) || 0,
-          have_variant: item.have_variant || 0,
-          mode: 1,
-          size: 1,
-          currency: item.currency,
-          aed_rate: parseFloat(item.aedRate) || 0
-        })),
+        product: cart.map(item => {
+          const qtyNum = parseFloat(item.qty) || 1;
+          const rateNum = parseFloat(item.ratePerVori) || 0;
+          const totalLineAmount = rateNum * qtyNum;
+          
+          return {
+            product_id: item.id,
+            qty: qtyNum,
+            price: totalLineAmount,
+            purchase_price: 0,
+            retails_price: totalLineAmount,
+            have_variant: item.have_variant || 0,
+            mode: 1,
+            size: 1,
+            currency: item.currency,
+            aed_rate: parseFloat(item.aedRate) || 0
+          };
+        }),
         payment_method: finalPaymentMethods,
       };
       const res = await axios.post(`${API_URL}/save-sales`, payload, {

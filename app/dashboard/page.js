@@ -261,6 +261,7 @@ const DueListTable = ({ title, data, type, loading }) => {
           due: Number(r.due || 0),
           customer_id: r.customer_id,
           vendor_id: r.vendor_id,
+          pay_mode: r.pay_mode || '',
         });
       } else {
         const existing = map.get(nameKey);
@@ -320,14 +321,14 @@ const DueListTable = ({ title, data, type, loading }) => {
                           <p className="font-semibold text-xs text-neutral-900 group-hover:text-blue-600 transition-colors truncate">{r.name || "N/A"}</p>
                           <p className="text-[11px] text-neutral-500 font-mono truncate">{r.invoice_id}</p>
                           <p className="text-[10px] text-neutral-400 mt-0.5 truncate">
-                            Paid: BDT {formatNumber(r.paid_amount, 2)} / Total: BDT {formatNumber(r.total_amount, 2)}
+                            Paid: {r.pay_mode?.includes('(AED @') ? 'AED' : 'BDT'} {formatNumber(r.paid_amount, 2)} / Total: {r.pay_mode?.includes('(AED @') ? 'AED' : 'BDT'} {formatNumber(r.total_amount, 2)}
                           </p>
                         </div>
                       </div>
 
                       <div className="text-right shrink-0 pl-1">
                         <p className="text-[10px] text-neutral-400 font-medium">Due</p>
-                        <p className="font-bold text-xs text-rose-600">BDT {formatNumber(r.due, 2)}</p>
+                        <p className="font-bold text-xs text-rose-600">{r.pay_mode?.includes('(AED @') ? 'AED' : 'BDT'} {formatNumber(r.due, 2)}</p>
                       </div>
                     </div>
                   </Link>
@@ -356,9 +357,9 @@ const DueListTable = ({ title, data, type, loading }) => {
                       <tr key={i} className="hover:bg-neutral-50/80 transition-colors cursor-pointer group" onClick={() => window.location.href = targetUrl}>
                         <td className="py-3 px-5 font-medium text-neutral-900">{r.invoice_id}</td>
                         <td className="py-3 px-5 text-neutral-700 group-hover:text-blue-600 font-medium transition-colors">{r.name}</td>
-                        <td className="py-3 px-5 text-right font-medium">BDT {formatNumber(r.total_amount, 2)}</td>
-                        <td className="py-3 px-5 text-right font-medium">BDT {formatNumber(r.paid_amount, 2)}</td>
-                        <td className="py-3 px-5 text-right font-bold text-rose-600">BDT {formatNumber(r.due, 2)}</td>
+                        <td className="py-3 px-5 text-right font-medium">{r.pay_mode?.includes('(AED @') ? 'AED' : 'BDT'} {formatNumber(r.total_amount, 2)}</td>
+                        <td className="py-3 px-5 text-right font-medium">{r.pay_mode?.includes('(AED @') ? 'AED' : 'BDT'} {formatNumber(r.paid_amount, 2)}</td>
+                        <td className="py-3 px-5 text-right font-bold text-rose-600">{r.pay_mode?.includes('(AED @') ? 'AED' : 'BDT'} {formatNumber(r.due, 2)}</td>
                       </tr>
                     );
                   })}
