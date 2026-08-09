@@ -115,8 +115,8 @@ export default function ProfitLossReport() {
   // Current profit (normal)
   const currentProfit = (avgSellPrice - avgPurchasePrice) * totalSalesQty;
 
-  // Formula: (ASP - APP) * Stock Available * Sell Qty
-  const fullStockProfit = (avgSellPrice - avgPurchasePrice) * stockMultiplier * totalSalesQty;
+  // Formula: APP * Stock
+  const currentStockPrice = avgPurchasePrice * stockMultiplier;
 
   const totalStockCount = purchaseData.reduce((count, inv) => {
     // Attempting a rough stock sum if quantities are available, else we count invoices.
@@ -178,11 +178,11 @@ export default function ProfitLossReport() {
         <Card>
           <CardContent className="flex flex-col gap-0.5 sm:gap-1 p-4 sm:p-6">
             <div className="flex items-center gap-2 text-neutral-500">
-              {fullStockProfit >= 0 ? <TrendingUp size={16} className="text-emerald-500" /> : <TrendingDown size={16} className="text-rose-500" />}
-              <span className="text-xs sm:text-sm font-medium">Full Stock Profit/Loss</span>
+              <DollarSign size={16} />
+              <span className="text-sm font-medium">Current Stock Price</span>
             </div>
-            <div className={`text-xl sm:text-2xl font-bold tracking-tight sm:tracking-normal ${fullStockProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-              BDT {fullStockProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            <div className="text-2xl font-bold text-neutral-900">
+              BDT {currentStockPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </div>
           </CardContent>
         </Card>
@@ -465,10 +465,18 @@ export default function ProfitLossReport() {
             </div>
 
             <div>
-              <h4 className="font-semibold text-neutral-900 mb-1">4. Full Stock Profit / Loss</h4>
-              <p className="text-neutral-500 text-xs mb-2">Per Qty Profit × Max(1, Stock Available) × Total Sales Qty</p>
+              <h4 className="font-semibold text-neutral-900 mb-1">4. Current Stock Price</h4>
+              <p className="text-neutral-500 text-xs mb-2">Avg Purchase Price × Max(1, Stock Available)</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                {Number(avgSellPrice - avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} × {Math.max(1, totalPurchaseQty - totalSalesQty).toFixed(3)} × {totalSalesQty.toFixed(3)} = <span className={`font-bold ${fullStockProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(fullStockProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+                {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} × {Math.max(1, totalPurchaseQty - totalSalesQty).toFixed(3)} = <span className="font-bold text-neutral-900">{Number(currentStockPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+              </code>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-neutral-900 mb-1">5. Negative Stock Valuation</h4>
+              <p className="text-neutral-500 text-xs mb-2">-Stock Available × Avg Sell Price</p>
+              <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
+                -{Math.max(1, totalPurchaseQty - totalSalesQty).toFixed(3)} × {Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} = <span className="font-bold text-rose-600">{Number(-1 * stockMultiplier * avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
               </code>
             </div>
           </div>
