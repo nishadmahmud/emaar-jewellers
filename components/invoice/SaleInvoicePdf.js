@@ -137,11 +137,11 @@ const SaleInvoicePdf = ({ invoice }) => {
   const paidBdt = Number(data.paid_amount || 0);
   const dueBdt = Math.max(finalTotalBdt - paidBdt, 0);
 
-  const subTotalDisplay = isAed ? subTotalBdt / invoiceAedRate : subTotalBdt;
-  const discountDisplay = isAed ? discountBdt / invoiceAedRate : discountBdt;
-  const finalTotalDisplay = isAed ? finalTotalBdt / invoiceAedRate : finalTotalBdt;
-  const paidDisplay = isAed ? paidBdt / invoiceAedRate : paidBdt;
-  const dueDisplay = isAed ? dueBdt / invoiceAedRate : dueBdt;
+  const subTotalDisplay = subTotalBdt;
+  const discountDisplay = discountBdt;
+  const finalTotalDisplay = finalTotalBdt;
+  const paidDisplay = paidBdt;
+  const dueDisplay = dueBdt;
 
   const multiplePayments = data.multiple_payment || data.multiple_payments || [];
 
@@ -229,7 +229,7 @@ const SaleInvoicePdf = ({ invoice }) => {
                   const detailLabel = [accName, accNum].filter(Boolean).join(' - ');
                   
                   const pmAmountBdt = Number(pm.payment_amount || 0);
-                  const pmAmountDisplay = isAed ? pmAmountBdt / invoiceAedRate : pmAmountBdt;
+                  const pmAmountDisplay = pmAmountBdt;
 
                   return (
                     <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>

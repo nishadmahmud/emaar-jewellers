@@ -42,17 +42,11 @@ export default function VendorInvoiceHistory({ vendorWiseInvoice }) {
 
               const payModeString = inv.pay_mode || '';
               const isAed = payModeString.includes('(AED @');
-              const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
-              const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
               const displayCurrency = isAed ? 'AED' : 'BDT';
 
-              const totalAmtBdt = Number(inv.sub_total || inv.total_amount || 0);
-              const paidAmtBdt = Number(inv.paid_amount || 0);
-              const dueAmtBdt = Number(inv.due_amount || inv.due || 0);
-
-              const totalAmt = isAed ? totalAmtBdt / invoiceAedRate : totalAmtBdt;
-              const paidAmt = isAed ? paidAmtBdt / invoiceAedRate : paidAmtBdt;
-              const dueAmt = isAed ? dueAmtBdt / invoiceAedRate : dueAmtBdt;
+              const totalAmt = Number(inv.sub_total || inv.total_amount || 0);
+              const paidAmt = Number(inv.paid_amount || 0);
+              const dueAmt = Number(inv.due_amount || inv.due || 0);
 
               return (
                 <div key={idx} className="py-3 flex items-center justify-between">
@@ -97,17 +91,11 @@ export default function VendorInvoiceHistory({ vendorWiseInvoice }) {
 
                   const payModeString = inv.pay_mode || '';
                   const isAed = payModeString.includes('(AED @');
-                  const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
-                  const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
                   const displayCurrency = isAed ? 'AED' : 'BDT';
 
-                  const totalAmtBdt = Number(inv.sub_total || inv.total_amount || 0);
-                  const paidAmtBdt = Number(inv.paid_amount || 0);
-                  const dueAmtBdt = Number(inv.due_amount || inv.due || 0);
-
-                  const totalAmt = isAed ? totalAmtBdt / invoiceAedRate : totalAmtBdt;
-                  const paidAmt = isAed ? paidAmtBdt / invoiceAedRate : paidAmtBdt;
-                  const dueAmt = isAed ? dueAmtBdt / invoiceAedRate : dueAmtBdt;
+                  const totalAmt = Number(inv.sub_total || inv.total_amount || 0);
+                  const paidAmt = Number(inv.paid_amount || 0);
+                  const dueAmt = Number(inv.due_amount || inv.due || 0);
 
                   return (
                     <tr key={idx} className="hover:bg-neutral-50/50 transition-colors">

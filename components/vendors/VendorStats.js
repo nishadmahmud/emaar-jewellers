@@ -44,9 +44,9 @@ export default function VendorStats({ vendor, vendorWiseInvoice }) {
         const dAmt = Number(inv.due_amount || inv.due || 0);
         
         if (isAed) {
-          calcAedPurchase += (tAmt / invoiceAedRate);
-          calcAedPaid += (pAmt / invoiceAedRate);
-          calcAedDue += (dAmt / invoiceAedRate);
+          calcAedPurchase += tAmt;
+          calcAedPaid += pAmt;
+          calcAedDue += dAmt;
         } else {
           calcBdtPurchase += tAmt;
           calcBdtPaid += pAmt;

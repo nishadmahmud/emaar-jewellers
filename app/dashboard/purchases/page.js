@@ -119,9 +119,7 @@ export default function PurchaseHistoryPage() {
                   const currency = isAed ? 'AED' : 'BDT';
 
                   const totalBdt = inv.sub_total - inv.discount;
-                  const totalDisplay = isAed ? totalBdt / aedRate : totalBdt;
                   const dueBdt = Math.max(totalBdt - inv.paid_amount, 0);
-                  const dueDisplay = isAed ? dueBdt / aedRate : dueBdt;
 
                   return (
                     <div
@@ -144,10 +142,10 @@ export default function PurchaseHistoryPage() {
 
                       <div className="text-right shrink-0 flex items-center gap-1 pl-1">
                         <div>
-                          <p className="font-bold text-xs text-neutral-900">{currency} {Number(totalDisplay).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}</p>
+                          <p className="font-bold text-xs text-neutral-900">{currency} {Number(totalBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}</p>
                           {dueBdt > 0 ? (
                             <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200 mt-0.5">
-                              Due {currency} {dueDisplay.toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
+                              Due {currency} {Number(dueBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
                             </span>
                           ) : (
                             <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200 mt-0.5">
@@ -184,11 +182,8 @@ export default function PurchaseHistoryPage() {
                       const currency = isAed ? 'AED' : 'BDT';
 
                       const totalBdt = inv.sub_total - inv.discount;
-                      const totalDisplay = isAed ? totalBdt / aedRate : totalBdt;
                       const paidBdt = inv.paid_amount;
-                      const paidDisplay = isAed ? paidBdt / aedRate : paidBdt;
                       const dueBdt = Math.max(totalBdt - paidBdt, 0);
-                      const dueDisplay = isAed ? dueBdt / aedRate : dueBdt;
 
                       return (
                         <tr key={inv.id} className="hover:bg-neutral-50/50 transition-colors">
@@ -202,13 +197,13 @@ export default function PurchaseHistoryPage() {
                             {inv.vendor_name || 'Unknown Vendor'}
                           </td>
                           <td className="px-6 py-4 text-right text-neutral-900 font-medium">
-                            {currency} {Number(totalDisplay).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
+                            {currency} {Number(totalBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
                           </td>
                           <td className="px-6 py-4 text-right text-green-600">
-                            {currency} {Number(paidDisplay).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
+                            {currency} {Number(paidBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
                           </td>
                           <td className="px-6 py-4 text-right text-red-600">
-                            {currency} {Number(dueDisplay).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
+                            {currency} {Number(dueBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
                           </td>
                           <td className="px-6 py-4 text-center">
                             <button

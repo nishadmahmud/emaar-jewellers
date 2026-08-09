@@ -33,8 +33,8 @@ export default function CustomerProfileSidebar({ customer, customerWiseInvoice, 
                 const tAmt = Number(inv.sub_total || inv.total_amount || 0);
                 
                 if (isAed) {
-                    calcAedDue += (dAmt / invoiceAedRate);
-                    calcAedPurchase += (tAmt / invoiceAedRate);
+                    calcAedDue += dAmt;
+                    calcAedPurchase += tAmt;
                 } else {
                     calcBdtDue += dAmt;
                     calcBdtPurchase += tAmt;
@@ -119,6 +119,7 @@ export default function CustomerProfileSidebar({ customer, customerWiseInvoice, 
                 customerId={data.id}
                 customerName={data.name}
                 totalDue={data.due || 0}
+                customerWiseInvoice={customerWiseInvoice}
                 onSuccess={onRefresh}
             />
         </div>

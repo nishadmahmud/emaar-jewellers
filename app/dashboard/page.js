@@ -67,9 +67,9 @@ const calculatePayment = (inv) => {
   return { total, due, changeAmount };
 };
 
-const getDueStatus = (due) => {
-  if (due > 0) return { label: `${due.toLocaleString()} BDT`, color: "bg-red-100 text-red-800" };
-  if (due < 0) return { label: `${Math.abs(due).toLocaleString()} BDT`, color: "bg-blue-100 text-blue-800" };
+const getDueStatus = (due, currency = "BDT") => {
+  if (due > 0) return { label: `${due.toLocaleString()} ${currency}`, color: "bg-red-100 text-red-800" };
+  if (due < 0) return { label: `${Math.abs(due).toLocaleString()} ${currency}`, color: "bg-blue-100 text-blue-800" };
   return { label: "Paid", color: "bg-green-100 text-green-800" };
 };
 
@@ -109,17 +109,21 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
 
                 let amountDisplay, dueBadge;
 
+                const payModeString = invoice.pay_mode || '';
+                const isAed = payModeString.includes('(AED @');
+                const currency = isAed ? 'AED' : 'BDT';
+
                 if (isSelling) {
                   const { total, due, changeAmount } = calculatePayment(invoice);
-                  amountDisplay = `BDT ${total.toLocaleString()}`;
+                  amountDisplay = `${currency} ${total.toLocaleString()}`;
                   
                   dueBadge = changeAmount > 0 ? (
                     <span className="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">
-                      Change BDT {changeAmount.toLocaleString()}
+                      Change {currency} {changeAmount.toLocaleString()}
                     </span>
                   ) : due > 0 ? (
                     <span className="text-[10px] bg-rose-50 text-rose-700 font-semibold px-2 py-0.5 rounded-full border border-rose-200">
-                      Due BDT {due.toLocaleString()}
+                      Due {currency} {due.toLocaleString()}
                     </span>
                   ) : (
                     <span className="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">
@@ -128,8 +132,8 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
                   );
                 } else {
                   const dueAmount = Number.parseFloat(invoice.sub_total || 0) - Number.parseFloat(invoice.paid_amount || 0);
-                  const status = getDueStatus(dueAmount);
-                  amountDisplay = `BDT ${Number(invoice.sub_total || 0).toLocaleString()}`;
+                  const status = getDueStatus(dueAmount, currency);
+                  amountDisplay = `${currency} ${Number(invoice.sub_total || 0).toLocaleString()}`;
                   dueBadge = (
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${status.color}`}>
                       {status.label}
@@ -176,18 +180,22 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
                     const customerName = isSelling ? invoice.customer_name : invoice.vendor_name;
 
                     let amountDisplay, dueBadge;
+                    
+                    const payModeString = invoice.pay_mode || '';
+                    const isAed = payModeString.includes('(AED @');
+                    const currency = isAed ? 'AED' : 'BDT';
 
                     if (isSelling) {
                       const { total, due, changeAmount } = calculatePayment(invoice);
-                      amountDisplay = `BDT ${total.toLocaleString()}`;
+                      amountDisplay = `${currency} ${total.toLocaleString()}`;
                       
                       dueBadge = changeAmount > 0 ? (
                         <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold px-2 py-0.5 rounded-full">
-                          Change BDT {changeAmount.toLocaleString()}
+                          Change {currency} {changeAmount.toLocaleString()}
                         </span>
                       ) : due > 0 ? (
                         <span className="text-xs bg-rose-50 text-rose-700 border border-rose-200 font-semibold px-2 py-0.5 rounded-full">
-                          Due BDT {due.toLocaleString()}
+                          Due {currency} {due.toLocaleString()}
                         </span>
                       ) : (
                         <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold px-2 py-0.5 rounded-full">
@@ -196,8 +204,8 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
                       );
                     } else {
                       const dueAmount = Number.parseFloat(invoice.sub_total || 0) - Number.parseFloat(invoice.paid_amount || 0);
-                      const status = getDueStatus(dueAmount);
-                      amountDisplay = `BDT ${Number(invoice.sub_total || 0).toLocaleString()}`;
+                      const status = getDueStatus(dueAmount, currency);
+                      amountDisplay = `${currency} ${Number(invoice.sub_total || 0).toLocaleString()}`;
                       dueBadge = (
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${status.color}`}>
                           {status.label}

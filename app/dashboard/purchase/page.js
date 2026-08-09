@@ -217,7 +217,7 @@ export default function PurchasePage() {
   const displayGrandTotal = displayCurrency === 'AED' && displayAedRate > 0 ? (goldValue / displayAedRate) : goldValue;
   
   const effectivePaidAmount = parseFloat(formData.paidAmount) || 0;
-  const effectivePaidAmountBdt = displayCurrency === 'AED' ? effectivePaidAmount * displayAedRate : effectivePaidAmount;
+  const effectivePaidAmountToSave = effectivePaidAmount; // Send exact AED amount to backend
   const dueAmountDisplay = Math.max(0, displayGrandTotal - effectivePaidAmount);
 
   const handleSubmit = async (e) => {
@@ -239,20 +239,20 @@ export default function PurchasePage() {
         ? savedPaymentMethods.map(m => ({
             payment_type_id: Number(m.payment_type_id) || 1,
             payment_type_category_id: Number(m.payment_type_category_id) || 1,
-            payment_amount: displayCurrency === 'AED' ? Number(m.payment_amount) * displayAedRate : Number(m.payment_amount) || 0,
+            payment_amount: Number(m.payment_amount) || 0,
           }))
         : [{
             payment_type_id: formData.paymentMethodId || 1,
             payment_type_category_id: 1,
-            payment_amount: effectivePaidAmountBdt,
+            payment_amount: effectivePaidAmountToSave,
           }];
 
       const payload = {
         vendor_id: formData.vendorId,
         vendor_name: formData.vendorName,
         pay_mode: finalPayMode,
-        paid_amount: effectivePaidAmountBdt,
-        sub_total: goldValue,
+        paid_amount: effectivePaidAmountToSave,
+        sub_total: displayGrandTotal,
         discount: 0,
         vat: 0,
         tax: 0,
@@ -260,12 +260,13 @@ export default function PurchasePage() {
         product: cart.map(item => {
           const qtyNum = parseFloat(item.qty) || 1;
           const rateNum = parseFloat(item.ratePerVori) || 0;
+          const totalLineAmount = rateNum * qtyNum;
           
           return {
             product_id: item.id,
             qty: qtyNum,
-            price: rateNum,
-            purchase_price: rateNum,
+            price: totalLineAmount,
+            purchase_price: totalLineAmount,
             retails_price: 0,
             have_variant: item.have_variant || 0,
             mode: 1,

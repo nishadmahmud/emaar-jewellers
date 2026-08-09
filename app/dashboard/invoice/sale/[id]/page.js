@@ -79,11 +79,11 @@ export default function SaleInvoicePage() {
   const paidBdt = Number(invoiceData.paid_amount || 0);
   const dueBdt = Math.max(finalTotalBdt - paidBdt, 0);
   
-  const subTotalDisplay = isAed ? subTotalBdt / invoiceAedRate : subTotalBdt;
-  const discountDisplay = isAed ? discountBdt / invoiceAedRate : discountBdt;
-  const finalTotalDisplay = isAed ? finalTotalBdt / invoiceAedRate : finalTotalBdt;
-  const paidDisplay = isAed ? paidBdt / invoiceAedRate : paidBdt;
-  const dueDisplay = isAed ? dueBdt / invoiceAedRate : dueBdt;
+  const subTotalDisplay = subTotalBdt;
+  const discountDisplay = discountBdt;
+  const finalTotalDisplay = finalTotalBdt;
+  const paidDisplay = paidBdt;
+  const dueDisplay = dueBdt;
   
   const multiplePayments = invoiceData.multiple_payment || invoiceData.multiple_payments || [];
 
@@ -240,7 +240,7 @@ export default function SaleInvoicePage() {
                       const detailLabel = [accName, accNum].filter(Boolean).join(' - ');
                       
                       const pmAmountBdt = Number(pm.payment_amount || 0);
-                      const pmAmountDisplay = isAed ? pmAmountBdt / invoiceAedRate : pmAmountBdt;
+                      const pmAmountDisplay = pmAmountBdt;
 
                       return (
                         <div key={pm.id || idx} className="flex justify-between items-center bg-white px-2.5 py-1.5 rounded border border-neutral-200/80 shadow-2xs">

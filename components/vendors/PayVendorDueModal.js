@@ -258,7 +258,7 @@ function PurchaseDetailsModal({ invoiceId, onClose, token, API_URL }) {
   );
 }
 
-export default function PayVendorDueModal({ open, onClose, vendorId, vendorName, totalDue = 0, onSuccess }) {
+export default function PayVendorDueModal({ open, onClose, vendorId, vendorName, totalDue = 0, vendorWiseInvoice, onSuccess }) {
   const { data: session } = useSession();
   const token = session?.accessToken;
   const API_URL = process.env.NEXT_PUBLIC_API;
@@ -279,6 +279,42 @@ export default function PayVendorDueModal({ open, onClose, vendorId, vendorName,
   const [selectedGatewayId, setSelectedGatewayId] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Dynamic Default for Payment Currency
+  useEffect(() => {
+    let aedCount = 0;
+    let bdtCount = 0;
+    
+    if (dueInvoices && dueInvoices.length > 0) {
+      dueInvoices.forEach(inv => {
+        const invId = inv.purchase_invoice_id || inv.invoice_id || inv.id;
+        let payModeString = inv.pay_mode || '';
+        
+        if (!payModeString && vendorWiseInvoice) {
+          const historyInvoices = Array.isArray(vendorWiseInvoice?.data?.data)
+            ? vendorWiseInvoice.data.data
+            : Array.isArray(vendorWiseInvoice?.data)
+            ? vendorWiseInvoice.data
+            : Array.isArray(vendorWiseInvoice)
+            ? vendorWiseInvoice
+            : [];
+          const matchingHistory = historyInvoices.find(h => String(h.purchase_invoice_id || h.invoice_id || h.id) === String(invId));
+          if (matchingHistory && matchingHistory.pay_mode) {
+            payModeString = matchingHistory.pay_mode;
+          }
+        }
+
+        if (payModeString.includes('(AED @')) {
+          aedCount++;
+        } else {
+          bdtCount++;
+        }
+      });
+      if (aedCount > 0 && bdtCount === 0) {
+        setPaymentCurrency('AED');
+      }
+    }
+  }, [dueInvoices, vendorWiseInvoice]);
 
   useEffect(() => {
     if (open && token && vendorId) {
@@ -400,14 +436,28 @@ export default function PayVendorDueModal({ open, onClose, vendorId, vendorName,
     ...dueInvoices.map((inv) => {
       const invId = inv.purchase_invoice_id || inv.invoice_id || inv.id;
       
-      const payModeString = inv.pay_mode || '';
+      let payModeString = inv.pay_mode || '';
+      
+      // Fallback: look up in vendorWiseInvoice
+      if (!payModeString && vendorWiseInvoice) {
+        const historyInvoices = Array.isArray(vendorWiseInvoice?.data?.data)
+          ? vendorWiseInvoice.data.data
+          : Array.isArray(vendorWiseInvoice?.data)
+          ? vendorWiseInvoice.data
+          : Array.isArray(vendorWiseInvoice)
+          ? vendorWiseInvoice
+          : [];
+        const matchingHistory = historyInvoices.find(h => String(h.purchase_invoice_id || h.invoice_id || h.id) === String(invId));
+        if (matchingHistory && matchingHistory.pay_mode) {
+          payModeString = matchingHistory.pay_mode;
+        }
+      }
+
       const isAed = payModeString.includes('(AED @');
-      const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
-      const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
       const displayCurrency = isAed ? 'AED' : 'BDT';
 
       const dueAmtBdt = Number(inv.total_due || inv.due_amount || inv.due || 0);
-      const dueAmt = isAed ? dueAmtBdt / invoiceAedRate : dueAmtBdt;
+      const dueAmt = dueAmtBdt; // Raw value from DB
       
       if (isAed) {
         calcAedDue += dueAmt;

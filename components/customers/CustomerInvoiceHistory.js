@@ -34,16 +34,15 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                             {invoices.map((invoice) => {
                                 const payModeString = invoice?.pay_mode || '';
                                 const isAed = payModeString.includes('(AED @');
-                                const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
-                                const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+                                const displayCurrency = isAed ? 'AED' : 'BDT';
                                 
-                                const totalBdt = invoice?.sub_total || invoice?.total_amount || 0;
-                                const paidBdt = invoice?.paid_amount || 0;
-                                const dueBdt = Math.max(totalBdt - paidBdt, 0);
+                                const totalAmt = Number(invoice?.sub_total || invoice?.total_amount || 0);
+                                const paidAmt = Number(invoice?.paid_amount || 0);
+                                const dueAmt = Math.max(totalAmt - paidAmt, 0);
 
-                                const totalDisplay = isAed ? totalBdt / invoiceAedRate : totalBdt;
-                                const dueDisplay = isAed ? dueBdt / invoiceAedRate : dueBdt;
-                                const currencyLabel = isAed ? 'AED' : 'BDT';
+                                const totalDisplay = totalAmt;
+                                const dueDisplay = dueAmt;
+                                const currencyLabel = displayCurrency;
 
                                 return (
                                     <div key={invoice?.id} className="px-3.5 py-3 flex items-center justify-between hover:bg-neutral-50/60 transition-colors">
@@ -102,16 +101,15 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                                     {invoices.map((invoice) => {
                                         const payModeString = invoice?.pay_mode || '';
                                         const isAed = payModeString.includes('(AED @');
-                                        const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
-                                        const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+                                        const displayCurrency = isAed ? 'AED' : 'BDT';
                                         
-                                        const totalBdt = invoice?.sub_total || invoice?.total_amount || 0;
-                                        const paidBdt = invoice?.paid_amount || 0;
-                                        const dueBdt = Math.max(totalBdt - paidBdt, 0);
+                                        const totalAmt = Number(invoice?.sub_total || invoice?.total_amount || 0);
+                                        const paidAmt = Number(invoice?.paid_amount || 0);
+                                        const dueAmt = Math.max(totalAmt - paidAmt, 0);
 
-                                        const totalDisplay = isAed ? totalBdt / invoiceAedRate : totalBdt;
-                                        const dueDisplay = isAed ? dueBdt / invoiceAedRate : dueBdt;
-                                        const currencyLabel = isAed ? 'AED' : 'BDT';
+                                        const totalDisplay = totalAmt;
+                                        const dueDisplay = dueAmt;
+                                        const currencyLabel = displayCurrency;
 
                                         return (
                                             <tr key={invoice?.id} className="hover:bg-neutral-50/50 transition-colors">

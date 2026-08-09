@@ -38,7 +38,7 @@ export default function VendorProfileSidebar({ vendor, vendorWiseInvoice, onRefr
         const dAmt = Number(inv.due_amount || inv.due || 0);
         
         if (isAed) {
-          calcAedDue += (dAmt / invoiceAedRate);
+          calcAedDue += dAmt;
         } else {
           calcBdtDue += dAmt;
         }
@@ -107,6 +107,7 @@ export default function VendorProfileSidebar({ vendor, vendorWiseInvoice, onRefr
           vendorId={vendorData.id}
           vendorName={name}
           totalDue={totalDue}
+          vendorWiseInvoice={vendorWiseInvoice}
           onSuccess={() => {
             if (onRefresh) onRefresh();
           }}

@@ -280,14 +280,15 @@ export default function SellPage() {
     }, 0);
   };
   
-  const subtotalBdt = calculateTotalBdt();
-  const discountNum = parseFloat(formData.discount) || 0;
+  const subtotalBdt = calculateTotalBdt(); // Raw value entered by user
+const discountNum = parseFloat(formData.discount) || 0;
   const grandTotalBdt = subtotalBdt - discountNum;
 
   const displayCurrency = cart.some(item => item.currency === 'AED') ? 'AED' : 'BDT';
   const displayAedRate = cart.find(item => item.currency === 'AED')?.aedRate || 1;
   const displaySubtotal = displayCurrency === 'AED' && displayAedRate > 0 ? subtotalBdt / displayAedRate : subtotalBdt;
   const displayGrandTotal = displayCurrency === 'AED' && displayAedRate > 0 ? grandTotalBdt / displayAedRate : grandTotalBdt;
+  const displayDiscount = displayCurrency === 'AED' && displayAedRate > 0 ? discountNum / displayAedRate : discountNum;
 
   const effectivePaidAmountDisplay =
     formData.paidAmount !== '' && formData.paidAmount !== null && formData.paidAmount !== undefined
@@ -296,8 +297,7 @@ export default function SellPage() {
       
   const dueAmountDisplay = Math.max(0, displayGrandTotal - effectivePaidAmountDisplay);
 
-  const effectivePaidAmountBdt = displayCurrency === 'AED' ? effectivePaidAmountDisplay * displayAedRate : effectivePaidAmountDisplay;
-  const dueAmountBdt = Math.max(0, grandTotalBdt - effectivePaidAmountBdt);
+  const effectivePaidAmountToSave = effectivePaidAmountDisplay; // Send exact AED amount to backend
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -305,7 +305,7 @@ export default function SellPage() {
       toast.error('Please select a customer.');
       return;
     }
-    if (dueAmountBdt > 0 && formData.customerId === 'walk-in') {
+    if (dueAmountDisplay > 0 && formData.customerId === 'walk-in') {
       toast.error('Please select or add a specific customer to record a due sale.');
       return;
     }
@@ -324,12 +324,12 @@ export default function SellPage() {
         ? savedPaymentMethods.map(m => ({
             payment_type_id: Number(m.payment_type_id) || 1,
             payment_type_category_id: Number(m.payment_type_category_id) || 1,
-            payment_amount: displayCurrency === 'AED' ? Number(m.payment_amount) * displayAedRate : Number(m.payment_amount) || 0,
+            payment_amount: Number(m.payment_amount) || 0,
           }))
         : [{
             payment_type_id: formData.paymentMethodId || 1,
             payment_type_category_id: 1,
-            payment_amount: effectivePaidAmountBdt,
+            payment_amount: effectivePaidAmountToSave,
           }];
 
       const payload = {
@@ -337,12 +337,14 @@ export default function SellPage() {
         customer_name: formData.customerName,
         customer_phone: "", 
         pay_mode: finalPayMode,
-        paid_amount: effectivePaidAmountBdt,
-        sub_total: subtotalBdt,
-        discount: discountNum,
+        paid_amount: effectivePaidAmountToSave,
+        sub_total: displaySubtotal,
+        discount: displayDiscount,
         vat: 0,
         tax: 0,
         order_type: 'shop',
+        total_amount: displayGrandTotal,
+        due_amount: dueAmountDisplay,
         product: cart.map(item => ({
           product_id: item.id,
           qty: parseFloat(item.qty) || 1,

@@ -248,7 +248,7 @@ function SalesDetailsModal({ invoiceId, onClose, token, API_URL }) {
   );
 }
 
-export default function CollectDueModal({ open, onClose, customerId, customerName, totalDue = 0, onSuccess }) {
+export default function CollectDueModal({ open, onClose, customerId, customerName, totalDue = 0, customerWiseInvoice, onSuccess }) {
   const { data: session } = useSession();
   const token = session?.accessToken;
   const API_URL = process.env.NEXT_PUBLIC_API;
@@ -261,11 +261,49 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
 
   // View Sales Details Popup state
   const [viewingInvoiceId, setViewingInvoiceId] = useState(null);
+  const [paymentCurrency, setPaymentCurrency] = useState('BDT');
+  
+  // Dynamic Default for Payment Currency
+  useEffect(() => {
+    let aedCount = 0;
+    let bdtCount = 0;
+
+    if (dueInvoices && dueInvoices.length > 0) {
+      dueInvoices.map((inv) => {
+        const invId = inv.invoice_id || inv.id;
+        
+        let payModeString = inv.pay_mode || '';
+        
+        // Fallback: look up in customerWiseInvoice
+        if (!payModeString && customerWiseInvoice) {
+          const historyInvoices = Array.isArray(customerWiseInvoice?.data?.data)
+            ? customerWiseInvoice.data.data
+            : Array.isArray(customerWiseInvoice?.data)
+            ? customerWiseInvoice.data
+            : Array.isArray(customerWiseInvoice)
+            ? customerWiseInvoice
+            : [];
+          const matchingHistory = historyInvoices.find(h => String(h.invoice_id || h.id) === String(invId));
+          if (matchingHistory && matchingHistory.pay_mode) {
+            payModeString = matchingHistory.pay_mode;
+          }
+        }
+
+        if (payModeString.includes('(AED @')) {
+          aedCount++;
+        } else {
+          bdtCount++;
+        }
+      });
+      if (aedCount > 0 && bdtCount === 0) {
+        setPaymentCurrency('AED');
+      }
+    }
+  }, [dueInvoices, customerWiseInvoice]);
 
   // Pay Due Form State
   const [selectedInvoice, setSelectedInvoice] = useState('');
   const [payAmount, setPayAmount] = useState('');
-  const [paymentCurrency, setPaymentCurrency] = useState('BDT');
   const [exchangeRate, setExchangeRate] = useState(1);
   const [selectedGatewayId, setSelectedGatewayId] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
@@ -476,13 +514,27 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
       const idVal = inv.sale_invoice_id || inv.invoice_id;
       const dueAmtBdt = Number(inv.total_due || inv.due_amount || 0);
 
-      const payModeString = inv.pay_mode || '';
+      let payModeString = inv.pay_mode || '';
+      
+      // Fallback: look up in customerWiseInvoice
+      if (!payModeString && customerWiseInvoice) {
+        const historyInvoices = Array.isArray(customerWiseInvoice?.data?.data)
+          ? customerWiseInvoice.data.data
+          : Array.isArray(customerWiseInvoice?.data)
+          ? customerWiseInvoice.data
+          : Array.isArray(customerWiseInvoice)
+          ? customerWiseInvoice
+          : [];
+        const matchingHistory = historyInvoices.find(h => String(h.invoice_id || h.id || h.sale_invoice_id) === String(idVal));
+        if (matchingHistory && matchingHistory.pay_mode) {
+          payModeString = matchingHistory.pay_mode;
+        }
+      }
+
       const isAed = payModeString.includes('(AED @');
-      const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
-      const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
       const displayCurrency = isAed ? 'AED' : 'BDT';
       
-      const dueAmt = isAed ? dueAmtBdt / invoiceAedRate : dueAmtBdt;
+      const dueAmt = dueAmtBdt; // Raw value from DB
       
       if (isAed) {
         calcAedDue += dueAmt;
@@ -507,11 +559,9 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
 
       const payModeString = inv.pay_mode || '';
       const isAed = payModeString.includes('(AED @');
-      const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
-      const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
       const displayCurrency = isAed ? 'AED' : 'BDT';
       
-      const dueAmt = isAed ? dueAmtBdt / invoiceAedRate : dueAmtBdt;
+      const dueAmt = dueAmtBdt; // Raw value from DB
       const dueVal = dueAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       
       return {

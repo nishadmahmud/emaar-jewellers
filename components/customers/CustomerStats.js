@@ -27,14 +27,13 @@ export default function CustomerStats({ data, customerWiseInvoice }) {
                 const payModeString = inv.pay_mode || '';
                 const isAed = payModeString.includes('(AED @');
                 const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
-                const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
                 
                 const tAmt = Number(inv.sub_total || inv.total_amount || 0);
                 const dAmt = Number(inv.due_amount || inv.due || 0);
                 
                 if (isAed) {
-                    calcAedPurchase += (tAmt / invoiceAedRate);
-                    calcAedDue += (dAmt / invoiceAedRate);
+                    calcAedDue += dAmt;
+                    calcAedPurchase += tAmt;
                 } else {
                     calcBdtPurchase += tAmt;
                     calcBdtDue += dAmt;
