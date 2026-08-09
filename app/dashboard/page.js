@@ -278,6 +278,9 @@ const DueListTable = ({ title, data, type, loading }) => {
           <h3 className="text-base sm:text-lg font-bold text-neutral-900">{title}</h3>
           <p className="text-xs text-neutral-500">Latest {type} due records (last 90 days)</p>
         </div>
+        <Link href={`/dashboard/due-report?type=${type}`} className="text-xs sm:text-sm font-semibold text-rose-600 hover:text-rose-700">
+          View All &rarr;
+        </Link>
       </div>
 
       <div className="flex-1">

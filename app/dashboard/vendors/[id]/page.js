@@ -118,12 +118,12 @@ export default function VendorDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar */}
         <div className="lg:col-span-1">
-          <VendorProfileSidebar vendor={vendor} onRefresh={fetchVendorData} />
+          <VendorProfileSidebar vendor={vendor} vendorWiseInvoice={vendorWiseInvoice} onRefresh={fetchVendorData} />
         </div>
 
         {/* Main Content Area */}
         <div className="lg:col-span-3 space-y-6">
-          <VendorStats vendor={vendor} />
+          <VendorStats vendor={vendor} vendorWiseInvoice={vendorWiseInvoice} />
           <VendorPurchasedProducts vendorWiseProduct={vendorWiseProduct} />
           <VendorInvoiceHistory vendorWiseInvoice={vendorWiseInvoice} />
         </div>

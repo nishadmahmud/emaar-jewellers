@@ -467,14 +467,34 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
   };
 
   // Options for Invoice Selects
+  let calcAedDue = 0, calcBdtDue = 0;
+  let hasDueInvoices = dueInvoices && dueInvoices.length > 0;
+
   const invoiceOptions = [
     { id: '', name: 'All Invoices (General Payment)' },
     ...dueInvoices.map((inv) => {
       const idVal = inv.sale_invoice_id || inv.invoice_id;
-      const dueVal = Number(inv.total_due || inv.due_amount || 0).toLocaleString();
+      const dueAmtBdt = Number(inv.total_due || inv.due_amount || 0);
+
+      const payModeString = inv.pay_mode || '';
+      const isAed = payModeString.includes('(AED @');
+      const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+      const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+      const displayCurrency = isAed ? 'AED' : 'BDT';
+      
+      const dueAmt = isAed ? dueAmtBdt / invoiceAedRate : dueAmtBdt;
+      
+      if (isAed) {
+        calcAedDue += dueAmt;
+      } else {
+        calcBdtDue += dueAmt;
+      }
+      
+      const dueVal = dueAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      
       return {
         id: idVal,
-        name: `${idVal} (Due: BDT ${dueVal})`
+        name: `${idVal} (Due: ${displayCurrency} ${dueVal})`
       };
     })
   ];
@@ -483,10 +503,20 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
     { id: '', name: 'Select Invoice ID' },
     ...dueInvoices.map((inv) => {
       const idVal = inv.sale_invoice_id || inv.invoice_id;
-      const dueVal = Number(inv.total_due || inv.due_amount || 0).toLocaleString();
+      const dueAmtBdt = Number(inv.total_due || inv.due_amount || 0);
+
+      const payModeString = inv.pay_mode || '';
+      const isAed = payModeString.includes('(AED @');
+      const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+      const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+      const displayCurrency = isAed ? 'AED' : 'BDT';
+      
+      const dueAmt = isAed ? dueAmtBdt / invoiceAedRate : dueAmtBdt;
+      const dueVal = dueAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      
       return {
         id: idVal,
-        name: `${idVal} (Due: BDT ${dueVal})`
+        name: `${idVal} (Due: ${displayCurrency} ${dueVal})`
       };
     })
   ];
@@ -553,7 +583,12 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
                 {/* Total Customer Due Header Card */}
                 <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-4 mb-5 flex items-center justify-between">
                   <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">TOTAL CUSTOMER DUE</span>
-                  <span className="text-xl font-extrabold text-rose-600">BDT {Number(totalDue).toLocaleString()}</span>
+                  <div className="text-right flex flex-col gap-0.5">
+                    {hasDueInvoices && calcAedDue > 0 && <span className="text-xl font-extrabold text-rose-600">AED {calcAedDue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+                    {(!hasDueInvoices || calcBdtDue > 0 || (!calcAedDue && !calcBdtDue)) && (
+                      <span className="text-xl font-extrabold text-rose-600">BDT {(hasDueInvoices ? calcBdtDue : totalDue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* TAB 1: PAY DUE */}

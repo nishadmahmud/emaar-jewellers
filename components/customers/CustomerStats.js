@@ -2,20 +2,69 @@
 
 import { TrendingUp, CreditCard, Calendar, Package, RotateCcw, FileText } from 'lucide-react';
 
-export default function CustomerStats({ data }) {
+export default function CustomerStats({ data, customerWiseInvoice }) {
     if (!data) return null;
+
+    const defaultTotalPurchase = Number(data.invoice_list_sum_sub_total || 0);
+    const defaultTotalDue = Number(data.due || 0);
+
+    let calcAedPurchase = 0, calcBdtPurchase = 0;
+    let calcAedDue = 0, calcBdtDue = 0;
+    let hasInvoices = false;
+
+    if (customerWiseInvoice) {
+        const invoices = Array.isArray(customerWiseInvoice?.data?.data)
+            ? customerWiseInvoice.data.data
+            : Array.isArray(customerWiseInvoice?.data)
+            ? customerWiseInvoice.data
+            : Array.isArray(customerWiseInvoice)
+            ? customerWiseInvoice
+            : [];
+
+        if (invoices.length > 0) {
+            hasInvoices = true;
+            invoices.forEach(inv => {
+                const payModeString = inv.pay_mode || '';
+                const isAed = payModeString.includes('(AED @');
+                const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+                const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+                
+                const tAmt = Number(inv.sub_total || inv.total_amount || 0);
+                const dAmt = Number(inv.due_amount || inv.due || 0);
+                
+                if (isAed) {
+                    calcAedPurchase += (tAmt / invoiceAedRate);
+                    calcAedDue += (dAmt / invoiceAedRate);
+                } else {
+                    calcBdtPurchase += tAmt;
+                    calcBdtDue += dAmt;
+                }
+            });
+        }
+    }
+
+    const showCalculated = hasInvoices;
+
+    const renderMultiValue = (aedVal, bdtVal, defaultVal) => {
+        return (
+            <div className="flex flex-col gap-0.5">
+                {showCalculated && aedVal > 0 && <span>AED {aedVal.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+                {(!showCalculated || bdtVal > 0 || (!aedVal && !bdtVal)) && <span>BDT {(showCalculated ? bdtVal : defaultVal).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+            </div>
+        );
+    };
 
     const stats = [
         {
             title: "Total Purchase Amount",
-            value: `${(data.invoice_list_sum_sub_total || 0).toLocaleString("en-US")} BDT`,
+            value: renderMultiValue(calcAedPurchase, calcBdtPurchase, defaultTotalPurchase),
             icon: TrendingUp,
             colors: "bg-emerald-50 text-emerald-600 border-emerald-100",
             iconBg: "bg-emerald-100"
         },
         {
             title: "Total Due",
-            value: `${(data.due || 0).toLocaleString("en-US")} BDT`,
+            value: renderMultiValue(calcAedDue, calcBdtDue, defaultTotalDue),
             icon: CreditCard,
             colors: "bg-blue-50 text-blue-600 border-blue-100",
             iconBg: "bg-blue-100"
@@ -65,7 +114,7 @@ export default function CustomerStats({ data }) {
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-[11px] sm:text-xs font-medium opacity-80 truncate">{stat.title}</p>
-                                <p className="text-xs sm:text-lg font-bold mt-0.5 truncate">{stat.value}</p>
+                                <div className="text-xs sm:text-lg font-bold mt-0.5">{stat.value}</div>
                             </div>
                         </div>
                     );

@@ -392,12 +392,32 @@ export default function PayVendorDueModal({ open, onClose, vendorId, vendorName,
     }
   };
 
+  let calcAedDue = 0, calcBdtDue = 0;
+  let hasDueInvoices = dueInvoices && dueInvoices.length > 0;
+  
   const invoiceOptions = [
     { id: '', name: 'All Invoices (General Payment)' },
     ...dueInvoices.map((inv) => {
       const invId = inv.purchase_invoice_id || inv.invoice_id || inv.id;
-      const dueVal = Number(inv.total_due || inv.due_amount || inv.due || 0).toLocaleString();
-      return { id: invId, name: `${invId} (Due: BDT ${dueVal})` };
+      
+      const payModeString = inv.pay_mode || '';
+      const isAed = payModeString.includes('(AED @');
+      const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+      const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+      const displayCurrency = isAed ? 'AED' : 'BDT';
+
+      const dueAmtBdt = Number(inv.total_due || inv.due_amount || inv.due || 0);
+      const dueAmt = isAed ? dueAmtBdt / invoiceAedRate : dueAmtBdt;
+      
+      if (isAed) {
+        calcAedDue += dueAmt;
+      } else {
+        calcBdtDue += dueAmt;
+      }
+      
+      const dueVal = dueAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      
+      return { id: invId, name: `${invId} (Due: ${displayCurrency} ${dueVal})` };
     })
   ];
 
@@ -428,7 +448,12 @@ export default function PayVendorDueModal({ open, onClose, vendorId, vendorName,
                 <p className="text-[10px] font-bold text-rose-800 uppercase tracking-wider">TOTAL VENDOR DUE</p>
                 <p className="text-xs text-rose-600 font-medium">Outstanding Balance</p>
               </div>
-              <p className="text-xl font-extrabold text-rose-600">BDT {Number(totalDue).toLocaleString('en-US')}</p>
+              <div className="text-right flex flex-col gap-0.5">
+                {hasDueInvoices && calcAedDue > 0 && <span className="text-xl font-extrabold text-rose-600">AED {calcAedDue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+                {(!hasDueInvoices || calcBdtDue > 0 || (!calcAedDue && !calcBdtDue)) && (
+                  <span className="text-xl font-extrabold text-rose-600">BDT {(hasDueInvoices ? calcBdtDue : totalDue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                )}
+              </div>
             </div>
 
             {loadingInitial ? (

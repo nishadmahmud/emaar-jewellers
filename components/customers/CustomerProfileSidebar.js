@@ -4,9 +4,48 @@ import { useState } from 'react';
 import { Phone, MessageCircle, Mail, MessageSquare } from 'lucide-react';
 import CollectDueModal from '@/components/customers/CollectDueModal';
 
-export default function CustomerProfileSidebar({ customer, onRefresh }) {
+export default function CustomerProfileSidebar({ customer, customerWiseInvoice, onRefresh }) {
     const data = customer?.data || {};
     const [isCollectDueOpen, setIsCollectDueOpen] = useState(false);
+
+    let calcAedDue = 0, calcBdtDue = 0;
+    let calcAedPurchase = 0, calcBdtPurchase = 0;
+    let hasInvoices = false;
+
+    if (customerWiseInvoice) {
+        const invoices = Array.isArray(customerWiseInvoice?.data?.data)
+            ? customerWiseInvoice.data.data
+            : Array.isArray(customerWiseInvoice?.data)
+            ? customerWiseInvoice.data
+            : Array.isArray(customerWiseInvoice)
+            ? customerWiseInvoice
+            : [];
+
+        if (invoices.length > 0) {
+            hasInvoices = true;
+            invoices.forEach(inv => {
+                const payModeString = inv.pay_mode || '';
+                const isAed = payModeString.includes('(AED @');
+                const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+                const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+                
+                const dAmt = Number(inv.due_amount || inv.due || 0);
+                const tAmt = Number(inv.sub_total || inv.total_amount || 0);
+                
+                if (isAed) {
+                    calcAedDue += (dAmt / invoiceAedRate);
+                    calcAedPurchase += (tAmt / invoiceAedRate);
+                } else {
+                    calcBdtDue += dAmt;
+                    calcBdtPurchase += tAmt;
+                }
+            });
+        }
+    }
+
+    const showCalculated = hasInvoices;
+    const defaultDue = Number(data.due || 0);
+    const defaultPurchase = Number(data.invoice_list_sum_sub_total || 0);
     
     return (
         <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden mb-6 md:mb-0">
@@ -44,13 +83,25 @@ export default function CustomerProfileSidebar({ customer, onRefresh }) {
             
             <div className="px-6 py-5 border-t border-neutral-100 bg-neutral-50/50">
                 <h3 className="font-semibold text-neutral-900 mb-3 text-sm tracking-wide uppercase">Financial Overview</h3>
-                <div className="flex justify-between items-center py-2">
-                    <span className="text-neutral-500 text-sm">Total Due</span>
-                    <span className="font-bold text-red-600">{(data.due || 0).toLocaleString("en-US")} BDT</span>
+                
+                <div className="flex justify-between items-start py-2 border-b border-neutral-100/50">
+                    <span className="text-neutral-500 text-sm mt-0.5">Total Due</span>
+                    <div className="flex flex-col items-end gap-0.5">
+                        {showCalculated && calcAedDue > 0 && <span className="font-bold text-red-600">AED {calcAedDue.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+                        {(!showCalculated || calcBdtDue > 0 || (!calcAedDue && !calcBdtDue)) && (
+                            <span className="font-bold text-red-600">BDT {(showCalculated ? calcBdtDue : defaultDue).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        )}
+                    </div>
                 </div>
-                <div className="flex justify-between items-center py-2">
-                    <span className="text-neutral-500 text-sm">Total Purchased</span>
-                    <span className="font-medium text-neutral-900">{(data.invoice_list_sum_sub_total || 0).toLocaleString("en-US")} BDT</span>
+
+                <div className="flex justify-between items-start py-2">
+                    <span className="text-neutral-500 text-sm mt-0.5">Total Purchased</span>
+                    <div className="flex flex-col items-end gap-0.5">
+                        {showCalculated && calcAedPurchase > 0 && <span className="font-medium text-neutral-900">AED {calcAedPurchase.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+                        {(!showCalculated || calcBdtPurchase > 0 || (!calcAedPurchase && !calcBdtPurchase)) && (
+                            <span className="font-medium text-neutral-900">BDT {(showCalculated ? calcBdtPurchase : defaultPurchase).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        )}
+                    </div>
                 </div>
                 
                 <button

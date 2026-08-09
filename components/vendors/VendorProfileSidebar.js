@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Store, Phone, Mail, MapPin, DollarSign, CreditCard } from 'lucide-react';
 import PayVendorDueModal from '@/components/vendors/PayVendorDueModal';
 
-export default function VendorProfileSidebar({ vendor, onRefresh }) {
+export default function VendorProfileSidebar({ vendor, vendorWiseInvoice, onRefresh }) {
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
 
   const vendorData = vendor?.data || vendor || {};
@@ -13,6 +13,40 @@ export default function VendorProfileSidebar({ vendor, onRefresh }) {
   const email = vendorData.email || 'N/A';
   const address = vendorData.address || 'N/A';
   const totalDue = Number(vendorData.total_due_amount || vendorData.due_amount || vendorData.due || 0);
+
+  // Calculate split totals based on invoice list
+  let calcAedDue = 0, calcBdtDue = 0;
+  let hasInvoices = false;
+
+  if (vendorWiseInvoice) {
+    const invoices = Array.isArray(vendorWiseInvoice?.data?.data)
+      ? vendorWiseInvoice.data.data
+      : Array.isArray(vendorWiseInvoice?.data)
+      ? vendorWiseInvoice.data
+      : Array.isArray(vendorWiseInvoice)
+      ? vendorWiseInvoice
+      : [];
+
+    if (invoices.length > 0) {
+      hasInvoices = true;
+      invoices.forEach(inv => {
+        const payModeString = inv.pay_mode || '';
+        const isAed = payModeString.includes('(AED @');
+        const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+        const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+        
+        const dAmt = Number(inv.due_amount || inv.due || 0);
+        
+        if (isAed) {
+          calcAedDue += (dAmt / invoiceAedRate);
+        } else {
+          calcBdtDue += dAmt;
+        }
+      });
+    }
+  }
+
+  const showCalculated = hasInvoices;
 
   return (
     <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 shadow-sm space-y-5 text-black">
@@ -47,7 +81,12 @@ export default function VendorProfileSidebar({ vendor, onRefresh }) {
       <div className="bg-rose-50/70 border border-rose-100 rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">REMAINING DUE</span>
-          <span className="text-base font-extrabold text-rose-600">BDT {totalDue.toLocaleString('en-US')}</span>
+          <div className="text-right flex flex-col gap-0.5">
+            {showCalculated && calcAedDue > 0 && <span className="text-base leading-tight font-extrabold text-rose-600">AED {calcAedDue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+            {(!showCalculated || calcBdtDue > 0 || (!calcAedDue && !calcBdtDue)) && (
+              <span className="text-base leading-tight font-extrabold text-rose-600">BDT {(showCalculated ? calcBdtDue : totalDue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+            )}
+          </div>
         </div>
 
         <button

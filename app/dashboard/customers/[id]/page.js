@@ -115,7 +115,7 @@ export default function CustomerDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Sidebar */}
                 <div className="lg:col-span-1">
-                    <CustomerProfileSidebar customer={customer} onRefresh={fetchCustomerData} />
+                    <CustomerProfileSidebar customer={customer} customerWiseInvoice={customerWiseInvoice} onRefresh={fetchCustomerData} />
                 </div>
 
                 {/* Content */}
@@ -126,7 +126,7 @@ export default function CustomerDashboard() {
                         </div>
                     )}
                     
-                    <CustomerStats data={customer?.data} />
+                    <CustomerStats data={customer?.data} customerWiseInvoice={customerWiseInvoice} />
                     <CustomerPurchasedProducts partyWiseProduct={customerWiseProduct} />
                     <CustomerInvoiceHistory partyWiseInvoice={customerWiseInvoice} />
                 </div>

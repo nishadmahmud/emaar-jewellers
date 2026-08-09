@@ -32,8 +32,18 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                         {/* Mobile View: Clean Card List (No horizontal scroll) */}
                         <div className="block sm:hidden divide-y divide-neutral-100">
                             {invoices.map((invoice) => {
-                                const total = invoice?.sub_total || 0;
-                                const due = Math.max((invoice?.sub_total || 0) - (invoice?.paid_amount || 0), 0);
+                                const payModeString = invoice?.pay_mode || '';
+                                const isAed = payModeString.includes('(AED @');
+                                const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+                                const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+                                
+                                const totalBdt = invoice?.sub_total || invoice?.total_amount || 0;
+                                const paidBdt = invoice?.paid_amount || 0;
+                                const dueBdt = Math.max(totalBdt - paidBdt, 0);
+
+                                const totalDisplay = isAed ? totalBdt / invoiceAedRate : totalBdt;
+                                const dueDisplay = isAed ? dueBdt / invoiceAedRate : dueBdt;
+                                const currencyLabel = isAed ? 'AED' : 'BDT';
 
                                 return (
                                     <div key={invoice?.id} className="px-3.5 py-3 flex items-center justify-between hover:bg-neutral-50/60 transition-colors">
@@ -48,15 +58,15 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                                             </div>
                                             <p className="text-[11px] text-neutral-500 mt-0.5">{formatInvoiceDate(invoice?.invoice_id)}</p>
                                             <p className="text-[11px] text-neutral-700 font-medium mt-0.5">
-                                                Total: {total.toLocaleString("en-US")} BDT
+                                                Total: {totalDisplay.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})} {currencyLabel}
                                             </p>
                                         </div>
 
                                         <div className="text-right shrink-0 flex items-center gap-2">
                                             <div>
-                                                {due > 0 ? (
+                                                {dueDisplay > 0 ? (
                                                     <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200">
-                                                        Due BDT {due.toLocaleString("en-US")}
+                                                        Due {currencyLabel} {dueDisplay.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                                     </span>
                                                 ) : (
                                                     <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200">
@@ -89,38 +99,53 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-neutral-100">
-                                    {invoices.map((invoice) => (
-                                        <tr key={invoice?.id} className="hover:bg-neutral-50/50 transition-colors">
-                                            <td className="py-3 px-6 font-medium text-neutral-900">
-                                                {invoice?.invoice_id}
-                                            </td>
-                                            <td className="py-3 px-6 text-neutral-500">
-                                                {formatInvoiceDate(invoice?.invoice_id)}
-                                            </td>
-                                            <td className="py-3 px-6 text-right tabular-nums font-medium">
-                                                {invoice?.sub_total?.toLocaleString("en-US")} BDT
-                                            </td>
-                                            <td className="py-3 px-6 text-right tabular-nums text-red-600 font-medium">
-                                                {(invoice?.sub_total - invoice?.paid_amount)?.toLocaleString("en-US")} BDT
-                                            </td>
-                                            <td className="py-3 px-6 text-center">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    invoice?.status 
-                                                        ? 'bg-green-100 text-green-800' 
-                                                        : 'bg-amber-100 text-amber-800'
-                                                }`}>
-                                                    {invoice?.status ? "Completed" : "On Hold"}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 px-6 text-center">
-                                                <Link href={`/dashboard/invoice/sale/${invoice?.invoice_id}`}>
-                                                    <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
-                                                        <Eye size={14} /> View
-                                                    </button>
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {invoices.map((invoice) => {
+                                        const payModeString = invoice?.pay_mode || '';
+                                        const isAed = payModeString.includes('(AED @');
+                                        const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+                                        const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
+                                        
+                                        const totalBdt = invoice?.sub_total || invoice?.total_amount || 0;
+                                        const paidBdt = invoice?.paid_amount || 0;
+                                        const dueBdt = Math.max(totalBdt - paidBdt, 0);
+
+                                        const totalDisplay = isAed ? totalBdt / invoiceAedRate : totalBdt;
+                                        const dueDisplay = isAed ? dueBdt / invoiceAedRate : dueBdt;
+                                        const currencyLabel = isAed ? 'AED' : 'BDT';
+
+                                        return (
+                                            <tr key={invoice?.id} className="hover:bg-neutral-50/50 transition-colors">
+                                                <td className="py-3 px-6 font-medium text-neutral-900">
+                                                    {invoice?.invoice_id}
+                                                </td>
+                                                <td className="py-3 px-6 text-neutral-500">
+                                                    {formatInvoiceDate(invoice?.invoice_id)}
+                                                </td>
+                                                <td className="py-3 px-6 text-right tabular-nums font-medium">
+                                                    {totalDisplay.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})} {currencyLabel}
+                                                </td>
+                                                <td className="py-3 px-6 text-right tabular-nums text-red-600 font-medium">
+                                                    {dueDisplay.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})} {currencyLabel}
+                                                </td>
+                                                <td className="py-3 px-6 text-center">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                        invoice?.status 
+                                                            ? 'bg-green-100 text-green-800' 
+                                                            : 'bg-amber-100 text-amber-800'
+                                                    }`}>
+                                                        {invoice?.status ? "Completed" : "On Hold"}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-6 text-center">
+                                                    <Link href={`/dashboard/invoice/sale/${invoice?.invoice_id}`}>
+                                                        <button className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                                                            <Eye size={14} /> View
+                                                        </button>
+                                                    </Link>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
