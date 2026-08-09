@@ -92,7 +92,6 @@ export default function ProfitLossReport() {
 
   const totalSalesBdt = aggregateTotal(salesData);
   const totalPurchaseBdt = aggregateTotal(purchaseData, true);
-  const netProfit = totalSalesBdt - totalPurchaseBdt;
 
   const totalSalesQty = salesData.reduce((acc, inv) => {
     return acc + (inv.sales_details && inv.sales_details.length > 0
@@ -105,6 +104,16 @@ export default function ProfitLossReport() {
       ? inv.purchase_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
       : 0);
   }, 0);
+
+  const avgSellPrice = totalSalesQty > 0 ? totalSalesBdt / totalSalesQty : 0;
+  const avgPurchasePrice = totalPurchaseQty > 0 ? totalPurchaseBdt / totalPurchaseQty : 0;
+  const stockAvailable = totalPurchaseQty - totalSalesQty;
+  
+  // If stock is 0, multiply by 1 (so never multiply by 0)
+  const stockMultiplier = stockAvailable === 0 ? 1 : stockAvailable;
+  
+  // Formula: (ASP - APP) * Stock Available * Sell Qty
+  const netProfit = (avgSellPrice - avgPurchasePrice) * stockMultiplier * totalSalesQty;
 
   const totalStockCount = purchaseData.reduce((count, inv) => {
     // Attempting a rough stock sum if quantities are available, else we count invoices.
