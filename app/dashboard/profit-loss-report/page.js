@@ -164,9 +164,9 @@ export default function ProfitLossReport() {
           <CardContent className="flex flex-col gap-1">
             <div className="flex items-center gap-2 text-neutral-500">
               <Package size={16} />
-              <span className="text-sm font-medium">Monthly Purchases</span>
+              <span className="text-sm font-medium">Stock Available</span>
             </div>
-            <div className="text-2xl font-bold text-neutral-900">{purchaseData.length} Invoices</div>
+            <div className="text-2xl font-bold text-neutral-900">{(totalPurchaseQty - totalSalesQty).toFixed(3)}</div>
           </CardContent>
         </Card>
       </div>
