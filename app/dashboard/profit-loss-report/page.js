@@ -112,8 +112,11 @@ export default function ProfitLossReport() {
   // If stock is 0, multiply by 1 (so never multiply by 0)
   const stockMultiplier = stockAvailable === 0 ? 1 : stockAvailable;
   
+  // Current profit (normal)
+  const currentProfit = (avgSellPrice - avgPurchasePrice) * totalSalesQty;
+
   // Formula: (ASP - APP) * Stock Available * Sell Qty
-  const netProfit = (avgSellPrice - avgPurchasePrice) * stockMultiplier * totalSalesQty;
+  const fullStockProfit = (avgSellPrice - avgPurchasePrice) * stockMultiplier * totalSalesQty;
 
   const totalStockCount = purchaseData.reduce((count, inv) => {
     // Attempting a rough stock sum if quantities are available, else we count invoices.
@@ -130,52 +133,67 @@ export default function ProfitLossReport() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Profit & Loss Report</h1>
-        <p className="text-sm text-neutral-500 mt-1">Monthly financial overview indicating profit, loss, and aggregate values (Converted to BDT).</p>
+        <p className="hidden sm:block text-sm text-neutral-500 mt-1">Monthly financial overview indicating profit, loss, and aggregate values (Converted to BDT).</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
         <Card>
-          <CardContent className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-neutral-500">
+          <CardContent className="flex flex-col gap-0.5 sm:gap-1 p-4 sm:p-6">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-neutral-500">
               <DollarSign size={16} />
-              <span className="text-sm font-medium">Total Sales</span>
+              <span className="text-xs sm:text-sm font-medium">Total Sales</span>
             </div>
-            <div className="text-2xl font-bold text-neutral-900">BDT {totalSalesBdt.toLocaleString()}</div>
+            <div className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight sm:tracking-normal">BDT {Number(totalSalesBdt).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+            <div className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 sm:mt-1">Avg: {Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT / Qty</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-neutral-500">
+          <CardContent className="flex flex-col gap-0.5 sm:gap-1 p-4 sm:p-6">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-neutral-500">
               <DollarSign size={16} />
-              <span className="text-sm font-medium">Total Purchase</span>
+              <span className="text-xs sm:text-sm font-medium">Total Purchase</span>
             </div>
-            <div className="text-2xl font-bold text-neutral-900">BDT {totalPurchaseBdt.toLocaleString()}</div>
+            <div className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight sm:tracking-normal">BDT {Number(totalPurchaseBdt).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+            <div className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 sm:mt-1">Avg: {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT / Qty</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="flex flex-col gap-1">
+          <CardContent className="flex flex-col gap-0.5 sm:gap-1 p-4 sm:p-6">
             <div className="flex items-center gap-2 text-neutral-500">
-              {netProfit >= 0 ? <TrendingUp size={16} className="text-emerald-500" /> : <TrendingDown size={16} className="text-rose-500" />}
-              <span className="text-sm font-medium">Net Profit / Loss</span>
+              {currentProfit >= 0 ? <TrendingUp size={16} className="text-emerald-500" /> : <TrendingDown size={16} className="text-rose-500" />}
+              <span className="text-xs sm:text-sm font-medium">Current Profit/Loss</span>
             </div>
-            <div className={`text-2xl font-bold ${netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-              BDT {netProfit.toLocaleString()}
+            <div className={`text-xl sm:text-2xl font-bold tracking-tight sm:tracking-normal ${currentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              BDT {currentProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </div>
+            <div className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 sm:mt-1">Per Qty: {Number(avgSellPrice - avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="flex flex-col gap-0.5 sm:gap-1 p-4 sm:p-6">
+            <div className="flex items-center gap-2 text-neutral-500">
+              {fullStockProfit >= 0 ? <TrendingUp size={16} className="text-emerald-500" /> : <TrendingDown size={16} className="text-rose-500" />}
+              <span className="text-xs sm:text-sm font-medium">Full Stock Profit/Loss</span>
+            </div>
+            <div className={`text-xl sm:text-2xl font-bold tracking-tight sm:tracking-normal ${fullStockProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              BDT {fullStockProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="flex flex-col gap-1">
+          <CardContent className="flex flex-col gap-0.5 sm:gap-1 p-4 sm:p-6">
             <div className="flex items-center gap-2 text-neutral-500">
               <Package size={16} />
-              <span className="text-sm font-medium">Stock Available</span>
+              <span className="text-xs sm:text-sm font-medium">Stock Available</span>
             </div>
-            <div className="text-2xl font-bold text-neutral-900">{(totalPurchaseQty - totalSalesQty).toFixed(3)}</div>
+            <div className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight sm:tracking-normal">{(totalPurchaseQty - totalSalesQty).toFixed(3)}</div>
           </CardContent>
         </Card>
       </div>
@@ -186,9 +204,61 @@ export default function ProfitLossReport() {
           <CardHeader>
             <CardTitle>Monthly Sales Activity</CardTitle>
           </CardHeader>
-          <div className="p-0 overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-neutral-50 text-neutral-600 border-b border-neutral-200">
+          <div className="p-0">
+            {/* Mobile View */}
+            <div className="block sm:hidden divide-y divide-neutral-100">
+              {salesData.length === 0 ? (
+                <div className="px-6 py-8 text-center text-neutral-500 text-sm">No sales data for this month.</div>
+              ) : (
+                salesData.map((inv) => {
+                  const isAed = (inv.pay_mode || '').includes('(AED @');
+                  const conversionRate = 34;
+                  const originalAmount = inv.sub_total - (inv.discount || 0);
+                  const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
+                  const qty = inv.sales_details && inv.sales_details.length > 0
+                    ? inv.sales_details.reduce((acc, item) => acc + (Number(item.qty) || 0), 0)
+                    : '-';
+                  
+                  return (
+                    <div key={inv.id} className="px-4 py-3 flex items-center justify-between hover:bg-neutral-50/60 transition-colors">
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <p className="font-semibold text-xs text-neutral-900 truncate">{inv.invoice_id}</p>
+                        <p className="text-[10px] text-neutral-500 mt-0.5">{new Date(inv.created_at).toLocaleDateString()}</p>
+                        <div className="mt-1">
+                          <span className="inline-block text-[10px] bg-neutral-100 text-neutral-600 font-medium px-1.5 py-0.5 rounded border border-neutral-200">
+                            Qty: {qty !== '-' ? Number(qty).toFixed(3) : '-'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0 flex flex-col items-end pl-1">
+                        <p className="font-bold text-xs text-emerald-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</p>
+                        {isAed && (
+                          <span className="text-[10px] text-neutral-500 font-medium mt-0.5">
+                            {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} AED
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              {salesData.length > 0 && (
+                <div className="bg-neutral-50 border-t border-neutral-200 px-4 py-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-xs text-neutral-900">Total:</span>
+                    <div className="text-right">
+                      <p className="font-bold text-xs text-emerald-600">{Number(totalSalesBdt).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</p>
+                      <p className="text-[10px] text-neutral-500 mt-0.5 font-medium">Qty: {totalSalesQty > 0 ? totalSalesQty.toFixed(3) : '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop View */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-neutral-50 text-neutral-600 border-b border-neutral-200">
                 <tr>
                   <th className="px-6 py-4 font-medium">Invoice</th>
                   <th className="px-6 py-4 font-medium">Date</th>
@@ -242,6 +312,7 @@ export default function ProfitLossReport() {
               </tfoot>
             </table>
           </div>
+          </div>
         </Card>
 
         {/* Purchase Table */}
@@ -249,9 +320,61 @@ export default function ProfitLossReport() {
           <CardHeader>
             <CardTitle>Monthly Purchase Activity</CardTitle>
           </CardHeader>
-          <div className="p-0 overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-neutral-50 text-neutral-600 border-b border-neutral-200">
+          <div className="p-0">
+            {/* Mobile View */}
+            <div className="block sm:hidden divide-y divide-neutral-100">
+              {purchaseData.length === 0 ? (
+                <div className="px-6 py-8 text-center text-neutral-500 text-sm">No purchase data for this month.</div>
+              ) : (
+                purchaseData.map((inv) => {
+                  const isAed = (inv.pay_mode || '').includes('(AED @');
+                  const conversionRate = 34; // Fixed 34 as requested
+                  const originalAmount = inv.sub_total - (inv.discount || 0);
+                  const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
+                  const qty = inv.purchase_details && inv.purchase_details.length > 0
+                    ? inv.purchase_details.reduce((acc, item) => acc + (Number(item.qty) || 0), 0)
+                    : '-';
+                  
+                  return (
+                    <div key={inv.id} className="px-4 py-3 flex items-center justify-between hover:bg-neutral-50/60 transition-colors">
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <p className="font-semibold text-xs text-neutral-900 truncate">{inv.invoice_id}</p>
+                        <p className="text-[10px] text-neutral-500 mt-0.5">{new Date(inv.created_at).toLocaleDateString()}</p>
+                        <div className="mt-1">
+                          <span className="inline-block text-[10px] bg-neutral-100 text-neutral-600 font-medium px-1.5 py-0.5 rounded border border-neutral-200">
+                            Qty: {qty !== '-' ? Number(qty).toFixed(3) : '-'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0 flex flex-col items-end pl-1">
+                        <p className="font-bold text-xs text-rose-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</p>
+                        {isAed && (
+                          <span className="text-[10px] text-neutral-500 font-medium mt-0.5">
+                            {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} AED
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              {purchaseData.length > 0 && (
+                <div className="bg-neutral-50 border-t border-neutral-200 px-4 py-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-xs text-neutral-900">Total:</span>
+                    <div className="text-right">
+                      <p className="font-bold text-xs text-rose-600">{Number(totalPurchaseBdt).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</p>
+                      <p className="text-[10px] text-neutral-500 mt-0.5 font-medium">Qty: {totalPurchaseQty > 0 ? totalPurchaseQty.toFixed(3) : '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop View */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-neutral-50 text-neutral-600 border-b border-neutral-200">
                 <tr>
                   <th className="px-6 py-4 font-medium">Invoice</th>
                   <th className="px-6 py-4 font-medium">Date</th>
@@ -304,6 +427,7 @@ export default function ProfitLossReport() {
                 </tr>
               </tfoot>
             </table>
+          </div>
           </div>
         </Card>
       </div>
