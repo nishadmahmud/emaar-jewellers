@@ -94,6 +94,18 @@ export default function ProfitLossReport() {
   const totalPurchaseBdt = aggregateTotal(purchaseData, true);
   const netProfit = totalSalesBdt - totalPurchaseBdt;
 
+  const totalSalesQty = salesData.reduce((acc, inv) => {
+    return acc + (inv.sales_details && inv.sales_details.length > 0
+      ? inv.sales_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
+      : 0);
+  }, 0);
+
+  const totalPurchaseQty = purchaseData.reduce((acc, inv) => {
+    return acc + (inv.purchase_details && inv.purchase_details.length > 0
+      ? inv.purchase_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
+      : 0);
+  }, 0);
+
   const totalStockCount = purchaseData.reduce((count, inv) => {
     // Attempting a rough stock sum if quantities are available, else we count invoices.
     // If we don't have individual product quantities, we can sum an assumed property or leave as length.
@@ -171,28 +183,54 @@ export default function ProfitLossReport() {
                 <tr>
                   <th className="px-6 py-4 font-medium">Invoice</th>
                   <th className="px-6 py-4 font-medium">Date</th>
+                  <th className="px-6 py-4 font-medium text-center">Qty</th>
                   <th className="px-6 py-4 font-medium text-right">Amount (BDT)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 bg-white">
                 {salesData.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="px-6 py-8 text-center text-neutral-500">No sales data for this month.</td>
+                    <td colSpan={4} className="px-6 py-8 text-center text-neutral-500">No sales data for this month.</td>
                   </tr>
                 ) : (
                   salesData.map((inv) => {
                     const isAed = (inv.pay_mode || '').includes('(AED @');
-                    const bdtAmount = isAed ? (inv.sub_total - inv.discount) * 34 : (inv.sub_total - inv.discount);
+                    const conversionRate = 34; // Fixed 34 as requested
+                    const originalAmount = inv.sub_total - (inv.discount || 0);
+                    const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
+                    const qty = inv.sales_details && inv.sales_details.length > 0
+                      ? inv.sales_details.reduce((acc, item) => acc + (Number(item.qty) || 0), 0)
+                      : '-';
+                    
                     return (
                       <tr key={inv.id} className="hover:bg-neutral-50/50">
                         <td className="px-6 py-4 font-medium text-neutral-900">{inv.invoice_id}</td>
                         <td className="px-6 py-4 text-neutral-500">{new Date(inv.created_at).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 text-right text-emerald-600 font-medium">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })}</td>
+                        <td className="px-6 py-4 text-center text-neutral-700">{qty !== '-' ? Number(qty).toFixed(3) : '-'}</td>
+                        <td className="px-6 py-4 text-right font-medium">
+                          {isAed ? (
+                            <div className="flex flex-col items-end">
+                              <span className="text-emerald-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</span>
+                              <span className="text-[10px] text-black font-medium mt-0.5">
+                                {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} AED (Rate: {conversionRate})
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-emerald-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })
                 )}
               </tbody>
+              <tfoot className="bg-neutral-50 border-t border-neutral-200">
+                <tr>
+                  <td colSpan={2} className="px-6 py-4 font-bold text-neutral-900 text-right">Total:</td>
+                  <td className="px-6 py-4 font-bold text-neutral-900 text-center">{totalSalesQty > 0 ? totalSalesQty.toFixed(3) : '-'}</td>
+                  <td className="px-6 py-4 font-bold text-emerald-600 text-right">{Number(totalSalesBdt).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </Card>
@@ -208,28 +246,54 @@ export default function ProfitLossReport() {
                 <tr>
                   <th className="px-6 py-4 font-medium">Invoice</th>
                   <th className="px-6 py-4 font-medium">Date</th>
+                  <th className="px-6 py-4 font-medium text-center">Qty</th>
                   <th className="px-6 py-4 font-medium text-right">Amount (BDT)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 bg-white">
                 {purchaseData.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="px-6 py-8 text-center text-neutral-500">No purchase data for this month.</td>
+                    <td colSpan={4} className="px-6 py-8 text-center text-neutral-500">No purchase data for this month.</td>
                   </tr>
                 ) : (
                   purchaseData.map((inv) => {
                     const isAed = (inv.pay_mode || '').includes('(AED @');
-                    const bdtAmount = isAed ? (inv.sub_total - inv.discount) * 34 : (inv.sub_total - inv.discount);
+                    const conversionRate = 34; // Fixed 34 as requested
+                    const originalAmount = inv.sub_total - (inv.discount || 0);
+                    const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
+                    const qty = inv.purchase_details && inv.purchase_details.length > 0
+                      ? inv.purchase_details.reduce((acc, item) => acc + (Number(item.qty) || 0), 0)
+                      : '-';
+                    
                     return (
                       <tr key={inv.id} className="hover:bg-neutral-50/50">
                         <td className="px-6 py-4 font-medium text-neutral-900">{inv.invoice_id}</td>
                         <td className="px-6 py-4 text-neutral-500">{new Date(inv.created_at).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 text-right text-rose-600 font-medium">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })}</td>
+                        <td className="px-6 py-4 text-center text-neutral-700">{qty !== '-' ? Number(qty).toFixed(3) : '-'}</td>
+                        <td className="px-6 py-4 text-right font-medium">
+                          {isAed ? (
+                            <div className="flex flex-col items-end">
+                              <span className="text-rose-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</span>
+                              <span className="text-[10px] text-black font-medium mt-0.5">
+                                {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} AED (Rate: {conversionRate})
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-rose-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })
                 )}
               </tbody>
+              <tfoot className="bg-neutral-50 border-t border-neutral-200">
+                <tr>
+                  <td colSpan={2} className="px-6 py-4 font-bold text-neutral-900 text-right">Total:</td>
+                  <td className="px-6 py-4 font-bold text-neutral-900 text-center">{totalPurchaseQty > 0 ? totalPurchaseQty.toFixed(3) : '-'}</td>
+                  <td className="px-6 py-4 font-bold text-rose-600 text-right">{Number(totalPurchaseBdt).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </Card>

@@ -179,9 +179,10 @@ export default function SaleInvoicePage() {
                   {salesDetails.map((item, index) => {
                     const itemName = item.product_info?.name || 'Unnamed Item';
                     const itemQty = Number(item.qty || 1);
-                    const itemRateBdt = Number(item.price || 0);
+                    const itemTotalBdt = Number(item.price || 0); // item.price is the total BDT for this line
+                    const itemRateBdt = itemQty > 0 ? itemTotalBdt / itemQty : 0;
                     const itemRateDisplay = isAed ? itemRateBdt / invoiceAedRate : itemRateBdt;
-                    const itemTotalDisplay = isAed ? (itemRateBdt * itemQty) / invoiceAedRate : (itemRateBdt * itemQty);
+                    const itemTotalDisplay = isAed ? itemTotalBdt / invoiceAedRate : itemTotalBdt;
                     
                     return (
                       <tr key={item.id || index} className="group">
