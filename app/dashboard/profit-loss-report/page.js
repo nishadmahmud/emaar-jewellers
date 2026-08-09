@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
-import { Loader2, TrendingUp, TrendingDown, DollarSign, Package } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Calculator } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API;
@@ -430,7 +430,51 @@ export default function ProfitLossReport() {
           </div>
           </div>
         </Card>
-      </div>
+      {/* Calculation Breakdown */}
+      <Card className="lg:col-span-2">
+        <CardHeader className="pb-3 border-b border-neutral-100">
+          <CardTitle className="flex items-center gap-2">
+            <Calculator size={18} className="text-neutral-500" />
+            Calculation Steps Breakdown
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6 bg-neutral-50/50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+            <div>
+              <h4 className="font-semibold text-neutral-900 mb-1">1. Average Sell Price</h4>
+              <p className="text-neutral-500 text-xs mb-2">Total Sales BDT ÷ Total Sales Qty</p>
+              <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
+                {Number(totalSalesBdt).toLocaleString()} ÷ {totalSalesQty.toFixed(3)} = <span className="font-bold text-neutral-900">{Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+              </code>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold text-neutral-900 mb-1">2. Average Purchase Price</h4>
+              <p className="text-neutral-500 text-xs mb-2">Total Purchase BDT ÷ Total Purchase Qty</p>
+              <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
+                {Number(totalPurchaseBdt).toLocaleString()} ÷ {totalPurchaseQty.toFixed(3)} = <span className="font-bold text-neutral-900">{Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+              </code>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-neutral-900 mb-1">3. Current Profit / Loss</h4>
+              <p className="text-neutral-500 text-xs mb-2">(Avg Sell Price - Avg Purchase Price) × Total Sales Qty</p>
+              <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
+                ({Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} - {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })}) × {totalSalesQty.toFixed(3)} = <span className={`font-bold ${currentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(currentProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+              </code>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-neutral-900 mb-1">4. Full Stock Profit / Loss</h4>
+              <p className="text-neutral-500 text-xs mb-2">Per Qty Profit × Max(1, Stock Available) × Total Sales Qty</p>
+              <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
+                {Number(avgSellPrice - avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} × {Math.max(1, totalPurchaseQty - totalSalesQty).toFixed(3)} × {totalSalesQty.toFixed(3)} = <span className={`font-bold ${fullStockProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(fullStockProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+              </code>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
     </div>
   );
 }
