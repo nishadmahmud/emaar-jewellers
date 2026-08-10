@@ -563,9 +563,9 @@ export default function LedgerStatementReportPage() {
         </CardContent>
       </Card>
 
-      <div className="bg-white p-8 shadow-lg max-w-5xl mx-auto min-h-[297mm] print:shadow-none print:p-0 print:max-w-none rounded-xl border border-neutral-200">
-        <div className="flex border-b-2 border-neutral-800 pb-4 mb-4">
-          <div className="w-[15%] pr-4 border-r-2 border-neutral-300 flex items-center justify-center">
+      <div className="bg-white p-4 md:p-8 shadow-lg max-w-5xl mx-auto min-h-[297mm] print:shadow-none print:p-0 print:max-w-none rounded-xl border border-neutral-200">
+        <div className="flex flex-col md:flex-row border-b-2 border-neutral-800 pb-4 mb-4 gap-4 md:gap-0">
+          <div className="w-full md:w-[15%] md:pr-4 border-b-2 md:border-b-0 md:border-r-2 border-neutral-300 flex items-center justify-center pb-4 md:pb-0">
             <div className="w-24 h-24 flex items-center justify-center">
               {session?.user?.profile_pic ? (
                 <img src={session.user.profile_pic} alt="Logo" className="max-w-full max-h-full object-contain" />
@@ -574,15 +574,15 @@ export default function LedgerStatementReportPage() {
               )}
             </div>
           </div>
-          <div className="w-[50%] px-4 border-r-2 border-neutral-300 flex flex-col justify-center">
-            <h2 className="text-2xl font-bold uppercase mb-1">{session?.user?.outlet_name || "EMAAR JEWELLERS"}</h2>
+          <div className="w-full md:w-[50%] md:px-4 border-b-2 md:border-b-0 md:border-r-2 border-neutral-300 flex flex-col justify-center text-center md:text-left pb-4 md:pb-0">
+            <h2 className="text-xl md:text-2xl font-bold uppercase mb-1">{session?.user?.outlet_name || "EMAAR JEWELLERS"}</h2>
             <p className="text-neutral-700 text-sm mt-2">{session?.user?.address || "Address Line 1"}</p>
             <div className="mt-2 space-y-0.5">
               <p className="text-neutral-700 text-sm">Mobile: {session?.user?.phone || "-"}</p>
               <p className="text-neutral-700 text-sm">Email: {session?.user?.email || "-"}</p>
             </div>
           </div>
-          <div className="w-[35%] pl-4 text-right flex flex-col items-end justify-center">
+          <div className="w-full md:w-[35%] md:pl-4 text-center md:text-right flex flex-col md:items-end justify-center">
             <div className="text-sm space-y-1">
               <p><span className="font-bold">Ref N°:</span> {session?.user?.ref_no || "REP000000"}</p>
               <p><span className="font-bold">Date:</span> {new Date().toLocaleDateString("en-GB")}</p>
@@ -674,7 +674,7 @@ export default function LedgerStatementReportPage() {
             </table>
             
             {matchedAccounts.length > 0 && (
-                <div className="mt-8 border border-neutral-400 max-w-sm ml-auto">
+                <div className="mt-8 border border-neutral-400 w-full md:max-w-sm ml-auto">
                     <table className="w-full text-xs text-left">
                         <tbody>
                             <tr className="bg-neutral-100">
