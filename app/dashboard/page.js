@@ -243,7 +243,7 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
 };
 
 
-const DueListTable = ({ title, data, type, loading }) => {
+const DueListTable = ({ title, data, type, loading, viewAllUrl }) => {
   const rawRows = Array.isArray(data?.data) ? data.data : [];
 
   // Group & merge rows by customer/vendor name
@@ -287,7 +287,7 @@ const DueListTable = ({ title, data, type, loading }) => {
           <h3 className="text-base sm:text-lg font-bold text-neutral-900">{title}</h3>
           <p className="text-xs text-neutral-500">Latest {type} due records (last 90 days)</p>
         </div>
-        <Link href={`/dashboard/due-report?type=${type}`} className="text-xs sm:text-sm font-semibold text-rose-600 hover:text-rose-700">
+        <Link href={viewAllUrl} className="text-xs sm:text-sm font-semibold text-rose-600 hover:text-rose-700">
           View All &rarr;
         </Link>
       </div>
@@ -597,16 +597,18 @@ export default function DashboardPage() {
       {/* Due List Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-6">
         <DueListTable 
-          title="Customer Due List" 
+          title="Client Sell Due" 
           data={customerDueData} 
           type="customer" 
           loading={customerDueLoading}
+          viewAllUrl="/dashboard/clients?filter=sell-due"
         />
         <DueListTable 
-          title="Vendor Due List" 
+          title="Client Purchase Due" 
           data={vendorDueData} 
           type="vendor" 
           loading={vendorDueLoading}
+          viewAllUrl="/dashboard/clients?filter=purchase-due"
         />
       </div>
 

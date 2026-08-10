@@ -58,11 +58,10 @@ export default function DashboardLayout({ children }) {
     { name: 'Add Product', href: '/dashboard/add-product', icon: PackagePlus },
     { name: 'Sell', href: '/dashboard/sell', icon: ShoppingCart },
     { name: 'Sales History', href: '/dashboard/sales', icon: History },
-    { name: 'Purchase', href: '/dashboard/purchase', icon: ArrowDownToLine },
+    { name: 'Buy', href: '/dashboard/purchase', icon: ArrowDownToLine },
     { name: 'Purchase History', href: '/dashboard/purchases', icon: History },
-    { name: 'Vendors', href: '/dashboard/vendors', icon: Users },
+    { name: 'Clients', href: '/dashboard/clients', icon: Users },
     { name: 'Balance Sheet', href: '/dashboard/balance-sheet', icon: FileText },
-    { name: 'Customers', href: '/dashboard/customers', icon: Users },
     { name: 'Due Report', href: '/dashboard/due-report', icon: AlertCircle },
     { name: 'Profit/Loss Report', href: '/dashboard/profit-loss-report', icon: FileText },
     { name: 'Ledger Statement', href: '/dashboard/ledger-statement-report', icon: FileText },
@@ -281,14 +280,14 @@ export default function DashboardLayout({ children }) {
                 className="bg-black hover:bg-neutral-800 text-white rounded-lg text-xs flex items-center gap-1.5 px-3 py-2 font-semibold shadow-sm transition-all"
               >
                 <ShoppingCart className="w-3.5 h-3.5" />
-                <span className="inline">POS</span>
+                <span className="inline">Sell</span>
               </Link>
               <Link
                 href="/dashboard/purchase"
                 className="bg-black hover:bg-neutral-800 text-white rounded-lg text-xs flex items-center gap-1.5 px-3 py-2 font-semibold shadow-sm transition-all"
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
-                <span className="inline">Purchase</span>
+                <span className="inline">Buy</span>
               </Link>
             </div>
 
