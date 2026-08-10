@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
@@ -18,7 +18,7 @@ function normalizeBdMobileInput(raw) {
 const Card = ({ children, className }) => <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 ${className || ''}`}>{children}</div>;
 const CardContent = ({ children, className = '' }) => <div className={className}>{children}</div>;
 
-export default function ClientsPage() {
+function ClientsContent() {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -370,5 +370,13 @@ export default function ClientsPage() {
       )}
 
     </div>
+  );
+}
+
+export default function ClientsPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-10"><Loader2 className="animate-spin text-neutral-400" /></div>}>
+      <ClientsContent />
+    </Suspense>
   );
 }
