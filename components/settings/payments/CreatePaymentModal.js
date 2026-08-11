@@ -53,24 +53,84 @@ export default function CreatePaymentModal({ isOpen, onClose, onSuccess }) {
         }
       }
 
-      const payload = {
+      const nameDH = `${formData.type_name.trim()} (DH)`;
+      const payloadDH = {
         ...formData,
+        type_name: nameDH,
         ...(uploadedImagePath && { icon_image: uploadedImagePath }),
       };
 
-      const res = await axios.post(`${API_URL}/payment-type-save`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const nameBD = `${formData.type_name.trim()} (BD)`;
+      const payloadBD = {
+        ...formData,
+        type_name: nameBD,
+        ...(uploadedImagePath && { icon_image: uploadedImagePath }),
+      };
 
-      if (res.data?.success || res.status === 200) {
-        toast.success(res.data?.message || 'Payment method created successfully!');
+      const [resDH, resBD] = await Promise.all([
+        axios.post(`${API_URL}/payment-type-save`, payloadDH, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.post(`${API_URL}/payment-type-save`, payloadBD, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      ]);
+
+      if ((resDH.data?.success || resDH.status === 200) && (resBD.data?.success || resBD.status === 200)) {
+        // We have to wait a bit so that payment methods are created first before we can grab them
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Fetch the full list to get the actual IDs of the newly created methods
+        const listRes = await axios.get(`${API_URL}/payment-type-list?t=${Date.now()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const allMethods = Array.isArray(listRes.data?.data?.data) ? listRes.data.data.data 
+                         : Array.isArray(listRes.data?.data) ? listRes.data.data 
+                         : Array.isArray(listRes.data) ? listRes.data : [];
+        
+        // Find the newly created methods by name
+        const savedDH = allMethods.find(m => m.type_name === nameDH);
+        const savedBD = allMethods.find(m => m.type_name === nameBD);
+
+        const accountPromises = [];
+        if (savedDH?.id) {
+          accountPromises.push(
+            axios.post(`${API_URL}/payment-type-category-save`, {
+              payment_category_name: nameDH,
+              account_number: '1',
+              branch_name: '',
+              payment_type_id: savedDH.id
+            }, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+          );
+        }
+        if (savedBD?.id) {
+          accountPromises.push(
+            axios.post(`${API_URL}/payment-type-category-save`, {
+              payment_category_name: nameBD,
+              account_number: '1',
+              branch_name: '',
+              payment_type_id: savedBD.id
+            }, {
+              headers: { Authorization: `Bearer ${token}` }
+            })
+          );
+        }
+
+        if (accountPromises.length > 0) {
+          await Promise.all(accountPromises);
+        }
+
+        toast.success('Payment methods and accounts created successfully!');
         setFormData({ type_name: '', icon_letter: '', icon_image: '' });
         setImageFile(null);
         setPreview('');
         onSuccess?.();
         onClose();
       } else {
-        toast.error(res.data?.message || 'Failed to create payment method.');
+        toast.error('Failed to create one or both payment methods.');
       }
     } catch (err) {
       console.error('Create payment error:', err);

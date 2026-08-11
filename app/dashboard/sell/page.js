@@ -165,29 +165,49 @@ export default function SellPage() {
     return () => clearTimeout(delay);
   }, [normalizedPhone, token, API_URL]);
 
-  const handleSaveCustomer = (e) => {
+  const handleSaveCustomer = async (e) => {
     e.preventDefault();
     if (!token) return;
     setSavingCustomer(true);
-    axios.post(`${API_URL}/save-customer`, newCustomer, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => {
-      toast.success("Customer added successfully!");
-      const saved = res.data?.data || res.data;
-      if (saved) {
-        setFormData(prev => ({
-          ...prev,
-          customerId: saved.id,
-          customerName: saved.name || saved.customer_name
-        }));
-        setCustomerSearch(saved.name || saved.customer_name);
-      }
-      setShowAddCustomer(false);
-      setNewCustomer({ name: '', email: '', mobile_number: '', address: '', is_member: 0 });
-    }).catch(err => {
-      toast.error("Failed to save customer");
-      console.error(err);
-    }).finally(() => setSavingCustomer(false));
+    
+    try {
+        const customerPayload = {
+            name: newCustomer.name,
+            email: newCustomer.email,
+            mobile_number: newCustomer.mobile_number,
+            address: newCustomer.address,
+            is_member: 0
+        };
+
+        const vendorFormData = new FormData();
+        vendorFormData.append('name', newCustomer.name);
+        vendorFormData.append('email', newCustomer.email);
+        vendorFormData.append('mobile_number', newCustomer.mobile_number);
+        vendorFormData.append('address', newCustomer.address);
+
+        const [custRes, vendRes] = await Promise.all([
+            axios.post(`${API_URL}/save-customer`, customerPayload, { headers: { Authorization: `Bearer ${token}` } }),
+            axios.post(`${API_URL}/save-vendor`, vendorFormData, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } })
+        ]);
+
+        toast.success("Client added successfully!");
+        const saved = custRes.data?.data || custRes.data;
+        if (saved) {
+            setFormData(prev => ({
+                ...prev,
+                customerId: saved.id,
+                customerName: saved.name || saved.customer_name
+            }));
+            setCustomerSearch(saved.name || saved.customer_name);
+        }
+        setShowAddCustomer(false);
+        setNewCustomer({ name: '', email: '', mobile_number: '', address: '', is_member: 0 });
+    } catch (err) {
+        toast.error("Failed to save client");
+        console.error(err);
+    } finally {
+        setSavingCustomer(false);
+    }
   };
 
 
@@ -293,7 +313,7 @@ const discountNum = parseFloat(formData.discount) || 0;
   const effectivePaidAmountDisplay =
     formData.paidAmount !== '' && formData.paidAmount !== null && formData.paidAmount !== undefined
       ? parseFloat(formData.paidAmount) || 0
-      : displayGrandTotal;
+      : 0;
       
   const dueAmountDisplay = Math.max(0, displayGrandTotal - effectivePaidAmountDisplay);
 
@@ -423,7 +443,7 @@ const discountNum = parseFloat(formData.discount) || 0;
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2 text-neutral-800">
                   <UserPlus size={18} />
-                  <h3 className="font-medium">Customer Details</h3>
+                  <h3 className="font-medium">Client Details</h3>
                 </div>
                 <div className="flex items-center gap-3">
                   {formData.customerName && (
@@ -441,7 +461,7 @@ const discountNum = parseFloat(formData.discount) || 0;
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Search Customer (Mobile / Name)</label>
+                <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Search Client (Mobile / Name)</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search size={14} className="text-neutral-400" />
@@ -458,7 +478,7 @@ const discountNum = parseFloat(formData.discount) || 0;
                     }}
                     onFocus={() => setIsCustomerDropdownOpen(true)}
                     className="w-full pl-9 pr-10 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-all outline-none text-sm"
-                    placeholder="Search by Mobile or Name..."
+                    placeholder="Search Client by Mobile or Name..."
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                      {isCustomerSearching ? <Loader2 size={14} className="text-neutral-400 animate-spin" /> : <ChevronDown size={14} className="text-neutral-400" />}
@@ -485,17 +505,17 @@ const discountNum = parseFloat(formData.discount) || 0;
                       </ul>
                     ) : (
                       <div className="p-4 text-sm text-neutral-500 text-center">
-                        {customerSearch ? 'No customers found.' : 'Type to search customers'}
+                        {customerSearch ? 'No clients found.' : 'Type to search clients'}
                         <div className="mt-2">
                           <button 
                             type="button" 
                             onClick={() => {
-                              setFormData(prev => ({...prev, customerId: 'walk-in', customerName: customerSearch || 'Walk-in Customer'}));
+                              setFormData(prev => ({...prev, customerId: 'walk-in', customerName: customerSearch || 'Walk-in Client'}));
                               setIsCustomerDropdownOpen(false);
                             }}
                             className="text-black font-medium hover:underline"
                           >
-                            Use as Walk-in Customer
+                            Use as Walk-in Client
                           </button>
                         </div>
                       </div>
@@ -717,7 +737,7 @@ const discountNum = parseFloat(formData.discount) || 0;
                   <input
                     type="number"
                     value={formData.paidAmount ?? ''}
-                    placeholder={displayGrandTotal.toFixed(2)}
+                    placeholder="0.00"
                     onChange={(e) => setFormData({...formData, paidAmount: e.target.value})}
                     className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-r-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm font-medium"
                   />
@@ -751,35 +771,7 @@ const discountNum = parseFloat(formData.discount) || 0;
             </div>
 
             <div className="p-6 bg-neutral-50 border-t border-neutral-100">
-              {paymentMethods.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  {paymentMethods.map(method => (
-                    <button 
-                      key={method.id}
-                      type="button"
-                      onClick={() => setFormData({...formData, paymentMethodId: method.id, paymentMethodName: method.type_name})}
-                      className={`flex items-center justify-center gap-2 py-2 border rounded-lg text-sm transition-colors ${formData.paymentMethodId === method.id ? 'border-black bg-black text-white' : 'border-neutral-200 bg-white hover:bg-neutral-50'}`}
-                    >
-                      {getPaymentIcon(method.type_name)} {method.type_name}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                   <button type="button" className="flex items-center justify-center gap-2 py-2 border border-black bg-black text-white rounded-lg text-sm">
-                      <Banknote size={16} /> Cash
-                    </button>
-                </div>
-              )}
 
-               <button
-                type="button"
-                onClick={() => setIsPaymentModalOpen(true)}
-                className="w-full bg-emerald-600 text-white font-semibold py-2.5 rounded-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 mb-3 shadow-sm text-sm"
-              >
-                <CreditCard className="w-4 h-4" />
-                Make Payment {paymentSummaryText ? `(${paymentSummaryText})` : ''}
-              </button>
 
               <button
                 type="submit"

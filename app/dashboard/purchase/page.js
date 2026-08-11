@@ -45,6 +45,58 @@ export default function PurchasePage() {
   
   const [cart, setCart] = useState([]);
 
+  // --- Add Client Modal State ---
+  const [showAddClient, setShowAddClient] = useState(false);
+  const [newClient, setNewClient] = useState({
+    name: '', email: '', mobile_number: '', address: ''
+  });
+  const [savingClient, setSavingClient] = useState(false);
+
+  const handleSaveClient = async (e) => {
+    e.preventDefault();
+    if (!token) return;
+    setSavingClient(true);
+    
+    try {
+        const customerPayload = {
+            name: newClient.name,
+            email: newClient.email,
+            mobile_number: newClient.mobile_number,
+            address: newClient.address,
+            is_member: 0
+        };
+
+        const vendorFormData = new FormData();
+        vendorFormData.append('name', newClient.name);
+        vendorFormData.append('email', newClient.email);
+        vendorFormData.append('mobile_number', newClient.mobile_number);
+        vendorFormData.append('address', newClient.address);
+
+        const [custRes, vendRes] = await Promise.all([
+            axios.post(`${API_URL}/save-customer`, customerPayload, { headers: { Authorization: `Bearer ${token}` } }),
+            axios.post(`${API_URL}/save-vendor`, vendorFormData, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } })
+        ]);
+
+        toast.success("Client added successfully!");
+        const saved = vendRes.data?.data || vendRes.data;
+        if (saved) {
+            setFormData(prev => ({
+                ...prev,
+                vendorId: saved.id,
+                vendorName: saved.name || saved.vendor_name
+            }));
+            setVendorSearch(saved.name || saved.vendor_name);
+        }
+        setShowAddClient(false);
+        setNewClient({ name: '', email: '', mobile_number: '', address: '' });
+    } catch (err) {
+        toast.error("Failed to save client");
+        console.error(err);
+    } finally {
+        setSavingClient(false);
+    }
+  };
+
   // --- Vendor Search ---
   const [vendorSearch, setVendorSearch] = useState('');
   const [vendorList, setVendorList] = useState([]);
@@ -333,13 +385,28 @@ export default function PurchasePage() {
             
             {/* Vendor Section */}
             <div className="bg-white border border-neutral-200 p-6 rounded-xl shadow-sm relative" ref={vendorDropdownRef}>
-              <div className="flex items-center gap-2 mb-4 text-neutral-800">
-                <Store size={18} />
-                <h3 className="font-medium">Vendor Details</h3>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 text-neutral-800">
+                  <Store size={18} />
+                  <h3 className="font-medium">Client Details</h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  {formData.vendorName && (
+                    <button type="button" onClick={() => {
+                      setFormData(prev => ({...prev, vendorId: null, vendorName: ''}));
+                      setVendorSearch('');
+                    }} className="text-xs text-red-500 hover:underline">
+                      Clear Selection
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setShowAddClient(true)} className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                    + Add New
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Vendor Name</label>
+                  <label className="block text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">Search Client (Mobile / Name)</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Search size={14} className="text-neutral-400" />
@@ -357,7 +424,7 @@ export default function PurchasePage() {
                       }}
                       onFocus={() => setIsVendorDropdownOpen(true)}
                       className="w-full pl-9 pr-10 py-2 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-all outline-none text-sm"
-                      placeholder="Search vendor by name or phone..."
+                      placeholder="Search Client by name or phone..."
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                       {isVendorSearching ? <Loader2 size={14} className="text-neutral-400 animate-spin" /> : <ChevronDown size={14} className="text-neutral-400" />}
@@ -382,7 +449,7 @@ export default function PurchasePage() {
                         </ul>
                       ) : (
                         <div className="p-4 text-sm text-neutral-500 text-center">
-                          {vendorSearch ? 'No vendors found.' : 'Loading vendors...'}
+                          {vendorSearch ? 'No clients found.' : 'Loading clients...'}
                         </div>
                       )}
                     </div>
@@ -573,8 +640,8 @@ export default function PurchasePage() {
                   <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3 py-2 rounded-l-lg text-neutral-500 text-sm">{displayCurrency === 'AED' ? 'AED' : '৳'}</span>
                   <input
                     type="number"
-                    value={formData.paidAmount}
-                    placeholder={displayGrandTotal.toFixed(2)}
+                    value={formData.paidAmount ?? ''}
+                    placeholder="0.00"
                     onChange={(e) => setFormData({...formData, paidAmount: e.target.value})}
                     className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-r-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm font-medium"
                   />
@@ -612,35 +679,7 @@ export default function PurchasePage() {
             </div>
 
             <div className="p-6 bg-neutral-50 border-t border-neutral-100">
-              {paymentMethods.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  {paymentMethods.map(method => (
-                    <button 
-                      key={method.id}
-                      type="button"
-                      onClick={() => setFormData({...formData, paymentMethodId: method.id, paymentMethodName: method.type_name})}
-                      className={`flex items-center justify-center gap-2 py-2 border rounded-lg text-sm transition-colors ${formData.paymentMethodId === method.id ? 'border-black bg-black text-white' : 'border-neutral-200 bg-white hover:bg-neutral-50'}`}
-                    >
-                      {getPaymentIcon(method.type_name)} {method.type_name}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                   <button type="button" className="flex items-center justify-center gap-2 py-2 border border-black bg-black text-white rounded-lg text-sm">
-                      <Banknote size={16} /> Cash
-                    </button>
-                </div>
-              )}
 
-               <button
-                type="button"
-                onClick={() => setIsPaymentModalOpen(true)}
-                className="w-full bg-emerald-600 text-white font-semibold py-2.5 rounded-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 mb-3 shadow-sm text-sm"
-              >
-                <CreditCard className="w-4 h-4" />
-                Make Payment {paymentSummaryText ? `(${paymentSummaryText})` : ''}
-              </button>
 
               <button
                 type="submit"
@@ -668,6 +707,82 @@ export default function PurchasePage() {
           setFormData((prev) => ({ ...prev, paidAmount: totalPaid }));
         }}
       />
+
+      {/* Add Client Modal */}
+      {showAddClient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-medium text-neutral-800 mb-1 tracking-wide">Add New Client</h3>
+            <p className="text-xs text-neutral-500 mb-4">This will create both a Customer and a Vendor profile.</p>
+            <form onSubmit={handleSaveClient} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Name <span className="text-red-500">*</span></label>
+                <input
+                  required
+                  type="text"
+                  value={newClient.name}
+                  onChange={e => setNewClient({...newClient, name: e.target.value})}
+                  className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none"
+                  placeholder="Client Name"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Mobile Number <span className="text-red-500">*</span></label>
+                <input
+                  required
+                  type="text"
+                  value={newClient.mobile_number}
+                  onChange={e => setNewClient({...newClient, mobile_number: e.target.value})}
+                  className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none"
+                  placeholder="e.g. 01XXXXXXXXX"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Email (Optional)</label>
+                <input
+                  type="email"
+                  value={newClient.email}
+                  onChange={e => setNewClient({...newClient, email: e.target.value})}
+                  className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none"
+                  placeholder="client@email.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1">Address (Optional)</label>
+                <input
+                  type="text"
+                  value={newClient.address}
+                  onChange={e => setNewClient({...newClient, address: e.target.value})}
+                  className="w-full px-4 py-2 border border-neutral-200 rounded-lg text-sm focus:ring-2 focus:ring-black outline-none"
+                  placeholder="123 Street Name"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-neutral-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddClient(false)}
+                  disabled={savingClient}
+                  className="px-4 py-2 text-sm font-medium border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingClient}
+                  className="px-4 py-2 text-sm font-medium bg-black text-white rounded-lg hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2 min-w-[100px]"
+                >
+                  {savingClient ? <Loader2 size={16} className="animate-spin" /> : null}
+                  {savingClient ? 'Saving...' : 'Save Client'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
