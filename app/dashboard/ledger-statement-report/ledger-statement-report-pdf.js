@@ -290,20 +290,31 @@ export default function LedgerStatementReportPDF({
                           {endDate}
                         </Text>
 
-        <RenderTable 
-          title="LEDGER STATEMENT - BDT" 
-          entries={ledgerBDT} 
-          totals={summaryTotalsBDT} 
-          matchedAccounts={accountsBDT} 
-          grandBal={grandEndingBDT} 
-        />
-        <RenderTable 
-          title="LEDGER STATEMENT - AED" 
-          entries={ledgerAED} 
-          totals={summaryTotalsAED} 
-          matchedAccounts={accountsAED} 
-          grandBal={grandEndingAED} 
-        />
+        {(ledgerBDT?.length > 0 || accountsBDT?.length > 0) && (
+          <RenderTable 
+            title="LEDGER STATEMENT - BDT" 
+            entries={ledgerBDT} 
+            totals={summaryTotalsBDT} 
+            matchedAccounts={accountsBDT} 
+            grandBal={grandEndingBDT} 
+          />
+        )}
+        {(ledgerAED?.length > 0 || accountsAED?.length > 0) && (
+          <RenderTable 
+            title="LEDGER STATEMENT - AED" 
+            entries={ledgerAED} 
+            totals={summaryTotalsAED} 
+            matchedAccounts={accountsAED} 
+            grandBal={grandEndingAED} 
+          />
+        )}
+        
+        {(!ledgerBDT || ledgerBDT.length === 0) && (!accountsBDT || accountsBDT.length === 0) && 
+         (!ledgerAED || ledgerAED.length === 0) && (!accountsAED || accountsAED.length === 0) && (
+          <View style={{ marginBottom: 30, padding: 20, textAlign: 'center' }}>
+             <Text style={{ fontSize: 12, color: '#666' }}>No ledger data found.</Text>
+          </View>
+        )}
 
         {/* Footer */}
         <View style={styles.footer}>

@@ -397,13 +397,22 @@ export default function LedgerStatementReportPage() {
 
       const wb = XLSX.utils.book_new();
 
-      const bdtData = createSheetData(filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT);
-      const wsBDT = XLSX.utils.json_to_sheet(bdtData);
-      XLSX.utils.book_append_sheet(wb, wsBDT, "Ledger Statement BDT");
+      if (filteredBDT.length > 0 || accountsBDT.length > 0) {
+          const bdtData = createSheetData(filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT);
+          const wsBDT = XLSX.utils.json_to_sheet(bdtData);
+          XLSX.utils.book_append_sheet(wb, wsBDT, "Ledger Statement BDT");
+      }
 
-      const aedData = createSheetData(filteredAED, summaryTotalsAED, accountsAED, grandEndingAED);
-      const wsAED = XLSX.utils.json_to_sheet(aedData);
-      XLSX.utils.book_append_sheet(wb, wsAED, "Ledger Statement AED");
+      if (filteredAED.length > 0 || accountsAED.length > 0) {
+          const aedData = createSheetData(filteredAED, summaryTotalsAED, accountsAED, grandEndingAED);
+          const wsAED = XLSX.utils.json_to_sheet(aedData);
+          XLSX.utils.book_append_sheet(wb, wsAED, "Ledger Statement AED");
+      }
+
+      if (filteredBDT.length === 0 && accountsBDT.length === 0 && filteredAED.length === 0 && accountsAED.length === 0) {
+          const wsEmpty = XLSX.utils.json_to_sheet([{ Message: "No ledger data found." }]);
+          XLSX.utils.book_append_sheet(wb, wsEmpty, "Ledger Statement");
+      }
 
       XLSX.writeFile(wb, `ledger-statement-report-${new Date().toISOString().split("T")[0]}.xlsx`);
     } catch (err) {
@@ -709,8 +718,14 @@ export default function LedgerStatementReportPage() {
           <div className="text-center text-red-500 py-10 font-medium">Error loading data.</div>
         ) : (
           <div className="overflow-x-auto" ref={tableRef}>
-             {renderLedgerTable("LEDGER STATEMENT - BDT", filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT)}
-             {renderLedgerTable("LEDGER STATEMENT - AED", filteredAED, summaryTotalsAED, accountsAED, grandEndingAED)}
+             {(filteredBDT.length > 0 || accountsBDT.length > 0) && renderLedgerTable("LEDGER STATEMENT - BDT", filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT)}
+             {(filteredAED.length > 0 || accountsAED.length > 0) && renderLedgerTable("LEDGER STATEMENT - AED", filteredAED, summaryTotalsAED, accountsAED, grandEndingAED)}
+             
+             {filteredBDT.length === 0 && accountsBDT.length === 0 && filteredAED.length === 0 && accountsAED.length === 0 && (
+                <div className="text-center text-neutral-500 py-8 border border-neutral-400">
+                  No ledger data found.
+                </div>
+             )}
           </div>
         )}
         
