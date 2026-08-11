@@ -703,46 +703,7 @@ const discountNum = parseFloat(formData.discount) || 0;
                 <span className="font-medium">{displayCurrency === 'AED' ? 'AED ' : '৳'}{displaySubtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
               </div>
               
-              <div className="pt-4 border-t border-neutral-100">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
-                  <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">Paid Amount</label>
-                  <div className="flex items-center gap-1.5">
-                    <button 
-                      type="button" 
-                      onClick={() => setFormData({...formData, paidAmount: displayGrandTotal.toString()})}
-                      className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-semibold hover:bg-emerald-200 transition border border-emerald-200"
-                    >
-                      Full Pay
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setFormData({...formData, paidAmount: (displayGrandTotal / 2).toString()})}
-                      className="text-[11px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-semibold hover:bg-amber-200 transition border border-amber-200"
-                    >
-                      50%
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setFormData({...formData, paidAmount: '0'})}
-                      className="text-[11px] px-2 py-0.5 rounded-md bg-red-100 text-red-800 font-semibold hover:bg-red-200 transition border border-red-200"
-                    >
-                      Full Due ({displayCurrency === 'AED' ? 'AED ' : '৳'}0)
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <span className="bg-neutral-100 border border-r-0 border-neutral-200 px-3 py-2 rounded-l-lg text-neutral-500 text-sm font-medium">
-                    {displayCurrency === 'AED' ? 'AED' : '৳'}
-                  </span>
-                  <input
-                    type="number"
-                    value={formData.paidAmount ?? ''}
-                    placeholder="0.00"
-                    onChange={(e) => setFormData({...formData, paidAmount: e.target.value})}
-                    className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-r-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm font-medium"
-                  />
-                </div>
-              </div>
+
 
               <div className="pt-4 mt-4 border-t border-neutral-200 space-y-2">
                 <div className="flex justify-between items-end">
