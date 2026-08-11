@@ -119,11 +119,34 @@ export default function CreatePaymentModal({ isOpen, onClose, onSuccess }) {
           );
         }
 
+        // Also create the two Quick Payment Categories
+        accountPromises.push(
+          axios.post(`${API_URL}/save-expense-type`, {
+            expense_name: nameDH,
+            transaction_category: 'Quick Payment',
+            expense_description: '',
+            transaction_type_id: 0
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        );
+
+        accountPromises.push(
+          axios.post(`${API_URL}/save-expense-type`, {
+            expense_name: nameBD,
+            transaction_category: 'Quick Payment',
+            expense_description: '',
+            transaction_type_id: 0
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        );
+
         if (accountPromises.length > 0) {
           await Promise.all(accountPromises);
         }
 
-        toast.success('Payment methods and accounts created successfully!');
+        toast.success('Payment methods, accounts, and quick payment categories created successfully!');
         setFormData({ type_name: '', icon_letter: '', icon_image: '' });
         setImageFile(null);
         setPreview('');
