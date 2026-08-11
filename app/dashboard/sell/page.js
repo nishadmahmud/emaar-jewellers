@@ -185,10 +185,82 @@ export default function SellPage() {
         vendorFormData.append('mobile_number', newCustomer.mobile_number);
         vendorFormData.append('address', newCustomer.address);
 
-        const [custRes, vendRes] = await Promise.all([
+        const nameDH = `${newCustomer.name} (DH)`;
+        const nameBD = `${newCustomer.name} (BD)`;
+        const iconLetter = newCustomer.name.charAt(0).toUpperCase();
+
+        const payloadDH = new FormData();
+        payloadDH.append('type_name', nameDH);
+        payloadDH.append('icon_letter', iconLetter);
+
+        const payloadBD = new FormData();
+        payloadBD.append('type_name', nameBD);
+        payloadBD.append('icon_letter', iconLetter);
+
+        const [custRes,, resDH, resBD] = await Promise.all([
             axios.post(`${API_URL}/save-customer`, customerPayload, { headers: { Authorization: `Bearer ${token}` } }),
-            axios.post(`${API_URL}/save-vendor`, vendorFormData, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } })
+            axios.post(`${API_URL}/save-vendor`, vendorFormData, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }),
+            axios.post(`${API_URL}/payment-type-save`, payloadDH, { headers: { Authorization: `Bearer ${token}` } }),
+            axios.post(`${API_URL}/payment-type-save`, payloadBD, { headers: { Authorization: `Bearer ${token}` } })
         ]);
+
+        if ((resDH.data?.success || resDH.status === 200) && (resBD.data?.success || resBD.status === 200)) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const listRes = await axios.get(`${API_URL}/payment-type-list?t=${Date.now()}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            const allMethods = Array.isArray(listRes.data?.data?.data) ? listRes.data.data.data 
+                             : Array.isArray(listRes.data?.data) ? listRes.data.data 
+                             : Array.isArray(listRes.data) ? listRes.data : [];
+            
+            const savedDH = allMethods.find(m => m.type_name === nameDH);
+            const savedBD = allMethods.find(m => m.type_name === nameBD);
+
+            const followUpPromises = [];
+
+            if (savedDH?.id) {
+                followUpPromises.push(
+                    axios.post(`${API_URL}/payment-type-category-save`, {
+                        payment_category_name: nameDH,
+                        account_number: '1',
+                        branch_name: '',
+                        payment_type_id: savedDH.id
+                    }, { headers: { Authorization: `Bearer ${token}` } })
+                );
+            }
+
+            if (savedBD?.id) {
+                followUpPromises.push(
+                    axios.post(`${API_URL}/payment-type-category-save`, {
+                        payment_category_name: nameBD,
+                        account_number: '1',
+                        branch_name: '',
+                        payment_type_id: savedBD.id
+                    }, { headers: { Authorization: `Bearer ${token}` } })
+                );
+            }
+
+            followUpPromises.push(
+                axios.post(`${API_URL}/save-expense-type`, {
+                    expense_name: nameDH,
+                    transaction_category: 'Quick Payment',
+                    expense_description: '',
+                    transaction_type_id: 0
+                }, { headers: { Authorization: `Bearer ${token}` } }),
+                axios.post(`${API_URL}/save-expense-type`, {
+                    expense_name: nameBD,
+                    transaction_category: 'Quick Payment',
+                    expense_description: '',
+                    transaction_type_id: 0
+                }, { headers: { Authorization: `Bearer ${token}` } })
+            );
+
+            if (followUpPromises.length > 0) {
+                await Promise.all(followUpPromises);
+            }
+        }
 
         toast.success("Client added successfully!");
         const saved = custRes.data?.data || custRes.data;
