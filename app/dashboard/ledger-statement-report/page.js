@@ -239,17 +239,11 @@ export default function LedgerStatementReportPage() {
         return dateA - dateB;
       });
 
-      // Recalculate running balance
-      let currentBalance = totalOpeningBalance;
+      // Use balance from API directly.
       allEntries = allEntries.map(e => {
-        const deb = Number(e.debit) || 0;
-        const cred = Number(e.credit) || 0;
-        
-        currentBalance = currentBalance + deb - cred;
-
         return {
           ...e,
-          balance: currentBalance,
+          balance: Number(e.balance) || 0,
         };
       });
 
@@ -277,56 +271,82 @@ export default function LedgerStatementReportPage() {
     };
   }, [reportData]);
 
-  const summaryTotals = useMemo(() => {
-    const defaultTotals = {
-      opening_balance: openingBalance,
-      total_debit: 0,
-      total_credit: 0,
-      closing_balance: openingBalance,
+  const { ledgerAED, ledgerBDT } = useMemo(() => {
+    const aed = [];
+    const bdt = [];
+    if (!Array.isArray(ledgerEntries)) return { ledgerAED: aed, ledgerBDT: bdt };
+
+    ledgerEntries.forEach(entry => {
+      const mode = (entry?.pay_mode || "").toUpperCase();
+      if (mode.includes("AED")) {
+        aed.push(entry);
+      } else {
+        bdt.push(entry);
+      }
+    });
+    return { ledgerAED: aed, ledgerBDT: bdt };
+  }, [ledgerEntries]);
+
+  const calculateTotals = (entries, opBalance) => {
+    const defaultTotals = { opening_balance: opBalance, closing_balance: opBalance };
+    if (!entries || entries.length === 0) return defaultTotals;
+    return {
+      opening_balance: opBalance,
+      closing_balance: entries[entries.length - 1]?.balance ?? opBalance,
     };
+  };
 
-    if (!Array.isArray(ledgerEntries) || ledgerEntries.length === 0) {
-      return defaultTotals;
-    }
+  const summaryTotalsAED = useMemo(() => calculateTotals(ledgerAED, openingBalance), [ledgerAED, openingBalance]);
+  const summaryTotalsBDT = useMemo(() => calculateTotals(ledgerBDT, openingBalance), [ledgerBDT, openingBalance]);
 
-    const totals = ledgerEntries.reduce(
-      (acc, entry) => {
-        const debit = Number(entry?.debit) || 0;
-        const credit = Number(entry?.credit) || 0;
-        return {
-          opening_balance: acc.opening_balance,
-          total_debit: acc.total_debit + debit,
-          total_credit: acc.total_credit + credit,
-        };
-      },
-      { ...defaultTotals },
-    );
+  const { accountsAED, accountsBDT } = useMemo(() => {
+    const aed = [];
+    const bdt = [];
+    matchedAccounts.forEach(acc => {
+       const name = (acc.payment_category_name || "").toUpperCase();
+       if (name.includes("(DH)") || name.includes("AED")) {
+         aed.push(acc);
+       } else {
+         bdt.push(acc);
+       }
+    });
+    return { accountsAED: aed, accountsBDT: bdt };
+  }, [matchedAccounts]);
 
-    totals.closing_balance = ledgerEntries[ledgerEntries.length - 1]?.balance ?? openingBalance;
-    return totals;
-  }, [ledgerEntries, openingBalance]);
+  const grandEndingAED = useMemo(() => {
+    let bal = summaryTotalsAED.closing_balance;
+    accountsAED.forEach(acc => bal += (Number(acc.balance) || 0));
+    return bal;
+  }, [summaryTotalsAED.closing_balance, accountsAED]);
 
-  const grandEndingBalance = useMemo(() => {
-      let bal = summaryTotals.closing_balance;
-      matchedAccounts.forEach(acc => {
-          bal += (Number(acc.balance) || 0);
-      });
-      return bal;
-  }, [summaryTotals.closing_balance, matchedAccounts]);
+  const grandEndingBDT = useMemo(() => {
+    let bal = summaryTotalsBDT.closing_balance;
+    accountsBDT.forEach(acc => bal += (Number(acc.balance) || 0));
+    return bal;
+  }, [summaryTotalsBDT.closing_balance, accountsBDT]);
 
-  const filteredLedgerEntries = useMemo(() => {
-    try {
-      if (!searchTerm.trim() || !Array.isArray(ledgerEntries)) return ledgerEntries;
-      const q = searchTerm.toLowerCase().trim();
-      return ledgerEntries.filter((entry) => {
+  const filterEntries = (entries, q) => {
+      if (!q) return entries;
+      return entries.filter((entry) => {
         const particulars = (entry?.particulars || "").toLowerCase();
         const remarks = (entry?.remarks || "").toLowerCase();
         return particulars.includes(q) || remarks.includes(q);
       });
-    } catch (err) {
-      return ledgerEntries;
-    }
-  }, [ledgerEntries, searchTerm]);
+  };
+
+  const filteredAED = useMemo(() => {
+    try {
+      const q = searchTerm.toLowerCase().trim();
+      return filterEntries(ledgerAED, q);
+    } catch { return ledgerAED; }
+  }, [ledgerAED, searchTerm]);
+
+  const filteredBDT = useMemo(() => {
+    try {
+      const q = searchTerm.toLowerCase().trim();
+      return filterEntries(ledgerBDT, q);
+    } catch { return ledgerBDT; }
+  }, [ledgerBDT, searchTerm]);
 
   const handleFilterChange = useCallback((key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -334,76 +354,79 @@ export default function LedgerStatementReportPage() {
 
   const handleExcelExport = useCallback(() => {
     try {
-      const ledgerData = filteredLedgerEntries.map((entry) => ({
-        Date: entry.date ? new Date(entry.date).toLocaleDateString() : "-",
-        Particulars: entry.particulars || "-",
-        Debit: fmt2(entry.debit),
-        Credit: fmt2(entry.credit),
-        Balance: fmt2(Math.abs(entry.balance)) + (Number(entry.balance) >= 0 ? " [+]" : " [-]"),
-        Remarks: entry.remarks || "-",
-      }));
+      const createSheetData = (entries, totals, matchedAccs, grandBal) => {
+          const ledgerData = entries.map((entry) => ({
+            Date: entry.date ? new Date(entry.date).toLocaleDateString() : "-",
+            Particulars: entry.particulars || "-",
+            Balance: fmt2(entry.balance),
+            Remarks: entry.remarks || "-",
+          }));
 
-      ledgerData.push({
-        Date: "",
-        Particulars: "TOTAL",
-        Debit: fmt2(summaryTotals.total_debit),
-        Credit: fmt2(summaryTotals.total_credit),
-        Balance: fmt2(Math.abs(summaryTotals.closing_balance)) + (Number(summaryTotals.closing_balance) >= 0 ? " [+]" : " [-]"),
-        Remarks: "",
-      });
-
-      if (matchedAccounts.length > 0) {
-          ledgerData.push({ Date: "", Particulars: "", Debit: "", Credit: "", Balance: "", Remarks: "" });
           ledgerData.push({
-              Date: "",
-              Particulars: "Ledger Closing Balance",
-              Debit: "",
-              Credit: "",
-              Balance: fmt2(Math.abs(summaryTotals.closing_balance)) + (Number(summaryTotals.closing_balance) >= 0 ? " [+]" : " [-]"),
-              Remarks: "",
+            Date: "",
+            Particulars: "TOTAL",
+            Balance: fmt2(totals.closing_balance),
+            Remarks: "",
           });
-          matchedAccounts.forEach(acc => {
+
+          if (matchedAccs.length > 0) {
+              ledgerData.push({ Date: "", Particulars: "", Balance: "", Remarks: "" });
               ledgerData.push({
                   Date: "",
-                  Particulars: `Account: ${acc.payment_category_name}`,
-                  Debit: "",
-                  Credit: "",
-                  Balance: fmt2(Math.abs(acc.balance)) + (Number(acc.balance) >= 0 ? " [+]" : " [-]"),
+                  Particulars: "Ledger Closing Balance",
+                  Balance: fmt2(totals.closing_balance),
                   Remarks: "",
               });
-          });
-          ledgerData.push({
-              Date: "",
-              Particulars: "GRAND ENDING BALANCE",
-              Debit: "",
-              Credit: "",
-              Balance: fmt2(Math.abs(grandEndingBalance)) + (Number(grandEndingBalance) >= 0 ? " [+]" : " [-]"),
-              Remarks: "",
-          });
-      }
+              matchedAccs.forEach(acc => {
+                  ledgerData.push({
+                      Date: "",
+                      Particulars: `Account: ${acc.payment_category_name}`,
+                      Balance: fmt2(acc.balance),
+                      Remarks: "",
+                  });
+              });
+              ledgerData.push({
+                  Date: "",
+                  Particulars: "GRAND ENDING BALANCE",
+                  Balance: fmt2(grandBal),
+                  Remarks: "",
+              });
+          }
+          return ledgerData;
+      };
 
-      const ws = XLSX.utils.json_to_sheet(ledgerData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Ledger Statement");
+
+      const bdtData = createSheetData(filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT);
+      const wsBDT = XLSX.utils.json_to_sheet(bdtData);
+      XLSX.utils.book_append_sheet(wb, wsBDT, "Ledger Statement BDT");
+
+      const aedData = createSheetData(filteredAED, summaryTotalsAED, accountsAED, grandEndingAED);
+      const wsAED = XLSX.utils.json_to_sheet(aedData);
+      XLSX.utils.book_append_sheet(wb, wsAED, "Ledger Statement AED");
+
       XLSX.writeFile(wb, `ledger-statement-report-${new Date().toISOString().split("T")[0]}.xlsx`);
     } catch (err) {
       console.error(err);
       toast.error("Error exporting to Excel.");
     }
-  }, [filteredLedgerEntries, summaryTotals, matchedAccounts, grandEndingBalance]);
+  }, [filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT, filteredAED, summaryTotalsAED, accountsAED, grandEndingAED]);
 
   const handlePDFExport = useCallback(async () => {
     try {
       const blob = await pdf(
         <LedgerStatementReportPDF
-          openingBalance={openingBalance}
-          ledgerEntries={filteredLedgerEntries}
-          summaryTotals={summaryTotals}
+          logoUrl={session?.user?.profile_pic || null}
+          ledgerAED={filteredAED}
+          ledgerBDT={filteredBDT}
+          summaryTotalsAED={summaryTotalsAED}
+          summaryTotalsBDT={summaryTotalsBDT}
           filters={appliedFilters}
           user={session?.user}
-          logoUrl={session?.user?.profile_pic || null}
-          matchedAccounts={matchedAccounts}
-          grandEndingBalance={grandEndingBalance}
+          accountsAED={accountsAED}
+          accountsBDT={accountsBDT}
+          grandEndingAED={grandEndingAED}
+          grandEndingBDT={grandEndingBDT}
         />,
       ).toBlob();
 
@@ -413,7 +436,7 @@ export default function LedgerStatementReportPage() {
       console.error(err);
       toast.error("Error generating PDF.");
     }
-  }, [openingBalance, filteredLedgerEntries, summaryTotals, appliedFilters, session?.user, matchedAccounts, grandEndingBalance]);
+  }, [filteredAED, filteredBDT, summaryTotalsAED, summaryTotalsBDT, appliedFilters, session?.user, accountsAED, accountsBDT, grandEndingAED, grandEndingBDT]);
 
   const tableRef = useRef(null);
   const handlePrintTable = useCallback(() => {
@@ -449,6 +472,91 @@ export default function LedgerStatementReportPage() {
   }, []);
 
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const renderLedgerTable = (title, entries, totals, matchedAccs, grandBal) => (
+    <div className="mb-12">
+      <div className="text-lg font-bold uppercase tracking-wide border-b border-neutral-300 pb-1 mb-4">{title}</div>
+      <table className="w-full border-collapse border border-neutral-400 text-xs text-left mb-6">
+        <thead>
+          <tr className="bg-neutral-200 text-neutral-900">
+            <th className="border border-neutral-400 p-2 uppercase w-[15%]">DATE</th>
+            <th className="border border-neutral-400 p-2 uppercase">PARTICULARS</th>
+            <th className="border border-neutral-400 p-2 text-right w-[15%] uppercase">BALANCE</th>
+            <th className="border border-neutral-400 p-2 uppercase w-[20%]">REMARKS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="bg-blue-50/50">
+            <td className="border border-neutral-400 p-2"></td>
+            <td className="border border-neutral-400 p-2 text-right font-bold text-neutral-900">Opening Balance</td>
+            <td className="border border-neutral-400 p-2 text-right font-bold text-neutral-900 whitespace-nowrap">{fmt2(totals.opening_balance)}</td>
+            <td className="border border-neutral-400 p-2"></td>
+          </tr>
+
+          {entries.map((entry, idx) => {
+            return (
+              <tr key={idx} className="hover:bg-neutral-50">
+                <td className="border border-neutral-400 p-2 text-neutral-700">
+                  {entry.date ? new Date(entry.date).toLocaleDateString("en-GB") : "-"}
+                </td>
+                <td className="border border-neutral-400 p-2 text-neutral-700">
+                  <span className="block whitespace-normal break-words">
+                      {entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "-")}
+                  </span>
+                </td>
+                <td className="border border-neutral-400 p-2 text-right font-semibold whitespace-nowrap text-neutral-900 tabular-nums">
+                  {fmt2(entry?.balance)}
+                </td>
+                <td className="border border-neutral-400 p-2 text-neutral-600 truncate max-w-[150px]">
+                  {entry?.remarks || ""}
+                </td>
+              </tr>
+            )
+          })}
+
+          {entries.length > 0 && (
+            <tr className="bg-neutral-100 font-bold text-neutral-900">
+              <td className="border border-neutral-400 p-2">Total</td>
+              <td className="border border-neutral-400 p-2"></td>
+              <td className="border border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums">{fmt2(totals.closing_balance)}</td>
+              <td className="border border-neutral-400 p-2"></td>
+            </tr>
+          )}
+
+          {entries.length === 0 && (
+            <tr>
+              <td colSpan={4} className="text-center text-neutral-500 py-8 border border-neutral-400">
+                No ledger data found.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+      
+      {matchedAccs.length > 0 && (
+          <div className="border border-neutral-400 w-full md:max-w-sm ml-auto">
+              <table className="w-full text-xs text-left">
+                  <tbody>
+                      <tr className="bg-neutral-100">
+                          <td className="p-2 border-b border-neutral-400 font-semibold">Ledger Closing Balance</td>
+                          <td className="p-2 border-b border-neutral-400 text-right font-semibold tabular-nums">{fmt2(totals.closing_balance)}</td>
+                      </tr>
+                      {matchedAccs.map((acc, i) => (
+                          <tr key={i} className="border-b border-neutral-200 last:border-b-0">
+                              <td className="p-2 text-neutral-600">Account: {acc.payment_category_name}</td>
+                              <td className="p-2 text-right tabular-nums text-neutral-700">{fmt2(acc.balance)}</td>
+                          </tr>
+                      ))}
+                      <tr className="bg-neutral-200">
+                          <td className="p-2 font-bold uppercase border-t border-neutral-400">Grand Ending Balance</td>
+                          <td className="p-2 text-right font-bold tabular-nums border-t border-neutral-400">{fmt2(grandBal)}</td>
+                      </tr>
+                  </tbody>
+              </table>
+          </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 text-black">
@@ -601,100 +709,8 @@ export default function LedgerStatementReportPage() {
           <div className="text-center text-red-500 py-10 font-medium">Error loading data.</div>
         ) : (
           <div className="overflow-x-auto" ref={tableRef}>
-            <table className="w-full border-collapse border border-neutral-400 text-xs text-left">
-              <thead>
-                <tr className="bg-neutral-200 text-neutral-900">
-                  <th rowSpan={2} className="border border-neutral-400 p-2 uppercase w-[12%]">DATE</th>
-                  <th rowSpan={2} className="border border-neutral-400 p-2 uppercase">PARTICULARS</th>
-                  <th colSpan={3} className="border border-neutral-400 p-2 text-center uppercase border-b-0">TRANSACTION DETAILS</th>
-                  <th rowSpan={2} className="border border-neutral-400 p-2 uppercase">REMARKS</th>
-                </tr>
-                <tr className="bg-neutral-200 text-neutral-900">
-                  <th className="border border-neutral-400 p-2 text-right w-[12%] uppercase">DEBIT</th>
-                  <th className="border border-neutral-400 p-2 text-right w-[12%] uppercase">CREDIT</th>
-                  <th className="border border-neutral-400 p-2 text-right w-[18%] uppercase">BALANCE</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="bg-blue-50/50">
-                  <td className="border border-neutral-400 p-2"></td>
-                  <td className="border border-neutral-400 p-2 text-right font-bold text-neutral-900">Opening Balance</td>
-                  <td className="border border-neutral-400 p-2"></td>
-                  <td className="border border-neutral-400 p-2"></td>
-                  <td className="border border-neutral-400 p-2 text-right font-bold text-neutral-900 whitespace-nowrap">{fmt2(Math.abs(summaryTotals.opening_balance))} [ {Number(summaryTotals.opening_balance) >= 0 ? "+" : "-"} ]</td>
-                  <td className="border border-neutral-400 p-2"></td>
-                </tr>
-
-                {filteredLedgerEntries.map((entry, idx) => {
-                  return (
-                    <tr key={idx} className="hover:bg-neutral-50">
-                      <td className="border border-neutral-400 p-2 text-neutral-700">
-                        {entry.date ? new Date(entry.date).toLocaleDateString("en-GB") : "-"}
-                      </td>
-                      <td className="border border-neutral-400 p-2 text-neutral-700">
-                        <span className="block whitespace-normal break-words">
-                            {entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "-")}
-                        </span>
-                      </td>
-                      <td className="border border-neutral-400 p-2 text-right text-emerald-700 font-medium tabular-nums">
-                        {Number(entry?.debit) !== 0 ? fmt2(entry?.debit) : ""}
-                      </td>
-                      <td className="border border-neutral-400 p-2 text-right text-rose-700 font-medium tabular-nums">
-                        {Number(entry?.credit) !== 0 ? fmt2(entry?.credit) : ""}
-                      </td>
-                      <td className="border border-neutral-400 p-2 text-right font-semibold whitespace-nowrap text-neutral-900 tabular-nums">
-                        {fmt2(Math.abs(entry?.balance))} [ {Number(entry?.balance) >= 0 ? "+" : "-"} ]
-                      </td>
-                      <td className="border border-neutral-400 p-2 text-neutral-600 truncate max-w-[150px]">
-                        {entry?.remarks || ""}
-                      </td>
-                    </tr>
-                  )
-                })}
-
-                {filteredLedgerEntries.length > 0 && (
-                  <tr className="bg-neutral-100 font-bold text-neutral-900">
-                    <td className="border border-neutral-400 p-2">Total</td>
-                    <td className="border border-neutral-400 p-2"></td>
-                    <td className="border border-neutral-400 p-2 text-right text-emerald-700 tabular-nums">{fmt2(summaryTotals.total_debit)}</td>
-                    <td className="border border-neutral-400 p-2 text-right text-rose-700 tabular-nums">{fmt2(summaryTotals.total_credit)}</td>
-                    <td className="border border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums">{fmt2(Math.abs(summaryTotals.closing_balance))} [ {Number(summaryTotals.closing_balance) >= 0 ? "+" : "-"} ]</td>
-                    <td className="border border-neutral-400 p-2"></td>
-                  </tr>
-                )}
-
-                {filteredLedgerEntries.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="text-center text-neutral-500 py-8 border border-neutral-400">
-                      No ledger data found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-            
-            {matchedAccounts.length > 0 && (
-                <div className="mt-8 border border-neutral-400 w-full md:max-w-sm ml-auto">
-                    <table className="w-full text-xs text-left">
-                        <tbody>
-                            <tr className="bg-neutral-100">
-                                <td className="p-2 border-b border-neutral-400 font-semibold">Ledger Closing Balance</td>
-                                <td className="p-2 border-b border-neutral-400 text-right font-semibold tabular-nums">{fmt2(Math.abs(summaryTotals.closing_balance))} [ {Number(summaryTotals.closing_balance) >= 0 ? "+" : "-"} ]</td>
-                            </tr>
-                            {matchedAccounts.map((acc, i) => (
-                                <tr key={i} className="border-b border-neutral-200 last:border-b-0">
-                                    <td className="p-2 text-neutral-600">Account: {acc.payment_category_name}</td>
-                                    <td className="p-2 text-right tabular-nums text-neutral-700">{fmt2(Math.abs(acc.balance))} [ {Number(acc.balance) >= 0 ? "+" : "-"} ]</td>
-                                </tr>
-                            ))}
-                            <tr className="bg-neutral-200">
-                                <td className="p-2 font-bold uppercase border-t border-neutral-400">Grand Ending Balance</td>
-                                <td className="p-2 text-right font-bold tabular-nums border-t border-neutral-400">{fmt2(Math.abs(grandEndingBalance))} [ {Number(grandEndingBalance) >= 0 ? "+" : "-"} ]</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            )}
+             {renderLedgerTable("LEDGER STATEMENT - BDT", filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT)}
+             {renderLedgerTable("LEDGER STATEMENT - AED", filteredAED, summaryTotalsAED, accountsAED, grandEndingAED)}
           </div>
         )}
         

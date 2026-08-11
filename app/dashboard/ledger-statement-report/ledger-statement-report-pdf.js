@@ -174,10 +174,78 @@ const styles = StyleSheet.create({
   footer: { marginTop: 30, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#ccc", fontSize: 8, color: "#999", textAlign: "center" },
 })
 
-export default function LedgerStatementReportPDF({ logoUrl, ledgerEntries, summaryTotals, filters, user, matchedAccounts = [], grandEndingBalance = 0 }) {
+export default function LedgerStatementReportPDF({ 
+  logoUrl, 
+  ledgerAED, 
+  ledgerBDT, 
+  summaryTotalsAED, 
+  summaryTotalsBDT, 
+  filters, 
+  user, 
+  accountsAED = [], 
+  accountsBDT = [], 
+  grandEndingAED = 0, 
+  grandEndingBDT = 0 
+}) {
   const startDate = new Date(filters.start_date).toLocaleDateString()
   const endDate = new Date(filters.end_date).toLocaleDateString()
   const logo = logoUrl || null;
+
+  const RenderTable = ({ title, entries, totals, matchedAccounts, grandBal }) => (
+    <View style={{ marginBottom: 30 }}>
+      <Text style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>{title}</Text>
+      <View style={styles.table}>
+        <View style={styles.tableRow}>
+          <Text style={{ ...styles.tableHeaderCell, flex: 1.5 }}>Date</Text>
+          <Text style={{ ...styles.tableHeaderCell, flex: 4.5 }}>Particulars</Text>
+          <Text style={{ ...styles.tableHeaderCell, flex: 2, textAlign: "right" }}>Balance</Text>
+          <Text style={{ ...styles.tableHeaderCell, flex: 2 }}>Remarks</Text>
+        </View>
+
+        <View style={{ ...styles.tableRow, ...styles.openingBalanceRow }}>
+          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
+          <Text style={{ ...styles.tableCell, flex: 4.5 }}>Opening Balance</Text>
+          <Text style={{ ...styles.tableCell, flex: 2, textAlign: "right" }}>{fmt2(totals?.opening_balance)}</Text>
+          <Text style={{ ...styles.tableCell, flex: 2 }}></Text>
+        </View>
+
+        {entries?.map((entry, idx) => (
+          <View style={styles.tableRow} key={idx}>
+            <Text style={{ ...styles.tableCell, flex: 1.5 }}>{entry.date ? new Date(entry.date).toLocaleDateString() : "-"}</Text>
+            <Text style={{ ...styles.tableCell, flex: 4.5 }}>{entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "-")}</Text>
+            <Text style={{ ...styles.tableCell, flex: 2, textAlign: "right" }}>{fmt2(entry.balance)}</Text>
+            <Text style={{ ...styles.tableCell, flex: 2 }}>{entry.remarks || "-"}</Text>
+          </View>
+        ))}
+
+        <View style={{ ...styles.tableRow, ...styles.totalRow }}>
+          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
+          <Text style={{ ...styles.tableCell, flex: 4.5 }}>Total</Text>
+          <Text style={{ ...styles.tableCell, flex: 2, textAlign: "right" }}>{fmt2(totals?.closing_balance)}</Text>
+          <Text style={{ ...styles.tableCell, flex: 2 }}></Text>
+        </View>
+      </View>
+
+      {matchedAccounts && matchedAccounts.length > 0 && (
+        <View style={styles.accountsContainer}>
+          <View style={styles.accountRow}>
+            <Text style={styles.accountRowLabel}>Ledger Closing Balance</Text>
+            <Text style={styles.accountRowValue}>{fmt2(totals?.closing_balance)}</Text>
+          </View>
+          {matchedAccounts.map((acc, idx) => (
+            <View style={styles.accountRow} key={`acc-${idx}`}>
+              <Text style={styles.accountRowLabel}>Account: {acc.payment_category_name}</Text>
+              <Text style={styles.accountRowValue}>{fmt2(acc.balance)}</Text>
+            </View>
+          ))}
+          <View style={styles.grandTotalRow}>
+            <Text style={styles.grandTotalLabel}>GRAND ENDING BALANCE</Text>
+            <Text style={styles.grandTotalValue}>{fmt2(grandBal)}</Text>
+          </View>
+        </View>
+      )}
+    </View>
+  );
 
   return (
     <Document>
@@ -222,70 +290,20 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerEntries, summa
                           {endDate}
                         </Text>
 
-        {/* Ledger Table */}
-        <View style={styles.table}>
-          {/* Header */}
-          <View style={styles.tableRow}>
-            <Text style={{ ...styles.tableHeaderCell, flex: 1.5 }}>Date</Text>
-            <Text style={{ ...styles.tableHeaderCell, flex: 3.5 }}>Particulars</Text>
-            <Text style={{ ...styles.tableHeaderCell, flex: 1.25, textAlign: "right" }}>Debit</Text>
-            <Text style={{ ...styles.tableHeaderCell, flex: 1.25, textAlign: "right" }}>Credit</Text>
-            <Text style={{ ...styles.tableHeaderCell, flex: 1.5, textAlign: "right" }}>Balance</Text>
-            <Text style={{ ...styles.tableHeaderCell, flex: 1 }}>Remarks</Text>
-          </View>
-
-          {/* Opening Balance */}
-          <View style={{ ...styles.tableRow, ...styles.openingBalanceRow }}>
-            <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-            <Text style={{ ...styles.tableCell, flex: 3.5 }}>Opening Balance</Text>
-            <Text style={{ ...styles.tableCell, flex: 1.25 }}></Text>
-            <Text style={{ ...styles.tableCell, flex: 1.25 }}></Text>
-            <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(Math.abs(summaryTotals.opening_balance))} [ {Number(summaryTotals.opening_balance) >= 0 ? "+" : "-"} ]</Text>
-            <Text style={{ ...styles.tableCell, flex: 1 }}></Text>
-          </View>
-
-          {/* Ledger Entries */}
-          {ledgerEntries?.map((entry, idx) => (
-            <View style={styles.tableRow} key={idx}>
-              <Text style={{ ...styles.tableCell, flex: 1.5 }}>{entry.date ? new Date(entry.date).toLocaleDateString() : "-"}</Text>
-              <Text style={{ ...styles.tableCell, flex: 3.5 }}>{entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "-")}</Text>
-              <Text style={{ ...styles.tableCell, flex: 1.25, textAlign: "right" }}>{Number(entry?.debit) !== 0 ? fmt2(entry.debit) : ""}</Text>
-              <Text style={{ ...styles.tableCell, flex: 1.25, textAlign: "right" }}>{Number(entry?.credit) !== 0 ? fmt2(entry.credit) : ""}</Text>
-              <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(Math.abs(entry.balance))} [ {Number(entry.balance) >= 0 ? "+" : "-"} ]</Text>
-              <Text style={{ ...styles.tableCell, flex: 1 }}>{entry.remarks || "-"}</Text>
-            </View>
-          ))}
-
-          {/* Total Row */}
-          <View style={{ ...styles.tableRow, ...styles.totalRow }}>
-            <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-            <Text style={{ ...styles.tableCell, flex: 3.5 }}>Total</Text>
-            <Text style={{ ...styles.tableCell, flex: 1.25, textAlign: "right" }}>{fmt2(summaryTotals.total_debit)}</Text>
-            <Text style={{ ...styles.tableCell, flex: 1.25, textAlign: "right" }}>{fmt2(summaryTotals.total_credit)}</Text>
-            <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(Math.abs(summaryTotals.closing_balance))} [ {Number(summaryTotals.closing_balance) >= 0 ? "+" : "-"} ]</Text>
-            <Text style={{ ...styles.tableCell, flex: 1 }}></Text>
-          </View>
-        </View>
-
-        {/* Account Balances and Grand Total */}
-        {matchedAccounts && matchedAccounts.length > 0 && (
-          <View style={styles.accountsContainer}>
-            <View style={styles.accountRow}>
-              <Text style={styles.accountRowLabel}>Ledger Closing Balance</Text>
-              <Text style={styles.accountRowValue}>{fmt2(Math.abs(summaryTotals.closing_balance))} [ {Number(summaryTotals.closing_balance) >= 0 ? "+" : "-"} ]</Text>
-            </View>
-            {matchedAccounts.map((acc, idx) => (
-              <View style={styles.accountRow} key={`acc-${idx}`}>
-                <Text style={styles.accountRowLabel}>Account: {acc.payment_category_name}</Text>
-                <Text style={styles.accountRowValue}>{fmt2(Math.abs(acc.balance))} [ {Number(acc.balance) >= 0 ? "+" : "-"} ]</Text>
-              </View>
-            ))}
-            <View style={styles.grandTotalRow}>
-              <Text style={styles.grandTotalLabel}>GRAND ENDING BALANCE</Text>
-              <Text style={styles.grandTotalValue}>{fmt2(Math.abs(grandEndingBalance))} [ {Number(grandEndingBalance) >= 0 ? "+" : "-"} ]</Text>
-            </View>
-          </View>
-        )}
+        <RenderTable 
+          title="LEDGER STATEMENT - BDT" 
+          entries={ledgerBDT} 
+          totals={summaryTotalsBDT} 
+          matchedAccounts={accountsBDT} 
+          grandBal={grandEndingBDT} 
+        />
+        <RenderTable 
+          title="LEDGER STATEMENT - AED" 
+          entries={ledgerAED} 
+          totals={summaryTotalsAED} 
+          matchedAccounts={accountsAED} 
+          grandBal={grandEndingAED} 
+        />
 
         {/* Footer */}
         <View style={styles.footer}>
