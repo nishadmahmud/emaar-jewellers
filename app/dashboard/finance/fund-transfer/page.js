@@ -184,7 +184,7 @@ if (filters.vendor_id) {
 
       // Fetch accounts to match against selected name
       promises.push(
-        axios.get(`${API_URL}/payment-type-category-list?t=${Date.now()}`, { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${API_URL}/payment-type-list?t=${Date.now()}`, { headers: { Authorization: `Bearer ${token}` } })
         .then(res => ({ type: 'accounts', data: res.data?.data?.data ?? res.data?.data ?? res.data ?? [] }))
       );
 
@@ -562,7 +562,7 @@ if (filters.vendor_id) {
     error,
     mutate
   } = useSWR(
-    token ? `${API_URL}/payment-type-category-list` : null,
+    token ? `${API_URL}/payment-type-list` : null,
     fetcher,
     { revalidateOnFocus: false, keepPreviousData: true }
   );
