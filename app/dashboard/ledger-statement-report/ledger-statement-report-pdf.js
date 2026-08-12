@@ -241,9 +241,27 @@ export default function LedgerStatementReportPDF({
             <Text style={styles.accountRowValue}>{fmt2(totals?.closing_balance)}</Text>
           </View>
           {matchedAccounts.map((acc, idx) => (
-            <View style={styles.accountRow} key={`acc-${idx}`}>
-              <Text style={styles.accountRowLabel}>Account: {acc.payment_category_name}</Text>
-              <Text style={styles.accountRowValue}>{fmt2(acc.balance)}</Text>
+            <View key={`acc-${idx}`}>
+              <View style={{...styles.accountRow, backgroundColor: '#f9f9f9'}}>
+                <Text style={{...styles.accountRowLabel, borderRightWidth: 0, fontWeight: 'bold'}}>Account: {acc.payment_category_name}</Text>
+                <Text style={styles.accountRowValue}></Text>
+              </View>
+              <View style={styles.accountRow}>
+                <Text style={{...styles.accountRowLabel, paddingLeft: 15}}>Opening Balance</Text>
+                <Text style={styles.accountRowValue}>{fmt2(acc.opening_balance)}</Text>
+              </View>
+              <View style={styles.accountRow}>
+                <Text style={{...styles.accountRowLabel, paddingLeft: 15}}>Total Debit</Text>
+                <Text style={styles.accountRowValue}>{fmt2(acc.total_debit)}</Text>
+              </View>
+              <View style={styles.accountRow}>
+                <Text style={{...styles.accountRowLabel, paddingLeft: 15}}>Total Credit</Text>
+                <Text style={styles.accountRowValue}>{fmt2(acc.total_credit)}</Text>
+              </View>
+              <View style={styles.accountRow}>
+                <Text style={{...styles.accountRowLabel, paddingLeft: 15, fontWeight: 'bold'}}>Closing Balance</Text>
+                <Text style={{...styles.accountRowValue, fontWeight: 'bold'}}>{fmt2(acc.closing_balance)}</Text>
+              </View>
             </View>
           ))}
           <View style={styles.grandTotalRow}>

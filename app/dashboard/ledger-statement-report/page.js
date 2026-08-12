@@ -217,6 +217,7 @@ export default function LedgerStatementReportPage() {
                item.payment_type_category.forEach((acc) => {
                  flattenedAccounts.push({
                    ...acc,
+                   actual_payment_type_id: item.id, // Parent's ID is the true payment type ID
                    payment_category_name: acc.payment_category_name || acc.name || item.type_name || "Account",
                    balance: Number(acc.paymentcategory_sum_payment_amount ?? acc.balance ?? acc.amount ?? 0),
                  });
@@ -224,7 +225,8 @@ export default function LedgerStatementReportPage() {
              } else {
                flattenedAccounts.push({
                  ...item,
-                 payment_category_name: item.payment_category_name || item.name || "Account",
+                 actual_payment_type_id: item.id, // This is the type itself
+                 payment_category_name: item.payment_category_name || item.name || item.type_name || "Account",
                  balance: Number(item.paymentcategory_sum_payment_amount ?? item.balance ?? item.amount ?? 0),
                });
              }
@@ -289,6 +291,41 @@ export default function LedgerStatementReportPage() {
         opening_balance: totalOpeningBalance,
         ledger: allEntries
       });
+      
+      // Fetch Cashbook Report for matched accounts
+      if (foundMatchedAccounts.length > 0) {
+          const cashbookPromises = foundMatchedAccounts.map(acc => {
+              const sd = new Date(filters.start_date);
+              sd.setHours(0, 0, 0, 0);
+              const ed = new Date(filters.end_date);
+              ed.setHours(23, 59, 59, 999);
+              
+              return axios.post(`${API_URL}/cash-book-report`, {
+                  start_date: sd.toISOString(),
+                  end_date: ed.toISOString(),
+                  view_order: "asc",
+                  payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id)
+              }, { headers: { Authorization: `Bearer ${token}` } })
+              .then(res => ({ acc_id: acc.id, data: res.data }))
+              .catch(() => ({ acc_id: acc.id, data: null }))
+          });
+          
+          const cashbookResults = await Promise.all(cashbookPromises);
+          
+          foundMatchedAccounts = foundMatchedAccounts.map(acc => {
+             const cb = cashbookResults.find(r => String(r.acc_id) === String(acc.id))?.data;
+             return {
+                 ...acc,
+                 opening_balance: Number(cb?.opening_balance ?? 0),
+                 total_credit: Number(cb?.current_total_credit ?? 0),
+                 total_debit: Number(cb?.current_total_debit ?? 0),
+                 closing_balance: Number(cb?.closing_balance ?? acc.balance ?? 0),
+                 balance: Number(cb?.closing_balance ?? acc.balance ?? 0),
+                 raw_cashbook_data: cb?.data || []
+             };
+          });
+      }
+
       setMatchedAccounts(foundMatchedAccounts);
 
     } catch (err) {
@@ -378,6 +415,38 @@ export default function LedgerStatementReportPage() {
     return bal;
   }, [summaryTotalsBDT.closing_balance, accountsBDT]);
 
+  const calculateCashbookRows = (accs) => {
+    let totalOp = 0;
+    let allRows = [];
+    accs.forEach(acc => {
+      totalOp += Number(acc.opening_balance || 0);
+      if (Array.isArray(acc.raw_cashbook_data)) {
+        allRows.push(...acc.raw_cashbook_data);
+      }
+    });
+    
+    allRows.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    let running = totalOp;
+    let totalDebit = 0;
+    let totalCredit = 0;
+    const finalRows = allRows.map((r, idx) => {
+      const status = (r?.status || "").toLowerCase();
+      const amount = Number(r?.payment_amount ?? 0);
+      const debit = status === "debit" || status === "out" ? amount : 0;
+      const credit = status === "credit" ? amount : 0;
+      running = running + credit - debit;
+      totalDebit += debit;
+      totalCredit += credit;
+      return { ...r, debit, credit, balance: running, _ascIndex: idx + 1 };
+    });
+    
+    return { opening_balance: totalOp, total_debit: totalDebit, total_credit: totalCredit, closing_balance: running, rows: finalRows };
+  };
+
+  const cashbookAED = useMemo(() => calculateCashbookRows(accountsAED), [accountsAED]);
+  const cashbookBDT = useMemo(() => calculateCashbookRows(accountsBDT), [accountsBDT]);
+
   const filterEntries = (entries, q) => {
       if (!q) return entries;
       return entries.filter((entry) => {
@@ -442,9 +511,13 @@ export default function LedgerStatementReportPage() {
                       Particulars: `Account: ${acc.payment_category_name}`,
                       Debit: "",
                       Credit: "",
-                      Balance: fmt2(acc.balance),
+                      Balance: "",
                       Remarks: "",
                   });
+                  ledgerData.push({ Date: "", Particulars: "Opening Balance", Debit: "", Credit: "", Balance: fmt2(acc.opening_balance), Remarks: "" });
+                  ledgerData.push({ Date: "", Particulars: "Total Debit", Debit: "", Credit: "", Balance: fmt2(acc.total_debit), Remarks: "" });
+                  ledgerData.push({ Date: "", Particulars: "Total Credit", Debit: "", Credit: "", Balance: fmt2(acc.total_credit), Remarks: "" });
+                  ledgerData.push({ Date: "", Particulars: "Closing Balance", Debit: "", Credit: "", Balance: fmt2(acc.closing_balance), Remarks: "" });
               });
               ledgerData.push({
                   Date: "",
@@ -545,6 +618,65 @@ export default function LedgerStatementReportPage() {
 
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const renderCashbookTable = (cbData, currency, totals, matchedAccs, grandBal) => {
+    if (!cbData || (cbData.rows.length === 0 && cbData.opening_balance === 0 && cbData.total_credit === 0 && cbData.total_debit === 0)) return null;
+    
+    return (
+      <div className="mb-12">
+        <table className="w-full border-collapse border border-neutral-400 text-xs text-left mb-6">
+          <thead>
+            <tr className="bg-neutral-200 text-neutral-900">
+              <th className="border border-neutral-400 p-2 font-bold whitespace-nowrap uppercase">Transaction Date</th>
+              <th className="border border-neutral-400 p-2 font-bold uppercase">Payment Types</th>
+              <th className="border border-neutral-400 p-2 font-bold uppercase">Vch Types</th>
+              <th className="border border-neutral-400 p-2 font-bold whitespace-nowrap uppercase">Vch Number</th>
+              <th className="border border-neutral-400 p-2 font-bold text-right whitespace-nowrap uppercase">Debit (in {currency})</th>
+              <th className="border border-neutral-400 p-2 font-bold text-right whitespace-nowrap uppercase">Credit (in {currency})</th>
+              <th className="border border-neutral-400 p-2 font-bold text-right whitespace-nowrap uppercase">Balance (in {currency})</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="bg-blue-50/50">
+              <td className="border border-neutral-400 p-2">{filters.start_date.slice(0, 10)}</td>
+              <td className="border border-neutral-400 p-2 text-right font-bold text-neutral-900" colSpan={3}>Opening Balance</td>
+              <td className="border border-neutral-400 p-2 text-right tabular-nums">0.00</td>
+              <td className="border border-neutral-400 p-2 text-right tabular-nums">0.00</td>
+              <td className="border border-neutral-400 p-2 text-right tabular-nums font-bold text-neutral-900">{fmt2(cbData.opening_balance)}</td>
+            </tr>
+            
+            {cbData.rows.map((row, idx) => (
+              <tr key={idx} className="hover:bg-neutral-50 border-b border-neutral-200">
+                <td className="border border-neutral-400 p-2 text-neutral-700">{row.date}</td>
+                <td className="border border-neutral-400 p-2 text-neutral-700">{row.type_name || ""}</td>
+                <td className="border border-neutral-400 p-2 text-neutral-700">{row.type || ""}</td>
+                <td className="border border-neutral-400 p-2 text-neutral-700">{row.invoice_id || ""}</td>
+                <td className="border border-neutral-400 p-2 text-right text-neutral-900 tabular-nums">{row.debit ? fmt2(row.debit) : "-"}</td>
+                <td className="border border-neutral-400 p-2 text-right text-neutral-900 tabular-nums">{row.credit ? fmt2(row.credit) : "-"}</td>
+                <td className="border border-neutral-400 p-2 text-right font-semibold text-neutral-900 tabular-nums">{fmt2(row.balance)}</td>
+              </tr>
+            ))}
+            
+            <tr className="bg-neutral-100 font-bold text-neutral-900 border-t border-neutral-400">
+              <td colSpan={4} className="border border-neutral-400 p-2 text-right">Totals</td>
+              <td className="border border-neutral-400 p-2 text-right tabular-nums">{fmt2(cbData.total_debit)}</td>
+              <td className="border border-neutral-400 p-2 text-right tabular-nums">{fmt2(cbData.total_credit)}</td>
+              <td className="border border-neutral-400 p-2 text-right tabular-nums">{fmt2(cbData.closing_balance)}</td>
+            </tr>
+
+            <tr className="bg-neutral-50 border-t-2 border-neutral-400">
+                <td colSpan={6} className="border border-neutral-400 p-2 font-bold text-right text-neutral-900">Ledger Closing Balance</td>
+                <td className="border border-neutral-400 p-2 text-right font-bold tabular-nums text-neutral-900">{fmt2(totals.closing_balance)}</td>
+            </tr>
+            <tr className="bg-neutral-200">
+                <td colSpan={6} className="border border-neutral-400 p-2 font-bold uppercase text-right text-neutral-900">Grand Ending Balance</td>
+                <td className="border border-neutral-400 p-2 text-right font-bold tabular-nums text-neutral-900">{fmt2(grandBal)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   const renderLedgerTable = (title, entries, totals, matchedAccs, grandBal) => (
     <div className="mb-12">
       <div className="text-lg font-bold uppercase tracking-wide border-b border-neutral-300 pb-1 mb-4">{title}</div>
@@ -617,28 +749,6 @@ export default function LedgerStatementReportPage() {
         </tbody>
       </table>
       
-      {matchedAccs.length > 0 && (
-          <div className="border border-neutral-400 w-full md:max-w-sm ml-auto">
-              <table className="w-full text-xs text-left">
-                  <tbody>
-                      <tr className="bg-neutral-100">
-                          <td className="p-2 border-b border-neutral-400 font-semibold">Ledger Closing Balance</td>
-                          <td className="p-2 border-b border-neutral-400 text-right font-semibold tabular-nums">{fmt2(totals.closing_balance)}</td>
-                      </tr>
-                      {matchedAccs.map((acc, i) => (
-                          <tr key={i} className="border-b border-neutral-200 last:border-b-0">
-                              <td className="p-2 text-neutral-600">Account: {acc.payment_category_name}</td>
-                              <td className="p-2 text-right tabular-nums text-neutral-700">{fmt2(acc.balance)}</td>
-                          </tr>
-                      ))}
-                      <tr className="bg-neutral-200">
-                          <td className="p-2 font-bold uppercase border-t border-neutral-400">Grand Ending Balance</td>
-                          <td className="p-2 text-right font-bold tabular-nums border-t border-neutral-400">{fmt2(grandBal)}</td>
-                      </tr>
-                  </tbody>
-              </table>
-          </div>
-      )}
     </div>
   );
 
@@ -794,7 +904,10 @@ export default function LedgerStatementReportPage() {
         ) : (
           <div className="overflow-x-auto" ref={tableRef}>
              {(filteredBDT.length > 0 || accountsBDT.length > 0) && renderLedgerTable("LEDGER STATEMENT - BDT", filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT)}
+             {renderCashbookTable(cashbookBDT, "BDT", summaryTotalsBDT, accountsBDT, grandEndingBDT)}
+
              {(filteredAED.length > 0 || accountsAED.length > 0) && renderLedgerTable("LEDGER STATEMENT - AED", filteredAED, summaryTotalsAED, accountsAED, grandEndingAED)}
+             {renderCashbookTable(cashbookAED, "AED", summaryTotalsAED, accountsAED, grandEndingAED)}
              
              {filteredBDT.length === 0 && accountsBDT.length === 0 && filteredAED.length === 0 && accountsAED.length === 0 && (
                 <div className="text-center text-neutral-500 py-8 border border-neutral-400">
