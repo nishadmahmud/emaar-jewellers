@@ -290,8 +290,9 @@ function ClientsContent() {
                     <th className="px-6 py-4 font-medium">Phone</th>
                     <th className="px-6 py-4 font-medium">Email</th>
                     <th className="px-6 py-4 font-medium">Address</th>
-                    <th className="px-6 py-4 font-medium text-right text-rose-600">Sell Due</th>
-                    <th className="px-6 py-4 font-medium text-right text-emerald-600">Purchase Due</th>
+                    <th className="px-6 py-4 font-medium text-right text-rose-600 hidden">Sell Due</th>
+                    <th className="px-6 py-4 font-medium text-right text-emerald-600 hidden">Purchase Due</th>
+                    <th className="px-6 py-4 font-medium text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 bg-white">
@@ -319,11 +320,22 @@ function ClientsContent() {
                         <td className="px-6 py-4 text-neutral-500 max-w-[200px] truncate">
                           {client.address || '-'}
                         </td>
-                        <td className="px-6 py-4 text-right font-bold text-rose-600">
+                        <td className="px-6 py-4 text-right font-bold text-rose-600 hidden">
                           {client.sell_due > 0 ? client.sell_due.toLocaleString('en-US') : '-'}
                         </td>
-                        <td className="px-6 py-4 text-right font-bold text-emerald-600">
+                        <td className="px-6 py-4 text-right font-bold text-emerald-600 hidden">
                           {client.purchase_due > 0 ? client.purchase_due.toLocaleString('en-US') : '-'}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(href);
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-black rounded-lg hover:bg-neutral-800 transition-colors shadow-sm"
+                          >
+                            View
+                          </button>
                         </td>
                       </tr>
                     );

@@ -207,7 +207,7 @@ export default function ClientProfileDashboard() {
               <p className="text-xs text-neutral-500 mt-1">Revenue from {clientName}</p>
             </div>
 
-            <div className="bg-white rounded-xl p-5 border border-neutral-200 shadow-sm">
+            <div className="bg-white rounded-xl p-5 border border-neutral-200 shadow-sm hidden">
               <div className="flex items-center gap-3 mb-2 text-rose-600">
                 <div className="p-2 bg-rose-50 rounded-lg">
                   <BadgeAlert size={20} />
@@ -229,7 +229,7 @@ export default function ClientProfileDashboard() {
               <p className="text-xs text-neutral-500 mt-1">Bought from {clientName}</p>
             </div>
 
-            <div className="bg-white rounded-xl p-5 border border-neutral-200 shadow-sm">
+            <div className="bg-white rounded-xl p-5 border border-neutral-200 shadow-sm hidden">
               <div className="flex items-center gap-3 mb-2 text-emerald-600">
                 <div className="p-2 bg-emerald-50 rounded-lg">
                   <DollarSign size={20} />

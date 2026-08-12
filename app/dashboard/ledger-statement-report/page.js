@@ -147,6 +147,13 @@ export default function LedgerStatementReportPage() {
       setError(false);
 
       const promises = [];
+
+      // Calculate previous period dates for opening balance calculation
+      const currentStart = new Date(filters.start_date);
+      const prevStart = new Date(Date.UTC(currentStart.getUTCFullYear(), currentStart.getUTCMonth(), 1, 0, 0, 0, 0));
+      const prevEnd = new Date(currentStart.getTime() - 1); // 1 ms before current start
+      const isPrevPeriodValid = prevEnd.getTime() >= prevStart.getTime();
+
       if (filters.customer_id) {
         promises.push(
           axios.post(`${API_URL}/ledger-statement-report`, {
@@ -156,6 +163,17 @@ export default function LedgerStatementReportPage() {
           }, { headers: { Authorization: `Bearer ${token}` } })
           .then(res => ({ type: 'customer', data: res.data?.data || res.data }))
         );
+        if (isPrevPeriodValid) {
+            promises.push(
+              axios.post(`${API_URL}/ledger-statement-report`, {
+                start_date: prevStart.toISOString(),
+                end_date: prevEnd.toISOString(),
+                customer_id: filters.customer_id
+              }, { headers: { Authorization: `Bearer ${token}` } })
+              .then(res => ({ type: 'prev_customer', data: res.data?.data || res.data }))
+              .catch(() => ({ type: 'prev_customer', data: [] }))
+            );
+        }
       }
 
       if (filters.vendor_id) {
@@ -167,6 +185,17 @@ export default function LedgerStatementReportPage() {
           }, { headers: { Authorization: `Bearer ${token}` } })
           .then(res => ({ type: 'vendor', data: res.data?.data || res.data }))
         );
+        if (isPrevPeriodValid) {
+            promises.push(
+              axios.post(`${API_URL}/ledger-statement-report`, {
+                start_date: prevStart.toISOString(),
+                end_date: prevEnd.toISOString(),
+                vendor_id: filters.vendor_id
+              }, { headers: { Authorization: `Bearer ${token}` } })
+              .then(res => ({ type: 'prev_vendor', data: res.data?.data || res.data }))
+              .catch(() => ({ type: 'prev_vendor', data: [] }))
+            );
+        }
       }
 
       // Fetch accounts to match against selected name
@@ -184,6 +213,16 @@ export default function LedgerStatementReportPage() {
         .then(res => ({ type: 'sales_invoices', data: res.data?.data?.data || [] }))
         .catch(() => ({ type: 'sales_invoices', data: [] }))
       );
+      if (isPrevPeriodValid) {
+          promises.push(
+            axios.post(`${API_URL}/search-invoice?page=1&limit=5000`, {
+               keyword: "", nameId: false, emailId: false, phoneId: false, product: false,
+               startDate: prevStart.toISOString(), endDate: prevEnd.toISOString(), dueOnly: false
+            }, { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => ({ type: 'prev_sales_invoices', data: res.data?.data?.data || [] }))
+            .catch(() => ({ type: 'prev_sales_invoices', data: [] }))
+          );
+      }
 
       // Fetch all purchase invoices for the date range
       promises.push(
@@ -194,6 +233,16 @@ export default function LedgerStatementReportPage() {
         .then(res => ({ type: 'purchase_invoices', data: res.data?.data?.data || [] }))
         .catch(() => ({ type: 'purchase_invoices', data: [] }))
       );
+      if (isPrevPeriodValid) {
+          promises.push(
+            axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=5000`, {
+               keyword: "", nameId: false, emailId: false, phoneId: false, product: false,
+               startDate: prevStart.toISOString(), endDate: prevEnd.toISOString(), dueOnly: false
+            }, { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => ({ type: 'prev_purchase_invoices', data: res.data?.data?.data || [] }))
+            .catch(() => ({ type: 'prev_purchase_invoices', data: [] }))
+          );
+      }
 
       const results = await Promise.all(promises);
 
@@ -204,11 +253,19 @@ export default function LedgerStatementReportPage() {
       const salesMap = new Map();
       const purchaseMap = new Map();
 
+      let prevAllEntries = [];
+      const prevSalesMap = new Map();
+      const prevPurchaseMap = new Map();
+
       results.forEach(res => {
         if (res.type === 'sales_invoices') {
            res.data.forEach(inv => salesMap.set(inv.invoice_id, inv));
         } else if (res.type === 'purchase_invoices') {
            res.data.forEach(inv => purchaseMap.set(inv.invoice_id, inv));
+        } else if (res.type === 'prev_sales_invoices') {
+           res.data.forEach(inv => prevSalesMap.set(inv.invoice_id, inv));
+        } else if (res.type === 'prev_purchase_invoices') {
+           res.data.forEach(inv => prevPurchaseMap.set(inv.invoice_id, inv));
         } else if (res.type === 'accounts') {
            const rawList = res.data;
            const flattenedAccounts = [];
@@ -240,23 +297,51 @@ export default function LedgerStatementReportPage() {
                return accFirstName === selectedFirstName;
              });
            }
-        } else {
-          const type = res.type;
-          const d = res.data;
-          const opBal = Number(d.opening_balance) || 0;
-          const entries = Array.isArray(d.ledger) ? d.ledger : [];
+         } else if (res.type === 'customer' || res.type === 'vendor') {
+           const type = res.type;
+           const d = res.data;
+           const entries = Array.isArray(d.ledger) ? d.ledger : [];
 
-          // Force opening balance to 0 as per Evan's logic rules.
-          totalOpeningBalance = 0;
-
-          const mappedEntries = entries.map(e => ({
-             ...e,
-             source_type: type,
-          }));
-          
-          allEntries = allEntries.concat(mappedEntries);
-        }
+           const mappedEntries = entries.map(e => ({
+              ...e,
+              source_type: type,
+           }));
+           
+           allEntries = allEntries.concat(mappedEntries);
+         } else if (res.type === 'prev_customer' || res.type === 'prev_vendor') {
+            const type = res.type.replace('prev_', '');
+            const d = res.data;
+            const entries = Array.isArray(d.ledger) ? d.ledger : [];
+            const mappedEntries = entries.map(e => ({
+               ...e,
+               source_type: type,
+            }));
+            prevAllEntries = prevAllEntries.concat(mappedEntries);
+         }
       });
+
+      // Calculate dynamic opening balance from previous period ledger entries
+      if (isPrevPeriodValid) {
+          let prevTotalDebit = 0;
+          let prevTotalCredit = 0;
+          prevAllEntries.forEach(e => {
+              let amt = Number(e.balance) || Number(e.amount) || Number(e.sub_total) || 0;
+              if (e.invoice_id) {
+                 if (e.invoice_id.startsWith("INV-") && prevSalesMap.has(e.invoice_id)) {
+                    const inv = prevSalesMap.get(e.invoice_id);
+                    amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
+                 } else if (e.invoice_id.startsWith("PUR-") && prevPurchaseMap.has(e.invoice_id)) {
+                    const inv = prevPurchaseMap.get(e.invoice_id);
+                    amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
+                 }
+              }
+              if (e.source_type === 'vendor') prevTotalDebit += amt;
+              if (e.source_type === 'customer') prevTotalCredit += amt;
+          });
+          totalOpeningBalance = prevTotalCredit - prevTotalDebit;
+      } else {
+          totalOpeningBalance = 0;
+      }
 
       // Sort serially by date ascending
       allEntries.sort((a, b) => {
@@ -309,18 +394,42 @@ export default function LedgerStatementReportPage() {
               .then(res => ({ acc_id: acc.id, data: res.data }))
               .catch(() => ({ acc_id: acc.id, data: null }))
           });
+
+          let prevCashbookPromises = [];
+          if (isPrevPeriodValid) {
+              prevCashbookPromises = foundMatchedAccounts.map(acc => {
+                  return axios.post(`${API_URL}/cash-book-report`, {
+                      start_date: prevStart.toISOString(),
+                      end_date: prevEnd.toISOString(),
+                      view_order: "asc",
+                      payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id)
+                  }, { headers: { Authorization: `Bearer ${token}` } })
+                  .then(res => ({ acc_id: acc.id, data: res.data }))
+                  .catch(() => ({ acc_id: acc.id, data: null }))
+              });
+          }
           
-          const cashbookResults = await Promise.all(cashbookPromises);
+          const [cashbookResults, prevCashbookResults] = await Promise.all([
+              Promise.all(cashbookPromises),
+              Promise.all(prevCashbookPromises)
+          ]);
           
           foundMatchedAccounts = foundMatchedAccounts.map(acc => {
              const cb = cashbookResults.find(r => String(r.acc_id) === String(acc.id))?.data;
+             const prevCb = prevCashbookResults.find(r => String(r.acc_id) === String(acc.id))?.data;
+             
+             let computedOpeningBalance = 0;
+             if (isPrevPeriodValid && prevCb) {
+                 computedOpeningBalance = Number(prevCb.closing_balance ?? 0);
+             }
+
              return {
                  ...acc,
-                 opening_balance: Number(cb?.opening_balance ?? 0),
+                 opening_balance: computedOpeningBalance,
                  total_credit: Number(cb?.current_total_credit ?? 0),
                  total_debit: Number(cb?.current_total_debit ?? 0),
-                 closing_balance: Number(cb?.closing_balance ?? acc.balance ?? 0),
-                 balance: Number(cb?.closing_balance ?? acc.balance ?? 0),
+                 closing_balance: computedOpeningBalance + Number(cb?.current_total_credit ?? 0) - Number(cb?.current_total_debit ?? 0),
+                 balance: computedOpeningBalance + Number(cb?.current_total_credit ?? 0) - Number(cb?.current_total_debit ?? 0),
                  raw_cashbook_data: cb?.data || []
              };
           });
@@ -623,8 +732,8 @@ export default function LedgerStatementReportPage() {
     
     return (
       <div className="mb-12">
-        <table className="w-full border-collapse border border-neutral-400 text-xs text-left mb-6">
-          <thead>
+        <table className="block md:table w-full border-collapse md:border border-neutral-400 text-xs text-left mb-6">
+          <thead className="hidden md:table-header-group">
             <tr className="bg-neutral-200 text-neutral-900">
               <th className="border border-neutral-400 p-2 font-bold whitespace-nowrap uppercase">Transaction Date</th>
               <th className="border border-neutral-400 p-2 font-bold uppercase">Payment Types</th>
@@ -635,41 +744,95 @@ export default function LedgerStatementReportPage() {
               <th className="border border-neutral-400 p-2 font-bold text-right whitespace-nowrap uppercase">Balance (in {currency})</th>
             </tr>
           </thead>
-          <tbody>
-            <tr className="bg-blue-50/50">
-              <td className="border border-neutral-400 p-2">{filters.start_date.slice(0, 10)}</td>
-              <td className="border border-neutral-400 p-2 text-right font-bold text-neutral-900" colSpan={3}>Opening Balance</td>
-              <td className="border border-neutral-400 p-2 text-right tabular-nums">0.00</td>
-              <td className="border border-neutral-400 p-2 text-right tabular-nums">0.00</td>
-              <td className="border border-neutral-400 p-2 text-right tabular-nums font-bold text-neutral-900">{fmt2(cbData.opening_balance)}</td>
+          <tbody className="block md:table-row-group">
+            <tr className="block md:table-row bg-blue-50/50 mb-4 md:mb-0 border border-neutral-400 md:border-none rounded-lg md:rounded-none overflow-hidden">
+              <td className="block md:table-cell border-b md:border border-neutral-200 md:border-neutral-400 p-2 flex justify-between md:table-cell">
+                 <span className="md:hidden font-bold">Transaction Date:</span>
+                 <span>{filters.start_date.slice(0, 10)}</span>
+              </td>
+              <td className="block md:table-cell border-b md:border border-neutral-200 md:border-neutral-400 p-2 md:text-right font-bold text-neutral-900 flex justify-between" colSpan={3}>
+                 <span className="md:hidden font-bold">Particulars:</span>
+                 <span>Opening Balance</span>
+              </td>
+              <td className="hidden md:table-cell border border-neutral-400 p-2 text-right tabular-nums">0.00</td>
+              <td className="hidden md:table-cell border border-neutral-400 p-2 text-right tabular-nums">0.00</td>
+              <td className="block md:table-cell p-2 md:border border-neutral-400 md:text-right tabular-nums font-bold text-neutral-900 flex justify-between bg-neutral-100 md:bg-transparent">
+                 <span className="md:hidden font-bold">Balance:</span>
+                 <span>{fmt2(cbData.opening_balance)}</span>
+              </td>
             </tr>
             
             {cbData.rows.map((row, idx) => (
-              <tr key={idx} className="hover:bg-neutral-50 border-b border-neutral-200">
-                <td className="border border-neutral-400 p-2 text-neutral-700">{row.date}</td>
-                <td className="border border-neutral-400 p-2 text-neutral-700">{row.type_name || ""}</td>
-                <td className="border border-neutral-400 p-2 text-neutral-700">{row.type || ""}</td>
-                <td className="border border-neutral-400 p-2 text-neutral-700">{row.invoice_id || ""}</td>
-                <td className="border border-neutral-400 p-2 text-right text-neutral-900 tabular-nums">{row.debit ? fmt2(row.debit) : "-"}</td>
-                <td className="border border-neutral-400 p-2 text-right text-neutral-900 tabular-nums">{row.credit ? fmt2(row.credit) : "-"}</td>
-                <td className="border border-neutral-400 p-2 text-right font-semibold text-neutral-900 tabular-nums">{fmt2(row.balance)}</td>
+              <tr key={idx} className="block md:table-row hover:bg-neutral-50 border border-neutral-400 md:border-b border-neutral-200 mb-4 md:mb-0 rounded-lg md:rounded-none shadow-sm md:shadow-none overflow-hidden">
+                <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-neutral-700 flex justify-between bg-neutral-50 md:bg-transparent">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Transaction Date</span>
+                  <span>{row.date}</span>
+                </td>
+                <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-neutral-700 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500 mb-1 sm:mb-0">Payment Types</span>
+                  <span className="text-right sm:text-left">{row.type_name || "-"}</span>
+                </td>
+                <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-neutral-700 flex justify-between">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Vch Types</span>
+                  <span>{row.type || "-"}</span>
+                </td>
+                <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-neutral-700 flex justify-between">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Vch Number</span>
+                  <span>{row.invoice_id || "-"}</span>
+                </td>
+                <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right text-neutral-900 tabular-nums flex justify-between">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Debit</span>
+                  <span>{row.debit ? fmt2(row.debit) : "-"}</span>
+                </td>
+                <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right text-neutral-900 tabular-nums flex justify-between">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Credit</span>
+                  <span>{row.credit ? fmt2(row.credit) : "-"}</span>
+                </td>
+                <td className="block md:table-cell p-2 md:border md:border-neutral-400 text-right font-semibold text-neutral-900 tabular-nums flex justify-between bg-neutral-100 md:bg-transparent">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Balance</span>
+                  <span>{fmt2(row.balance)}</span>
+                </td>
               </tr>
             ))}
             
-            <tr className="bg-neutral-100 font-bold text-neutral-900 border-t border-neutral-400">
-              <td colSpan={4} className="border border-neutral-400 p-2 text-right">Totals</td>
-              <td className="border border-neutral-400 p-2 text-right tabular-nums">{fmt2(cbData.total_debit)}</td>
-              <td className="border border-neutral-400 p-2 text-right tabular-nums">{fmt2(cbData.total_credit)}</td>
-              <td className="border border-neutral-400 p-2 text-right tabular-nums">{fmt2(cbData.closing_balance)}</td>
+            <tr className="block md:table-row bg-neutral-100 font-bold text-neutral-900 border md:border-t border-neutral-400 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+              <td colSpan={4} className="block md:table-cell border-b md:border md:border-neutral-400 p-2 md:text-right flex justify-between">
+                <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                <span>Totals</span>
+              </td>
+              <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right tabular-nums flex justify-between">
+                <span className="md:hidden font-bold uppercase text-neutral-500">Total Debit</span>
+                <span>{fmt2(cbData.total_debit)}</span>
+              </td>
+              <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right tabular-nums flex justify-between">
+                <span className="md:hidden font-bold uppercase text-neutral-500">Total Credit</span>
+                <span>{fmt2(cbData.total_credit)}</span>
+              </td>
+              <td className="block md:table-cell p-2 md:border md:border-neutral-400 text-right tabular-nums flex justify-between bg-neutral-200 md:bg-transparent">
+                <span className="md:hidden font-bold uppercase text-neutral-500">Closing Balance</span>
+                <span>{fmt2(cbData.closing_balance)}</span>
+              </td>
             </tr>
 
-            <tr className="bg-neutral-50 border-t-2 border-neutral-400">
-                <td colSpan={6} className="border border-neutral-400 p-2 font-bold text-right text-neutral-900">Ledger Closing Balance</td>
-                <td className="border border-neutral-400 p-2 text-right font-bold tabular-nums text-neutral-900">{fmt2(totals.closing_balance)}</td>
+            <tr className="block md:table-row bg-neutral-50 border md:border-t-2 border-neutral-400 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+                <td colSpan={6} className="block md:table-cell border-b md:border md:border-neutral-400 p-2 font-bold md:text-right text-neutral-900 flex justify-between">
+                  <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                  <span>Ledger Closing Balance</span>
+                </td>
+                <td className="block md:table-cell p-2 md:border md:border-neutral-400 text-right font-bold tabular-nums text-neutral-900 flex justify-between bg-neutral-200 md:bg-transparent">
+                  <span className="md:hidden font-bold uppercase text-neutral-500">Balance</span>
+                  <span>{fmt2(totals.closing_balance)}</span>
+                </td>
             </tr>
-            <tr className="bg-neutral-200">
-                <td colSpan={6} className="border border-neutral-400 p-2 font-bold uppercase text-right text-neutral-900">Grand Ending Balance</td>
-                <td className="border border-neutral-400 p-2 text-right font-bold tabular-nums text-neutral-900">{fmt2(grandBal)}</td>
+            <tr className="block md:table-row bg-neutral-200 border border-neutral-400 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+                <td colSpan={6} className="block md:table-cell border-b md:border md:border-neutral-400 p-2 font-bold uppercase md:text-right text-neutral-900 flex justify-between">
+                  <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                  <span>Grand Ending Balance</span>
+                </td>
+                <td className="block md:table-cell p-2 md:border md:border-neutral-400 text-right font-bold tabular-nums text-neutral-900 flex justify-between bg-neutral-300 md:bg-transparent">
+                  <span className="md:hidden font-bold uppercase text-neutral-500">Balance</span>
+                  <span>{fmt2(grandBal)}</span>
+                </td>
             </tr>
           </tbody>
         </table>
@@ -680,68 +843,85 @@ export default function LedgerStatementReportPage() {
   const renderLedgerTable = (title, entries, totals, matchedAccs, grandBal) => (
     <div className="mb-12">
       <div className="text-lg font-bold uppercase tracking-wide border-b border-neutral-300 pb-1 mb-4">{title}</div>
-      <table className="w-full border-collapse border border-neutral-400 text-xs text-left mb-6">
-        <thead>
+      <table className="block md:table w-full border-collapse md:border border-neutral-400 text-xs text-left mb-6">
+        <thead className="hidden md:table-header-group">
           <tr className="bg-neutral-200 text-neutral-900">
             <th className="border border-neutral-400 p-2 uppercase w-[12%]">DATE</th>
             <th className="border border-neutral-400 p-2 uppercase">PARTICULARS</th>
             <th className="border border-neutral-400 p-2 text-right w-[13%] uppercase">DEBIT</th>
             <th className="border border-neutral-400 p-2 text-right w-[13%] uppercase">CREDIT</th>
             <th className="border border-neutral-400 p-2 text-right w-[13%] uppercase">BALANCE</th>
-            <th className="border border-neutral-400 p-2 uppercase w-[15%]">REMARKS</th>
           </tr>
         </thead>
-        <tbody>
-          <tr className="bg-blue-50/50">
-            <td className="border border-neutral-400 p-2"></td>
-            <td className="border border-neutral-400 p-2 text-right font-bold text-neutral-900">Opening Balance</td>
-            <td className="border border-neutral-400 p-2"></td>
-            <td className="border border-neutral-400 p-2"></td>
-            <td className="border border-neutral-400 p-2 text-right font-bold text-neutral-900 whitespace-nowrap">{fmt2(totals.opening_balance)}</td>
-            <td className="border border-neutral-400 p-2"></td>
+        <tbody className="block md:table-row-group">
+          <tr className="block md:table-row bg-blue-50/50 mb-4 md:mb-0 border border-neutral-400 md:border-none rounded-lg md:rounded-none overflow-hidden">
+            <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
+            <td className="block md:table-cell border-b md:border border-neutral-200 md:border-neutral-400 p-2 md:text-right font-bold text-neutral-900 flex justify-between">
+              <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+              <span>Opening Balance</span>
+            </td>
+            <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
+            <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
+            <td className="block md:table-cell p-2 md:border border-neutral-400 text-right font-bold text-neutral-900 whitespace-nowrap flex justify-between bg-neutral-100 md:bg-transparent">
+              <span className="md:hidden font-bold uppercase text-neutral-500">Balance</span>
+              <span>{fmt2(totals.opening_balance)}</span>
+            </td>
           </tr>
 
           {entries.map((entry, idx) => {
             return (
-              <tr key={idx} className="hover:bg-neutral-50">
-                <td className="border border-neutral-400 p-2 text-neutral-700">
-                  {entry.date ? new Date(entry.date).toLocaleDateString("en-GB") : "-"}
+              <tr key={idx} className="block md:table-row hover:bg-neutral-50 border border-neutral-400 md:border-b border-neutral-200 mb-4 md:mb-0 rounded-lg md:rounded-none shadow-sm md:shadow-none overflow-hidden">
+                <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-neutral-700 flex justify-between bg-neutral-50 md:bg-transparent">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Date</span>
+                  <span>{entry.date ? new Date(entry.date).toLocaleDateString("en-GB") : "-"}</span>
                 </td>
-                <td className="border border-neutral-400 p-2 text-neutral-700">
-                  <span className="block whitespace-normal break-words">
+                <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-neutral-700 flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500 mb-1 sm:mb-0">Particulars</span>
+                  <span className="block whitespace-normal break-words text-right sm:text-left">
                       {entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "-")}
                   </span>
                 </td>
-                <td className="border border-neutral-400 p-2 text-right text-neutral-900 tabular-nums">
-                  {entry?.debit ? fmt2(entry.debit) : "-"}
+                <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right text-neutral-900 tabular-nums flex justify-between">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Debit</span>
+                  <span>{entry?.debit ? fmt2(entry.debit) : "-"}</span>
                 </td>
-                <td className="border border-neutral-400 p-2 text-right text-neutral-900 tabular-nums">
-                  {entry?.credit ? fmt2(entry.credit) : "-"}
+                <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right text-neutral-900 tabular-nums flex justify-between">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Credit</span>
+                  <span>{entry?.credit ? fmt2(entry.credit) : "-"}</span>
                 </td>
-                <td className="border border-neutral-400 p-2 text-right font-semibold whitespace-nowrap text-neutral-900 tabular-nums">
-                  {fmt2(entry?.balance)}
-                </td>
-                <td className="border border-neutral-400 p-2 text-neutral-600 truncate max-w-[150px]">
-                  {entry?.remarks || ""}
+                <td className="block md:table-cell p-2 md:border md:border-neutral-400 text-right font-semibold whitespace-nowrap text-neutral-900 tabular-nums flex justify-between bg-neutral-100 md:bg-transparent">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Balance</span>
+                  <span>{fmt2(entry?.balance)}</span>
                 </td>
               </tr>
             )
           })}
 
           {entries.length > 0 && (
-            <tr className="bg-neutral-100 font-bold text-neutral-900">
-              <td className="border border-neutral-400 p-2">Total</td>
-              <td className="border border-neutral-400 p-2"></td>
-              <td className="border border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums">{fmt2(totals.total_debit)}</td>
-              <td className="border border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums">{fmt2(totals.total_credit)}</td>
-              <td className="border border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums">{fmt2(totals.closing_balance)}</td>
-              <td className="border border-neutral-400 p-2"></td>
+            <tr className="block md:table-row bg-neutral-100 font-bold text-neutral-900 border border-neutral-400 md:border-t mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+              <td className="block md:table-cell border-b md:border border-neutral-200 md:border-neutral-400 p-2 flex justify-between">
+                <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                <span>Total</span>
+              </td>
+              <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
+              <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums flex justify-between">
+                <span className="md:hidden font-bold uppercase text-neutral-500">Total Debit</span>
+                <span>{fmt2(totals.total_debit)}</span>
+              </td>
+              <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums flex justify-between">
+                <span className="md:hidden font-bold uppercase text-neutral-500">Total Credit</span>
+                <span>{fmt2(totals.total_credit)}</span>
+              </td>
+              <td className="block md:table-cell p-2 md:border md:border-neutral-400 text-right whitespace-nowrap tabular-nums flex justify-between bg-neutral-200 md:bg-transparent">
+                <span className="md:hidden font-bold uppercase text-neutral-500">Closing Balance</span>
+                <span>{fmt2(totals.closing_balance)}</span>
+              </td>
             </tr>
           )}
 
           {entries.length === 0 && (
-            <tr>
-              <td colSpan={6} className="text-center text-neutral-500 py-8 border border-neutral-400">
+            <tr className="block md:table-row">
+              <td colSpan={6} className="block md:table-cell text-center text-neutral-500 py-8 border border-neutral-400">
                 No ledger data found.
               </td>
             </tr>
@@ -902,7 +1082,7 @@ export default function LedgerStatementReportPage() {
         {error ? (
           <div className="text-center text-red-500 py-10 font-medium">Error loading data.</div>
         ) : (
-          <div className="overflow-x-auto" ref={tableRef}>
+          <div className="" ref={tableRef}>
              {(filteredBDT.length > 0 || accountsBDT.length > 0) && renderLedgerTable("LEDGER STATEMENT - BDT", filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT)}
              {renderCashbookTable(cashbookBDT, "BDT", summaryTotalsBDT, accountsBDT, grandEndingBDT)}
 

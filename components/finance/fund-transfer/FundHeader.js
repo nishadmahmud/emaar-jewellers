@@ -34,7 +34,7 @@ export default function FundHeader({ accounts }) {
   };
 
   return (
-    <>
+    <div className="hidden">
       <h2 className="text-lg font-semibold text-slate-800 mb-3">
         Accounts Summary
       </h2>
@@ -89,6 +89,6 @@ export default function FundHeader({ accounts }) {
           );
         })}
       </div>
-    </>
+    </div>
   );
 }
