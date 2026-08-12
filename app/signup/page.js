@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Phone, User, Store, Loader2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { signIn } from 'next-auth/react';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -89,7 +90,20 @@ export default function SignupPage() {
 
       if (res.ok && data.success) {
         toast.success(data.message || 'Account created successfully!');
-        router.push('/login');
+        
+        // Auto-login
+        const loginRes = await signIn('credentials', {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
+        });
+
+        if (loginRes?.error) {
+          toast.error("Auto-login failed, please sign in manually");
+          router.push('/login');
+        } else {
+          router.push('/set-pin');
+        }
       } else {
         toast.error(data.message || 'Failed to create account');
         setLoading(false);

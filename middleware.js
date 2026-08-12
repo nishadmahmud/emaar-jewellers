@@ -22,8 +22,8 @@ export const middleware = async (req) => {
     return NextResponse.redirect(url);
   }
 
-  // 2. Token but pin not verified -> go to verify-pin
-  if (token && !isPinVerified && path !== "/verify-pin" && path !== "/login") {
+  // 2. Token but pin not verified -> go to verify-pin (unless already on verify-pin or set-pin)
+  if (token && !isPinVerified && path !== "/verify-pin" && path !== "/login" && path !== "/set-pin") {
     const url = req.nextUrl.clone();
     const callbackUrl = encodeURIComponent(url.pathname);
     url.pathname = "/verify-pin";
