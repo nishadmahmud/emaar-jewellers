@@ -51,6 +51,7 @@ export default function FundTransferPage() {
   const [vendorsLoading, setVendorsLoading] = useState(false);
   
   const [reportData, setReportData] = useState(null);
+  const [matchedAccounts, setMatchedAccounts] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Fetch Customers & Vendors initially
@@ -159,7 +160,7 @@ export default function FundTransferPage() {
         }
       }
 
-      if (filters.vendor_id) {
+if (filters.vendor_id) {
         promises.push(
           axios.post(`${API_URL}/ledger-statement-report`, {
             start_date: filters.start_date,
@@ -180,6 +181,12 @@ export default function FundTransferPage() {
             );
         }
       }
+
+      // Fetch accounts to match against selected name
+      promises.push(
+        axios.get(`${API_URL}/payment-type-category-list?t=${Date.now()}`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => ({ type: 'accounts', data: res.data?.data?.data ?? res.data?.data ?? res.data ?? [] }))
+      );
 
       // Fetch all sales invoices for the date range
       promises.push(
@@ -225,6 +232,7 @@ export default function FundTransferPage() {
 
       let totalOpeningBalance = 0;
       let allEntries = [];
+      let foundMatchedAccounts = [];
       
       const salesMap = new Map();
       const purchaseMap = new Map();
@@ -262,6 +270,37 @@ export default function FundTransferPage() {
                source_type: type,
             }));
             prevAllEntries = prevAllEntries.concat(mappedEntries);
+         } else if (res.type === 'accounts') {
+           const rawList = res.data;
+           const flattenedAccounts = [];
+           rawList.forEach((item) => {
+             if (Array.isArray(item.payment_type_category)) {
+               item.payment_type_category.forEach((acc) => {
+                 flattenedAccounts.push({
+                   ...acc,
+                   actual_payment_type_id: item.id, // Parent's ID is the true payment type ID
+                   payment_category_name: acc.payment_category_name || acc.name || item.type_name || "Account",
+                   balance: Number(acc.paymentcategory_sum_payment_amount ?? acc.balance ?? acc.amount ?? 0),
+                 });
+               });
+             } else {
+               flattenedAccounts.push({
+                 ...item,
+                 actual_payment_type_id: item.id, // This is the type itself
+                 payment_category_name: item.payment_category_name || item.name || item.type_name || "Account",
+                 balance: Number(item.paymentcategory_sum_payment_amount ?? item.balance ?? item.amount ?? 0),
+               });
+             }
+           });
+
+           if (filters.selected_name) {
+             const selectedFirstName = filters.selected_name.trim().split(' ')[0].toLowerCase();
+             foundMatchedAccounts = flattenedAccounts.filter(acc => {
+               if (!acc.payment_category_name) return false;
+               const accFirstName = acc.payment_category_name.trim().split(' ')[0].toLowerCase();
+               return accFirstName === selectedFirstName;
+             });
+           }
          }
       });
 
@@ -321,6 +360,67 @@ export default function FundTransferPage() {
         opening_balance: totalOpeningBalance,
         ledger: allEntries
       });
+
+      // Fetch Cashbook Report for matched accounts
+      if (foundMatchedAccounts.length > 0) {
+          const cashbookPromises = foundMatchedAccounts.map(acc => {
+              const sd = new Date(filters.start_date);
+              sd.setHours(0, 0, 0, 0);
+              const ed = new Date(filters.end_date);
+              ed.setHours(23, 59, 59, 999);
+              
+              return axios.post(`${API_URL}/cash-book-report`, {
+                  start_date: sd.toISOString(),
+                  end_date: ed.toISOString(),
+                  view_order: "asc",
+                  payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id)
+              }, { headers: { Authorization: `Bearer ${token}` } })
+              .then(res => ({ acc_id: acc.id, data: res.data }))
+              .catch(() => ({ acc_id: acc.id, data: null }))
+          });
+
+          let prevCashbookPromises = [];
+          if (isPrevPeriodValid) {
+              prevCashbookPromises = foundMatchedAccounts.map(acc => {
+                  return axios.post(`${API_URL}/cash-book-report`, {
+                      start_date: prevStart.toISOString(),
+                      end_date: prevEnd.toISOString(),
+                      view_order: "asc",
+                      payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id)
+                  }, { headers: { Authorization: `Bearer ${token}` } })
+                  .then(res => ({ acc_id: acc.id, data: res.data }))
+                  .catch(() => ({ acc_id: acc.id, data: null }))
+              });
+          }
+          
+          const [cashbookResults, prevCashbookResults] = await Promise.all([
+              Promise.all(cashbookPromises),
+              Promise.all(prevCashbookPromises)
+          ]);
+          
+          foundMatchedAccounts = foundMatchedAccounts.map(acc => {
+             const cb = cashbookResults.find(r => String(r.acc_id) === String(acc.id))?.data;
+             const prevCb = prevCashbookResults.find(r => String(r.acc_id) === String(acc.id))?.data;
+             
+             let computedOpeningBalance = 0;
+             if (isPrevPeriodValid && prevCb) {
+                 computedOpeningBalance = Number(prevCb.closing_balance ?? 0);
+             }
+
+             return {
+                 ...acc,
+                 opening_balance: computedOpeningBalance,
+                 total_credit: Number(cb?.current_total_credit ?? 0),
+                 total_debit: Number(cb?.current_total_debit ?? 0),
+                 closing_balance: computedOpeningBalance + Number(cb?.current_total_credit ?? 0) - Number(cb?.current_total_debit ?? 0),
+                 balance: computedOpeningBalance + Number(cb?.current_total_credit ?? 0) - Number(cb?.current_total_debit ?? 0),
+                 raw_cashbook_data: cb?.data || []
+             };
+          });
+      }
+
+      setMatchedAccounts(foundMatchedAccounts);
+
 
     } catch (err) {
       console.error(err);
@@ -384,6 +484,33 @@ export default function FundTransferPage() {
 
   const summaryTotalsAED = React.useMemo(() => calculateTotals(ledgerAED, openingBalance), [ledgerAED, openingBalance]);
   const summaryTotalsBDT = React.useMemo(() => calculateTotals(ledgerBDT, openingBalance), [ledgerBDT, openingBalance]);
+
+  const { accountsAED, accountsBDT } = React.useMemo(() => {
+    const aed = [];
+    const bdt = [];
+    matchedAccounts.forEach(acc => {
+       const name = (acc.payment_category_name || "").toUpperCase();
+       if (name.includes("(DH)") || name.includes("AED")) {
+         aed.push(acc);
+       } else {
+         bdt.push(acc);
+       }
+    });
+    return { accountsAED: aed, accountsBDT: bdt };
+  }, [matchedAccounts]);
+
+  const grandEndingAED = React.useMemo(() => {
+    let bal = summaryTotalsAED.closing_balance;
+    accountsAED.forEach(acc => bal += (Number(acc.balance) || 0));
+    return bal;
+  }, [summaryTotalsAED.closing_balance, accountsAED]);
+
+  const grandEndingBDT = React.useMemo(() => {
+    let bal = summaryTotalsBDT.closing_balance;
+    accountsBDT.forEach(acc => bal += (Number(acc.balance) || 0));
+    return bal;
+  }, [summaryTotalsBDT.closing_balance, accountsBDT]);
+
 
 
   const fetcher = async (url) => {
@@ -596,9 +723,9 @@ export default function FundTransferPage() {
       {reportData && (
           <div className="grid gap-4 sm:grid-cols-2 mb-6">
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
-                <h3 className="text-sm font-medium text-slate-800 mb-2">Ledger Closing Balance (BDT)</h3>
-                <div className={`text-3xl font-bold ${summaryTotalsBDT.closing_balance < 0 ? 'text-red-600' : 'text-blue-700'}`}>
-                    {fmt2(summaryTotalsBDT.closing_balance)}
+                <h3 className="text-sm font-medium text-slate-800 mb-2">Grand Ending Balance (BDT)</h3>
+                <div className={`text-3xl font-bold ${grandEndingBDT < 0 ? 'text-red-600' : 'text-blue-700'}`}>
+                    {fmt2(grandEndingBDT)}
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
                     For {appliedFilters.selected_name || 'All'}
@@ -606,9 +733,9 @@ export default function FundTransferPage() {
             </div>
             
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
-                <h3 className="text-sm font-medium text-slate-800 mb-2">Ledger Closing Balance (AED)</h3>
-                <div className={`text-3xl font-bold ${summaryTotalsAED.closing_balance < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
-                    {fmt2(summaryTotalsAED.closing_balance)}
+                <h3 className="text-sm font-medium text-slate-800 mb-2">Grand Ending Balance (AED)</h3>
+                <div className={`text-3xl font-bold ${grandEndingAED < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                    {fmt2(grandEndingAED)}
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
                     For {appliedFilters.selected_name || 'All'}
