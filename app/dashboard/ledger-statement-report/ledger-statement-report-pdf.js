@@ -197,32 +197,40 @@ export default function LedgerStatementReportPDF({
       <View style={styles.table}>
         <View style={styles.tableRow}>
           <Text style={{ ...styles.tableHeaderCell, flex: 1.5 }}>Date</Text>
-          <Text style={{ ...styles.tableHeaderCell, flex: 4.5 }}>Particulars</Text>
-          <Text style={{ ...styles.tableHeaderCell, flex: 2, textAlign: "right" }}>Balance</Text>
-          <Text style={{ ...styles.tableHeaderCell, flex: 2 }}>Remarks</Text>
+          <Text style={{ ...styles.tableHeaderCell, flex: 3.5 }}>Particulars</Text>
+          <Text style={{ ...styles.tableHeaderCell, flex: 1.5, textAlign: "right" }}>Debit</Text>
+          <Text style={{ ...styles.tableHeaderCell, flex: 1.5, textAlign: "right" }}>Credit</Text>
+          <Text style={{ ...styles.tableHeaderCell, flex: 1.5, textAlign: "right" }}>Balance</Text>
+          <Text style={{ ...styles.tableHeaderCell, flex: 1.5 }}>Remarks</Text>
         </View>
 
         <View style={{ ...styles.tableRow, ...styles.openingBalanceRow }}>
           <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-          <Text style={{ ...styles.tableCell, flex: 4.5 }}>Opening Balance</Text>
-          <Text style={{ ...styles.tableCell, flex: 2, textAlign: "right" }}>{fmt2(totals?.opening_balance)}</Text>
-          <Text style={{ ...styles.tableCell, flex: 2 }}></Text>
+          <Text style={{ ...styles.tableCell, flex: 3.5 }}>Opening Balance</Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(totals?.opening_balance)}</Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
         </View>
 
         {entries?.map((entry, idx) => (
           <View style={styles.tableRow} key={idx}>
             <Text style={{ ...styles.tableCell, flex: 1.5 }}>{entry.date ? new Date(entry.date).toLocaleDateString() : "-"}</Text>
-            <Text style={{ ...styles.tableCell, flex: 4.5 }}>{entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "-")}</Text>
-            <Text style={{ ...styles.tableCell, flex: 2, textAlign: "right" }}>{fmt2(entry.balance)}</Text>
-            <Text style={{ ...styles.tableCell, flex: 2 }}>{entry.remarks || "-"}</Text>
+            <Text style={{ ...styles.tableCell, flex: 3.5 }}>{entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "-")}</Text>
+            <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{entry.debit ? fmt2(entry.debit) : "-"}</Text>
+            <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{entry.credit ? fmt2(entry.credit) : "-"}</Text>
+            <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(entry.balance)}</Text>
+            <Text style={{ ...styles.tableCell, flex: 1.5 }}>{entry.remarks || "-"}</Text>
           </View>
         ))}
 
         <View style={{ ...styles.tableRow, ...styles.totalRow }}>
           <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-          <Text style={{ ...styles.tableCell, flex: 4.5 }}>Total</Text>
-          <Text style={{ ...styles.tableCell, flex: 2, textAlign: "right" }}>{fmt2(totals?.closing_balance)}</Text>
-          <Text style={{ ...styles.tableCell, flex: 2 }}></Text>
+          <Text style={{ ...styles.tableCell, flex: 3.5 }}>Total</Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(totals?.total_debit)}</Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(totals?.total_credit)}</Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(totals?.closing_balance)}</Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
         </View>
       </View>
 

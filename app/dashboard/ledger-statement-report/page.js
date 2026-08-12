@@ -175,14 +175,41 @@ export default function LedgerStatementReportPage() {
         .then(res => ({ type: 'accounts', data: res.data?.data?.data ?? res.data?.data ?? res.data ?? [] }))
       );
 
+      // Fetch all sales invoices for the date range
+      promises.push(
+        axios.post(`${API_URL}/search-invoice?page=1&limit=5000`, {
+           keyword: "", nameId: false, emailId: false, phoneId: false, product: false,
+           startDate: filters.start_date, endDate: filters.end_date, dueOnly: false
+        }, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => ({ type: 'sales_invoices', data: res.data?.data?.data || [] }))
+        .catch(() => ({ type: 'sales_invoices', data: [] }))
+      );
+
+      // Fetch all purchase invoices for the date range
+      promises.push(
+        axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=5000`, {
+           keyword: "", nameId: false, emailId: false, phoneId: false, product: false,
+           startDate: filters.start_date, endDate: filters.end_date, dueOnly: false
+        }, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => ({ type: 'purchase_invoices', data: res.data?.data?.data || [] }))
+        .catch(() => ({ type: 'purchase_invoices', data: [] }))
+      );
+
       const results = await Promise.all(promises);
 
       let totalOpeningBalance = 0;
       let allEntries = [];
       let foundMatchedAccounts = [];
+      
+      const salesMap = new Map();
+      const purchaseMap = new Map();
 
       results.forEach(res => {
-        if (res.type === 'accounts') {
+        if (res.type === 'sales_invoices') {
+           res.data.forEach(inv => salesMap.set(inv.invoice_id, inv));
+        } else if (res.type === 'purchase_invoices') {
+           res.data.forEach(inv => purchaseMap.set(inv.invoice_id, inv));
+        } else if (res.type === 'accounts') {
            const rawList = res.data;
            const flattenedAccounts = [];
            rawList.forEach((item) => {
@@ -217,11 +244,8 @@ export default function LedgerStatementReportPage() {
           const opBal = Number(d.opening_balance) || 0;
           const entries = Array.isArray(d.ledger) ? d.ledger : [];
 
-          if (type === 'customer') {
-             totalOpeningBalance += opBal;
-          } else if (type === 'vendor') {
-             totalOpeningBalance -= opBal;
-          }
+          // Force opening balance to 0 as per Evan's logic rules.
+          totalOpeningBalance = 0;
 
           const mappedEntries = entries.map(e => ({
              ...e,
@@ -239,11 +263,25 @@ export default function LedgerStatementReportPage() {
         return dateA - dateB;
       });
 
-      // Use balance from API directly.
+      // Separate transaction amount into Debit (Purchase) or Credit (Sale).
       allEntries = allEntries.map(e => {
+        let amt = Number(e.balance) || Number(e.amount) || Number(e.sub_total) || 0;
+        
+        if (e.invoice_id) {
+           if (e.invoice_id.startsWith("INV-") && salesMap.has(e.invoice_id)) {
+              const inv = salesMap.get(e.invoice_id);
+              amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
+           } else if (e.invoice_id.startsWith("PUR-") && purchaseMap.has(e.invoice_id)) {
+              const inv = purchaseMap.get(e.invoice_id);
+              amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
+           }
+        }
+
         return {
           ...e,
-          balance: Number(e.balance) || 0,
+          debit: e.source_type === 'vendor' ? amt : 0,
+          credit: e.source_type === 'customer' ? amt : 0,
+          balance: 0, // Will be calculated cumulatively later
         };
       });
 
@@ -276,22 +314,37 @@ export default function LedgerStatementReportPage() {
     const bdt = [];
     if (!Array.isArray(ledgerEntries)) return { ledgerAED: aed, ledgerBDT: bdt };
 
+    let runAed = openingBalance;
+    let runBdt = openingBalance;
+
     ledgerEntries.forEach(entry => {
       const mode = (entry?.pay_mode || "").toUpperCase();
       if (mode.includes("AED")) {
-        aed.push(entry);
+        runAed = runAed + entry.credit - entry.debit;
+        aed.push({ ...entry, balance: runAed });
       } else {
-        bdt.push(entry);
+        runBdt = runBdt + entry.credit - entry.debit;
+        bdt.push({ ...entry, balance: runBdt });
       }
     });
     return { ledgerAED: aed, ledgerBDT: bdt };
-  }, [ledgerEntries]);
+  }, [ledgerEntries, openingBalance]);
 
   const calculateTotals = (entries, opBalance) => {
-    const defaultTotals = { opening_balance: opBalance, closing_balance: opBalance };
+    const defaultTotals = { opening_balance: opBalance, closing_balance: opBalance, total_debit: 0, total_credit: 0 };
     if (!entries || entries.length === 0) return defaultTotals;
+    
+    let totalDebit = 0;
+    let totalCredit = 0;
+    entries.forEach(e => {
+        totalDebit += (e.debit || 0);
+        totalCredit += (e.credit || 0);
+    });
+
     return {
       opening_balance: opBalance,
+      total_debit: totalDebit,
+      total_credit: totalCredit,
       closing_balance: entries[entries.length - 1]?.balance ?? opBalance,
     };
   };
@@ -358,6 +411,8 @@ export default function LedgerStatementReportPage() {
           const ledgerData = entries.map((entry) => ({
             Date: entry.date ? new Date(entry.date).toLocaleDateString() : "-",
             Particulars: entry.particulars || "-",
+            Debit: entry.debit ? fmt2(entry.debit) : "-",
+            Credit: entry.credit ? fmt2(entry.credit) : "-",
             Balance: fmt2(entry.balance),
             Remarks: entry.remarks || "-",
           }));
@@ -365,15 +420,19 @@ export default function LedgerStatementReportPage() {
           ledgerData.push({
             Date: "",
             Particulars: "TOTAL",
+            Debit: fmt2(totals.total_debit),
+            Credit: fmt2(totals.total_credit),
             Balance: fmt2(totals.closing_balance),
             Remarks: "",
           });
 
           if (matchedAccs.length > 0) {
-              ledgerData.push({ Date: "", Particulars: "", Balance: "", Remarks: "" });
+              ledgerData.push({ Date: "", Particulars: "", Debit: "", Credit: "", Balance: "", Remarks: "" });
               ledgerData.push({
                   Date: "",
                   Particulars: "Ledger Closing Balance",
+                  Debit: "",
+                  Credit: "",
                   Balance: fmt2(totals.closing_balance),
                   Remarks: "",
               });
@@ -381,6 +440,8 @@ export default function LedgerStatementReportPage() {
                   ledgerData.push({
                       Date: "",
                       Particulars: `Account: ${acc.payment_category_name}`,
+                      Debit: "",
+                      Credit: "",
                       Balance: fmt2(acc.balance),
                       Remarks: "",
                   });
@@ -388,6 +449,8 @@ export default function LedgerStatementReportPage() {
               ledgerData.push({
                   Date: "",
                   Particulars: "GRAND ENDING BALANCE",
+                  Debit: "",
+                  Credit: "",
                   Balance: fmt2(grandBal),
                   Remarks: "",
               });
@@ -488,16 +551,20 @@ export default function LedgerStatementReportPage() {
       <table className="w-full border-collapse border border-neutral-400 text-xs text-left mb-6">
         <thead>
           <tr className="bg-neutral-200 text-neutral-900">
-            <th className="border border-neutral-400 p-2 uppercase w-[15%]">DATE</th>
+            <th className="border border-neutral-400 p-2 uppercase w-[12%]">DATE</th>
             <th className="border border-neutral-400 p-2 uppercase">PARTICULARS</th>
-            <th className="border border-neutral-400 p-2 text-right w-[15%] uppercase">BALANCE</th>
-            <th className="border border-neutral-400 p-2 uppercase w-[20%]">REMARKS</th>
+            <th className="border border-neutral-400 p-2 text-right w-[13%] uppercase">DEBIT</th>
+            <th className="border border-neutral-400 p-2 text-right w-[13%] uppercase">CREDIT</th>
+            <th className="border border-neutral-400 p-2 text-right w-[13%] uppercase">BALANCE</th>
+            <th className="border border-neutral-400 p-2 uppercase w-[15%]">REMARKS</th>
           </tr>
         </thead>
         <tbody>
           <tr className="bg-blue-50/50">
             <td className="border border-neutral-400 p-2"></td>
             <td className="border border-neutral-400 p-2 text-right font-bold text-neutral-900">Opening Balance</td>
+            <td className="border border-neutral-400 p-2"></td>
+            <td className="border border-neutral-400 p-2"></td>
             <td className="border border-neutral-400 p-2 text-right font-bold text-neutral-900 whitespace-nowrap">{fmt2(totals.opening_balance)}</td>
             <td className="border border-neutral-400 p-2"></td>
           </tr>
@@ -513,6 +580,12 @@ export default function LedgerStatementReportPage() {
                       {entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "-")}
                   </span>
                 </td>
+                <td className="border border-neutral-400 p-2 text-right text-neutral-900 tabular-nums">
+                  {entry?.debit ? fmt2(entry.debit) : "-"}
+                </td>
+                <td className="border border-neutral-400 p-2 text-right text-neutral-900 tabular-nums">
+                  {entry?.credit ? fmt2(entry.credit) : "-"}
+                </td>
                 <td className="border border-neutral-400 p-2 text-right font-semibold whitespace-nowrap text-neutral-900 tabular-nums">
                   {fmt2(entry?.balance)}
                 </td>
@@ -527,6 +600,8 @@ export default function LedgerStatementReportPage() {
             <tr className="bg-neutral-100 font-bold text-neutral-900">
               <td className="border border-neutral-400 p-2">Total</td>
               <td className="border border-neutral-400 p-2"></td>
+              <td className="border border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums">{fmt2(totals.total_debit)}</td>
+              <td className="border border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums">{fmt2(totals.total_credit)}</td>
               <td className="border border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums">{fmt2(totals.closing_balance)}</td>
               <td className="border border-neutral-400 p-2"></td>
             </tr>
@@ -534,7 +609,7 @@ export default function LedgerStatementReportPage() {
 
           {entries.length === 0 && (
             <tr>
-              <td colSpan={4} className="text-center text-neutral-500 py-8 border border-neutral-400">
+              <td colSpan={6} className="text-center text-neutral-500 py-8 border border-neutral-400">
                 No ledger data found.
               </td>
             </tr>
