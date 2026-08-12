@@ -100,6 +100,13 @@ function LoginContent() {
               {loading ? "Signing in..." : "Continue"}
             </button>
           </form>
+          
+          <div className="mt-6 text-center text-sm text-neutral-600">
+            Don't have an account?{' '}
+            <a href="/signup" className="text-black font-medium hover:underline">
+              Sign up
+            </a>
+          </div>
         </div>
         
         <p className="text-center text-neutral-500 text-xs mt-8">

@@ -562,7 +562,7 @@ if (filters.vendor_id) {
     error,
     mutate
   } = useSWR(
-    token ? `${API_URL}/payment-type-list` : null,
+    token ? `${API_URL}/payment-type-list?source=fund-transfer` : null,
     fetcher,
     { revalidateOnFocus: false, keepPreviousData: true }
   );

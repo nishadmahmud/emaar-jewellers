@@ -10,7 +10,7 @@ export const middleware = async (req) => {
 
   const path = req.nextUrl.pathname;
   const isStaticAsset = /\.[^/]+$/.test(path);
-  const isPublic = path === "/login" || path === "/verify-pin" || isStaticAsset;
+  const isPublic = path === "/login" || path === "/verify-pin" || path === "/signup" || isStaticAsset;
 
   // 1. No token -> go to login
   if (!token && !isPublic) {
