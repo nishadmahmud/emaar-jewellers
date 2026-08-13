@@ -1,179 +1,307 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
-import { FileText, Download, Calendar, Loader2, Search, AlertCircle } from 'lucide-react';
+import { Loader2, Calendar, Search } from 'lucide-react';
+import { toast } from 'sonner';
 
-const fmtBDT = (n) =>
-  Number(n ?? 0).toLocaleString('en-US', { maximumFractionDigits: 3 });
+function todayStartISO() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+function todayEndISO() {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d.toISOString();
+}
+
+const fmt2 = (n) =>
+  Number(n ?? 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
 export default function BalanceSheetPage() {
   const { data: session } = useSession();
+  const token = session?.accessToken;
   const API_URL = process.env.NEXT_PUBLIC_API;
 
-  // Default date range: today
-  const getDefaultDates = () => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    const start = d.toISOString().split('T')[0];
-    d.setHours(23, 59, 59, 999);
-    const end = d.toISOString().split('T')[0];
-    return {
-      start_date: start,
-      end_date: end,
-    };
+  const [filters, setFilters] = useState({
+    start_date: todayStartISO(),
+    end_date: todayEndISO(),
+  });
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progressMsg, setProgressMsg] = useState('');
+  const [aedRate, setAedRate] = useState(34);
+  
+  // Array of user balances: { name: string, bdt: number, aed: number }
+  const [userBalances, setUserBalances] = useState([]);
+
+  const apply = async () => {
+    if (!token) return;
+    
+    try {
+      setIsGenerating(true);
+      setUserBalances([]);
+      setProgressMsg('Fetching master data (Customers, Vendors, Invoices, Accounts)...');
+
+      // 1. Fetch Master Data
+      const currentStart = new Date(filters.start_date);
+      const prevStart = new Date(Date.UTC(currentStart.getUTCFullYear(), currentStart.getUTCMonth(), 1, 0, 0, 0, 0));
+      const prevEnd = new Date(currentStart.getTime() - 1); 
+      const isPrevPeriodValid = prevEnd.getTime() >= prevStart.getTime();
+
+      const baseHeaders = { headers: { Authorization: `Bearer ${token}` } };
+
+      const masterPromises = [
+        axios.get(`${API_URL}/customer-lists?page=1&limit=5000`, baseHeaders).then(res => res.data?.data?.data || []),
+        axios.get(`${API_URL}/vendor-lists?page=1&limit=5000`, baseHeaders).then(res => res.data?.data?.data || []),
+        axios.get(`${API_URL}/payment-type-category-list?t=${Date.now()}`, baseHeaders).then(res => res.data?.data?.data || res.data?.data || res.data || []),
+        axios.post(`${API_URL}/search-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, product: false, startDate: filters.start_date, endDate: filters.end_date, dueOnly: false }, baseHeaders).then(res => res.data?.data?.data || []),
+        axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, product: false, startDate: filters.start_date, endDate: filters.end_date, dueOnly: false }, baseHeaders).then(res => res.data?.data?.data || []),
+      ];
+
+      if (isPrevPeriodValid) {
+        masterPromises.push(axios.post(`${API_URL}/search-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, product: false, startDate: prevStart.toISOString(), endDate: prevEnd.toISOString(), dueOnly: false }, baseHeaders).then(res => res.data?.data?.data || []).catch(()=>[]));
+        masterPromises.push(axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, product: false, startDate: prevStart.toISOString(), endDate: prevEnd.toISOString(), dueOnly: false }, baseHeaders).then(res => res.data?.data?.data || []).catch(()=>[]));
+      }
+
+      const masterResults = await Promise.all(masterPromises);
+      
+      const customers = masterResults[0];
+      const vendors = masterResults[1];
+      const accountsRaw = masterResults[2];
+      const salesInvoices = masterResults[3];
+      const purchaseInvoices = masterResults[4];
+      const prevSalesInvoices = isPrevPeriodValid ? masterResults[5] : [];
+      const prevPurchaseInvoices = isPrevPeriodValid ? masterResults[6] : [];
+
+      // Build Maps for Invoices
+      const salesMap = new Map();
+      const purchaseMap = new Map();
+      const prevSalesMap = new Map();
+      const prevPurchaseMap = new Map();
+      
+      salesInvoices.forEach(inv => salesMap.set(inv.invoice_id, inv));
+      purchaseInvoices.forEach(inv => purchaseMap.set(inv.invoice_id, inv));
+      prevSalesInvoices.forEach(inv => prevSalesMap.set(inv.invoice_id, inv));
+      prevPurchaseInvoices.forEach(inv => prevPurchaseMap.set(inv.invoice_id, inv));
+
+      // Flatten Accounts
+      const flattenedAccounts = [];
+      accountsRaw.forEach((item) => {
+        if (Array.isArray(item.payment_type_category)) {
+          item.payment_type_category.forEach((acc) => {
+            flattenedAccounts.push({ ...acc, actual_payment_type_id: item.id, payment_category_name: acc.payment_category_name || acc.name || item.type_name || "Account" });
+          });
+        } else {
+          flattenedAccounts.push({ ...item, actual_payment_type_id: item.id, payment_category_name: item.payment_category_name || item.name || item.type_name || "Account" });
+        }
+      });
+
+      // Group entities by Name
+      const usersMap = new Map(); // key -> { name, customer_ids: [], vendor_ids: [], accounts: [] }
+
+      const addOrUpdateUser = (nameStr, type, dataObj) => {
+          if (!nameStr) return;
+          const key = nameStr.trim().toLowerCase();
+          if (!usersMap.has(key)) {
+              usersMap.set(key, { name: nameStr.trim(), customer_ids: [], vendor_ids: [], accounts: [] });
+          }
+          if (type === 'customer') usersMap.get(key).customer_ids.push(dataObj.id);
+          if (type === 'vendor') usersMap.get(key).vendor_ids.push(dataObj.id);
+          if (type === 'account') usersMap.get(key).accounts.push(dataObj);
+      };
+
+      customers.forEach(c => addOrUpdateUser(c.name || `Customer #${c.id}`, 'customer', c));
+      vendors.forEach(v => addOrUpdateUser(v.name || `Vendor #${v.id}`, 'vendor', v));
+      flattenedAccounts.forEach(a => addOrUpdateUser(a.payment_category_name, 'account', a));
+
+      // We need to match Cashbook accounts to names more fuzzily like in fund-transfer, 
+      // but let's assume the exact lowercase match is what we want since we are grouping them globally.
+
+      const allUsers = Array.from(usersMap.values());
+
+      // Process in Chunks of 5 to not overwhelm the server
+      const CHUNK_SIZE = 5;
+      for (let i = 0; i < allUsers.length; i += CHUNK_SIZE) {
+        const chunk = allUsers.slice(i, i + CHUNK_SIZE);
+        setProgressMsg(`Calculating for users ${i + 1} to ${Math.min(i + CHUNK_SIZE, allUsers.length)} of ${allUsers.length}...`);
+
+        const chunkPromises = [];
+        chunk.forEach(user => {
+            const payload = { start_date: filters.start_date, end_date: filters.end_date };
+            const prevPayload = { start_date: prevStart.toISOString(), end_date: prevEnd.toISOString() };
+
+            user.customer_ids.forEach(cid => {
+                chunkPromises.push(axios.post(`${API_URL}/ledger-statement-report`, { ...payload, customer_id: cid }, baseHeaders).then(res => ({ user, type: 'ledger_curr', entityType: 'customer', data: res.data?.data || res.data })).catch(() => ({ user, type: 'ledger_curr', entityType: 'customer', data: null })));
+                if (isPrevPeriodValid) chunkPromises.push(axios.post(`${API_URL}/ledger-statement-report`, { ...prevPayload, customer_id: cid }, baseHeaders).then(res => ({ user, type: 'ledger_prev', entityType: 'customer', data: res.data?.data || res.data })).catch(() => ({ user, type: 'ledger_prev', entityType: 'customer', data: null })));
+            });
+
+            user.vendor_ids.forEach(vid => {
+                chunkPromises.push(axios.post(`${API_URL}/ledger-statement-report`, { ...payload, vendor_id: vid }, baseHeaders).then(res => ({ user, type: 'ledger_curr', entityType: 'vendor', data: res.data?.data || res.data })).catch(() => ({ user, type: 'ledger_curr', entityType: 'vendor', data: null })));
+                if (isPrevPeriodValid) chunkPromises.push(axios.post(`${API_URL}/ledger-statement-report`, { ...prevPayload, vendor_id: vid }, baseHeaders).then(res => ({ user, type: 'ledger_prev', entityType: 'vendor', data: res.data?.data || res.data })).catch(() => ({ user, type: 'ledger_prev', entityType: 'vendor', data: null })));
+            });
+
+            user.accounts.forEach(acc => {
+                const cbPayload = { start_date: payload.start_date, end_date: payload.end_date, view_order: "asc", payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) };
+                const cbPrevPayload = { start_date: prevPayload.start_date, end_date: prevPayload.end_date, view_order: "asc", payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) };
+                
+                chunkPromises.push(axios.post(`${API_URL}/cash-book-report`, cbPayload, baseHeaders).then(res => ({ user, acc, type: 'cb_curr', data: res.data })).catch(() => ({ user, acc, type: 'cb_curr', data: null })));
+                if (isPrevPeriodValid) chunkPromises.push(axios.post(`${API_URL}/cash-book-report`, cbPrevPayload, baseHeaders).then(res => ({ user, acc, type: 'cb_prev', data: res.data })).catch(() => ({ user, acc, type: 'cb_prev', data: null })));
+            });
+        });
+
+        const chunkResults = await Promise.all(chunkPromises);
+
+        const newBalances = chunk.map(user => {
+            let userLedgerAED = 0;
+            let userLedgerBDT = 0;
+            let userCashAED = 0;
+            let userCashBDT = 0;
+
+            // 1. Process Ledger
+            // For each customer/vendor id, compute their balance separately and add to running total
+            const processLedger = (id, eType) => {
+                const currDataList = chunkResults.filter(r => r.user.name === user.name && r.type === 'ledger_curr' && r.entityType === eType && r.data);
+                const prevDataList = chunkResults.filter(r => r.user.name === user.name && r.type === 'ledger_prev' && r.entityType === eType && r.data);
+                
+                currDataList.forEach((currRes, idx) => {
+                    const prevRes = prevDataList[idx]; // Assume matching index for same id (technically we should match by ID, but since we pushed them sequentially per user, this is fine. Let's make it robust though)
+                    
+                    let currentEntries = Array.isArray(currRes?.data?.ledger) ? currRes.data.ledger : [];
+                    let prevEntries = Array.isArray(prevRes?.data?.ledger) ? prevRes.data.ledger : [];
+
+                    let prevTotalDebit = 0;
+                    let prevTotalCredit = 0;
+                    prevEntries.forEach(e => {
+                        let amt = Number(e.balance) || Number(e.amount) || Number(e.sub_total) || 0;
+                        if (e.invoice_id) {
+                            if (e.invoice_id.startsWith("INV-") && prevSalesMap.has(e.invoice_id)) {
+                                const inv = prevSalesMap.get(e.invoice_id);
+                                amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
+                            } else if (e.invoice_id.startsWith("PUR-") && prevPurchaseMap.has(e.invoice_id)) {
+                                const inv = prevPurchaseMap.get(e.invoice_id);
+                                amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
+                            }
+                        }
+                        if (eType === 'vendor') prevTotalDebit += amt;
+                        if (eType === 'customer') prevTotalCredit += amt;
+                    });
+                    
+                    let opBalance = prevTotalCredit - prevTotalDebit;
+                    
+                    currentEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                    
+                    let runAed = opBalance;
+                    let runBdt = opBalance;
+
+                    currentEntries.forEach(e => {
+                        let amt = Number(e.balance) || Number(e.amount) || Number(e.sub_total) || 0;
+                        if (e.invoice_id) {
+                            if (e.invoice_id.startsWith("INV-") && salesMap.has(e.invoice_id)) {
+                                const inv = salesMap.get(e.invoice_id);
+                                amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
+                            } else if (e.invoice_id.startsWith("PUR-") && purchaseMap.has(e.invoice_id)) {
+                                const inv = purchaseMap.get(e.invoice_id);
+                                amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
+                            }
+                        }
+                        let debit = eType === 'vendor' ? amt : 0;
+                        let credit = eType === 'customer' ? amt : 0;
+
+                        const mode = (e?.pay_mode || "").toUpperCase();
+                        if (mode.includes("AED")) {
+                            runAed = runAed + credit - debit;
+                        } else {
+                            runBdt = runBdt + credit - debit;
+                        }
+                    });
+
+                    userLedgerAED += runAed;
+                    userLedgerBDT += runBdt;
+                });
+            };
+
+            processLedger('any', 'customer');
+            processLedger('any', 'vendor');
+
+            // 2. Process Cashbook
+            user.accounts.forEach(acc => {
+                const cb = chunkResults.find(r => r.user.name === user.name && r.type === 'cb_curr' && r.acc.id === acc.id)?.data;
+                const prevCb = chunkResults.find(r => r.user.name === user.name && r.type === 'cb_prev' && r.acc.id === acc.id)?.data;
+
+                let opBal = 0;
+                if (isPrevPeriodValid && prevCb) {
+                    opBal = Number(prevCb.closing_balance ?? 0);
+                }
+                
+                let rawData = cb?.data || [];
+                rawData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                
+                let running = opBal;
+                rawData.forEach(r => {
+                    const status = (r?.status || "").toLowerCase();
+                    const amount = Number(r?.payment_amount ?? 0);
+                    const debit = status === "debit" || status === "out" ? amount : 0;
+                    const credit = status === "credit" ? amount : 0;
+                    running = running + credit - debit;
+                });
+
+                const accName = (acc.payment_category_name || "").toUpperCase();
+                if (accName.includes("(DH)") || accName.includes("AED")) {
+                    userCashAED += running;
+                } else {
+                    userCashBDT += running;
+                }
+            });
+
+            return {
+                name: user.name,
+                aed: userLedgerAED + userCashAED,
+                bdt: userLedgerBDT + userCashBDT
+            };
+        });
+
+        // Append to state dynamically
+        setUserBalances(prev => [...prev, ...newBalances].sort((a, b) => a.name.localeCompare(b.name)));
+      }
+
+      setProgressMsg('Completed!');
+      setTimeout(() => setProgressMsg(''), 3000);
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate combined balance report");
+      setProgressMsg('Error occurred during generation.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const [startDate, setStartDate] = useState(getDefaultDates().start_date);
-  const [endDate, setEndDate] = useState(getDefaultDates().end_date);
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [hasFetched, setHasFetched] = useState(false);
-
-  const fetchReport = useCallback(async () => {
-    if (!session?.accessToken) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await axios.post(
-        `${API_URL}/balance-Sheet-report-history`,
-        { 
-          start_date: startDate ? `${startDate}T00:00:00.000Z` : '', 
-          end_date: endDate ? `${endDate}T23:59:59.999Z` : '' 
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        }
-      );
-      setData(res.data);
-      setHasFetched(true);
-    } catch (err) {
-      console.error('Balance sheet fetch error:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to fetch balance sheet data');
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [session?.accessToken, API_URL, startDate, endDate]);
-
-  // Auto-fetch on mount when session is available
-  useEffect(() => {
-    if (session?.accessToken && !hasFetched) {
-      fetchReport();
-    }
-  }, [session?.accessToken, fetchReport, hasFetched]);
-
-  // Derived Values
-  const totalClosingStock = Number(data?.total_closing_stock_value ?? 0);
-  const availableBalances = Array.isArray(data?.available_balance)
-    ? data.available_balance
-    : [];
-  const totalCustomerDue = Number(data?.total_customer_due ?? 0);
-  const totalVendor = Number(data?.total_vendor_ ?? 0);
-
-  const availableBalanceTotal = useMemo(
-    () =>
-      availableBalances.reduce(
-        (sum, a) => sum + Number(a?.available_balance ?? 0),
-        0
-      ),
-    [availableBalances]
-  );
-
-  // Assets (right side)
-  const assetsRows = useMemo(() => {
-    const balanceRows = availableBalances.map((a) => ({
-      label: a?.type_name || "Unknown",
-      amount: Number(a?.available_balance ?? 0),
-    }));
-
-    const receivableRow = totalCustomerDue
-      ? [{ label: "Customer Due", amount: totalCustomerDue }]
-      : [];
-
-    const inventoryRow = totalClosingStock
-      ? [{ label: "Inventory (Closing Stock)", amount: totalClosingStock }]
-      : [];
-
-    return [
-      { label: "Current Assets", isGroup: true },
-      ...balanceRows,
-      ...receivableRow,
-      ...inventoryRow,
-    ];
-  }, [availableBalances, totalCustomerDue, totalClosingStock]);
-
-  const assetsTotal = useMemo(
-    () => availableBalanceTotal + totalCustomerDue + totalClosingStock,
-    [availableBalanceTotal, totalCustomerDue, totalClosingStock]
-  );
-
-  // Liabilities & Equity (left side)
-  const liabilitiesRows = useMemo(() => {
-    const paidUpCapital = assetsTotal - totalVendor;
-    const vendorRow =
-      typeof totalVendor === "number"
-        ? [{ label: "Vendor Payable", amount: totalVendor }]
-        : [];
-    return [{ label: "Paid up Capital", amount: paidUpCapital }, ...vendorRow];
-  }, [assetsTotal, totalVendor]);
-
-  const liabilitiesTotal = useMemo(
-    () => liabilitiesRows.reduce((sum, r) => sum + Number(r?.amount ?? 0), 0),
-    [liabilitiesRows]
-  );
-
-  const tableRows = useMemo(() => {
-    return Array.from(
-      { length: Math.max(liabilitiesRows.length, assetsRows.length) },
-      (_, i) => {
-        return {
-          L: liabilitiesRows[i],
-          A: assetsRows[i]
-        };
-      }
-    );
-  }, [liabilitiesRows, assetsRows]);
+  const handleFilterChange = (field, value) => {
+    setFilters((prev) => ({ ...prev, [field]: value }));
+  };
 
   return (
-    <div className="max-w-7xl mx-auto text-black">
+    <div className="max-w-7xl mx-auto text-black p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-semibold sm:font-medium tracking-wide">Balance Sheet</h2>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+            Balance Sheet
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Grand Ending Balance for all users.
+          </p>
         </div>
-        <button
-          className="flex items-center gap-1.5 bg-black text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-neutral-800 transition-colors shadow-sm shrink-0"
-          onClick={() => window.print()}
-        >
-          <Download size={14} className="sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Export PDF</span>
-          <span className="sm:hidden">Export</span>
-        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[30%,70%] gap-4 mb-6">
-        {/* Left: KPIs */}
-        <div className="bg-orange-500 text-white rounded-2xl shadow-sm p-4 sm:p-6 flex flex-col justify-center">
-          <div className="text-center mb-3 sm:mb-4">
-            <p className="text-lg sm:text-2xl font-extrabold tabular-nums">{fmtBDT(assetsTotal)} BDT</p>
-            <p className="text-xs sm:text-sm font-medium opacity-90">Assets Total (Computed)</p>
-          </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-[11px] sm:text-xs">
-            <p className="opacity-90">Available Balance:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(availableBalanceTotal)} BDT</span></p>
-            <p className="opacity-90">Customer Due:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(totalCustomerDue)} BDT</span></p>
-            <p className="opacity-90">Vendor Payable:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(totalVendor)} BDT</span></p>
-            <p className="opacity-90">Closing Stock:<br/><span className="font-semibold text-xs sm:text-[13px] tabular-nums opacity-100">{fmtBDT(totalClosingStock)} BDT</span></p>
-          </div>
-        </div>
-
-        {/* Right: Date Range Picker */}
-        <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-4 sm:p-6 flex items-center">
+      <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-4 sm:p-6 flex items-center mb-6">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 sm:gap-4 w-full">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-[11px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wider">
@@ -183,9 +311,9 @@ export default function BalanceSheetPage() {
                 <Calendar size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
                 <input
                   type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 sm:py-2.5 border border-neutral-200 rounded-lg text-xs sm:text-sm text-neutral-700 bg-neutral-50/50 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 transition-all"
+                  value={filters.start_date.slice(0, 10)}
+                  onChange={(e) => handleFilterChange("start_date", e.target.value ? `${e.target.value}T00:00:00.000Z` : "")}
+                  className="w-full pl-9 pr-3 py-2 sm:py-2.5 border border-neutral-200 rounded-lg text-xs sm:text-sm text-neutral-700 bg-neutral-50/50 focus:outline-none focus:ring-2 focus:ring-black transition-all"
                 />
               </div>
             </div>
@@ -197,18 +325,31 @@ export default function BalanceSheetPage() {
                 <Calendar size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
                 <input
                   type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 sm:py-2.5 border border-neutral-200 rounded-lg text-xs sm:text-sm text-neutral-700 bg-neutral-50/50 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 transition-all"
+                  value={filters.end_date.slice(0, 10)}
+                  onChange={(e) => handleFilterChange("end_date", e.target.value ? `${e.target.value}T23:59:59.999Z` : "")}
+                  className="w-full pl-9 pr-3 py-2 sm:py-2.5 border border-neutral-200 rounded-lg text-xs sm:text-sm text-neutral-700 bg-neutral-50/50 focus:outline-none focus:ring-2 focus:ring-black transition-all"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1 flex-1 max-w-[120px]">
+              <label className="text-[11px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wider">
+                AED Rate
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={aedRate}
+                  onChange={(e) => setAedRate(Number(e.target.value) || 0)}
+                  className="w-full px-3 py-2 sm:py-2.5 border border-neutral-200 rounded-lg text-xs sm:text-sm text-neutral-700 bg-neutral-50/50 focus:outline-none focus:ring-2 focus:ring-black transition-all"
                 />
               </div>
             </div>
             <button
-              onClick={fetchReport}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 bg-black text-white text-xs sm:text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-neutral-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed h-[38px] sm:h-[42px]"
+              onClick={apply}
+              disabled={isGenerating}
+              className="flex items-center justify-center gap-2 bg-black text-white text-xs sm:text-sm font-medium px-8 py-2.5 rounded-lg hover:bg-neutral-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed h-[38px] sm:h-[42px]"
             >
-              {loading ? (
+              {isGenerating ? (
                 <Loader2 size={16} className="animate-spin" />
               ) : (
                 <Search size={16} />
@@ -216,135 +357,39 @@ export default function BalanceSheetPage() {
               Report
             </button>
           </div>
-        </div>
       </div>
 
-      {/* Error State */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex items-center gap-3">
-          <AlertCircle size={18} className="text-red-500 shrink-0" />
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
+      {progressMsg && (
+         <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 p-3 rounded-lg animate-pulse mb-6">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {progressMsg}
+         </div>
       )}
 
-      {/* Table Container */}
-      <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-        <div className="p-4 sm:p-5 border-b border-neutral-100 bg-neutral-50/50">
-          <h3 className="font-semibold text-base sm:text-lg text-neutral-800">Balance Sheet Details</h3>
-        </div>
-        <div>
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 text-neutral-400">
-              <Loader2 size={28} className="animate-spin mb-2" />
-              <p className="text-xs sm:text-sm">Loading balance sheet data...</p>
-            </div>
-          ) : !hasFetched ? (
-            <div className="flex flex-col items-center justify-center py-16 text-neutral-400">
-              <FileText size={28} className="mb-2" />
-              <p className="text-xs sm:text-sm">Select a date range and generate the report.</p>
-            </div>
-          ) : !data ? (
-            <div className="flex flex-col items-center justify-center py-16 text-neutral-400">
-              <FileText size={28} className="mb-2" />
-              <p className="text-xs sm:text-sm">No data found for the selected date range.</p>
-            </div>
-          ) : (
-            <>
-              {/* Mobile View: Clean Section Cards (No horizontal scroll) */}
-              <div className="block sm:hidden p-3 space-y-4">
-                {/* Section 1: Liabilities & Equity */}
-                <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white">
-                  <div className="bg-neutral-100/70 px-3 py-2 border-b border-neutral-200 font-bold text-xs text-neutral-900 flex justify-between">
-                    <span>Liabilities & Equity</span>
-                    <span>Amount (BDT)</span>
-                  </div>
-                  <div className="divide-y divide-neutral-100 text-xs">
-                    {liabilitiesRows.map((row, idx) => (
-                      <div key={idx} className="flex justify-between items-center px-3 py-2.5 hover:bg-neutral-50/50">
-                        <span className="text-neutral-700 font-medium">{row.label}</span>
-                        <span className="font-semibold text-neutral-900 tabular-nums">{fmtBDT(row.amount)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="bg-neutral-100/80 px-3 py-2.5 border-t border-neutral-200 font-bold text-xs flex justify-between text-neutral-900">
-                    <span>Total Liabilities:</span>
-                    <span className="tabular-nums">{fmtBDT(liabilitiesTotal)} BDT</span>
-                  </div>
-                </div>
-
-                {/* Section 2: Assets */}
-                <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white">
-                  <div className="bg-neutral-100/70 px-3 py-2 border-b border-neutral-200 font-bold text-xs text-neutral-900 flex justify-between">
-                    <span>Assets</span>
-                    <span>Amount (BDT)</span>
-                  </div>
-                  <div className="divide-y divide-neutral-100 text-xs">
-                    {assetsRows.map((row, idx) => (
-                      row.isGroup ? (
-                        <div key={idx} className="bg-neutral-50 px-3 py-1.5 font-bold text-[11px] text-neutral-500 uppercase tracking-wider">
-                          {row.label}
+      {userBalances.length > 0 && (
+         <div className="space-y-4">
+           {userBalances.map((user, idx) => (
+              <div key={idx} className="bg-white rounded-xl shadow-sm border border-neutral-200 p-5">
+                 <h2 className="text-lg font-bold text-slate-800 mb-4 pb-3 border-b border-neutral-100">{user.name}</h2>
+                 <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+                        <h3 className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Grand Ending Balance (BDT)</h3>
+                        <div className={`text-2xl font-extrabold tabular-nums ${user.bdt < 0 ? 'text-red-600' : 'text-blue-700'}`}>
+                            {fmt2(user.bdt)}
                         </div>
-                      ) : (
-                        <div key={idx} className="flex justify-between items-center px-3 py-2.5 hover:bg-neutral-50/50">
-                          <span className="text-neutral-700 font-medium">{row.label}</span>
-                          <span className="font-semibold text-neutral-900 tabular-nums">{fmtBDT(row.amount)}</span>
+                    </div>
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+                        <h3 className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Grand Ending Balance (AED)</h3>
+                        <div className={`text-2xl font-extrabold tabular-nums ${user.aed < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                            {fmt2(user.aed)} AED = {fmt2(user.aed * aedRate)} BDT
                         </div>
-                      )
-                    ))}
-                  </div>
-                  <div className="bg-neutral-100/80 px-3 py-2.5 border-t border-neutral-200 font-bold text-xs flex justify-between text-neutral-900">
-                    <span>Total Assets:</span>
-                    <span className="tabular-nums">{fmtBDT(assetsTotal)} BDT</span>
-                  </div>
-                </div>
+                    </div>
+                 </div>
               </div>
+           ))}
+         </div>
+      )}
 
-              {/* Desktop View: Side by Side Table */}
-              <div className="hidden sm:block overflow-x-auto">
-                <table className="w-full text-left border-collapse text-sm min-w-[700px]">
-                  <thead className="bg-neutral-100/50 border-b border-neutral-200">
-                    <tr>
-                      <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 w-1/4">Liabilities & Equity</th>
-                      <th className="py-3 px-6 font-semibold text-neutral-900 text-right border-r border-neutral-200 w-1/4">Amount (BDT)</th>
-                      <th className="py-3 px-6 font-semibold text-neutral-900 border-r border-neutral-200 w-1/4">Assets</th>
-                      <th className="py-3 px-6 font-semibold text-neutral-900 text-right w-1/4">Amount (BDT)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-100">
-                    {tableRows.map((row, i) => (
-                      <tr key={i} className="hover:bg-neutral-50/50 transition-colors">
-                        {/* Liabilities */}
-                        <td className={`py-3 px-6 border-r border-neutral-100 text-neutral-800 ${row.L?.isGroup ? 'font-semibold bg-neutral-50' : ''}`}>
-                          {row.L ? row.L.label : ''}
-                        </td>
-                        <td className={`py-3 px-6 border-r border-neutral-100 text-right tabular-nums ${row.L?.isGroup ? 'bg-neutral-50' : ''}`}>
-                          {row.L && !row.L.isGroup ? fmtBDT(row.L.amount) : ''}
-                        </td>
-
-                        {/* Assets */}
-                        <td className={`py-3 px-6 border-r border-neutral-100 text-neutral-800 ${row.A?.isGroup ? 'font-semibold bg-neutral-50' : ''}`}>
-                          {row.A ? row.A.label : ''}
-                        </td>
-                        <td className={`py-3 px-6 text-right tabular-nums ${row.A?.isGroup ? 'bg-neutral-50' : ''}`}>
-                          {row.A && !row.A.isGroup ? fmtBDT(row.A.amount) : ''}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="bg-neutral-100/80 border-t border-neutral-200 font-bold">
-                    <tr>
-                      <td className="py-4 px-6 border-r border-neutral-200">Total:</td>
-                      <td className="py-4 px-6 border-r border-neutral-200 text-right tabular-nums">{fmtBDT(liabilitiesTotal)}</td>
-                      <td className="py-4 px-6 border-r border-neutral-200">Total:</td>
-                      <td className="py-4 px-6 text-right tabular-nums">{fmtBDT(assetsTotal)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

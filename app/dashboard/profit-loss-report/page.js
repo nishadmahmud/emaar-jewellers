@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
-import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Calculator } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Calculator, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const API_URL = process.env.NEXT_PUBLIC_API;
@@ -16,64 +16,79 @@ const CardTitle = ({ children }) => <h3 className="font-semibold text-lg text-ne
 export default function ProfitLossReport() {
   const [salesData, setSalesData] = useState([]);
   const [purchaseData, setPurchaseData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const { data: session } = useSession();
   const router = useRouter();
 
-  useEffect(() => {
+  const todayStart = () => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  };
+
+  const todayEnd = () => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    return d.toISOString();
+  };
+
+  const [startDate, setStartDate] = useState(todayStart());
+  const [endDate, setEndDate] = useState(todayEnd());
+
+  const fetchReportData = async () => {
     const token = session?.accessToken;
     if (!token) return;
 
-    const fetchReportData = async () => {
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
 
-        const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-        const currentMonthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString();
+      // Fetch sales
+      const salesRes = await axios.post(
+        `${API_URL}/search-invoice?page=1&limit=1000`,
+        {
+          keyword: '',
+          nameId: false,
+          emailId: false,
+          phoneId: false,
+          product: false,
+          startDate: startDate,
+          endDate: endDate,
+          dueOnly: false,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-        // Fetch sales
-        const salesRes = await axios.post(
-          `${API_URL}/search-invoice?page=1&limit=1000`,
-          {
-            keyword: '',
-            nameId: false,
-            emailId: false,
-            phoneId: false,
-            product: false,
-            startDate: currentMonthStart,
-            endDate: currentMonthEnd,
-            dueOnly: false,
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+      // Fetch purchases
+      const purchaseRes = await axios.post(
+        `${API_URL}/search-purchase-invoice?page=1&limit=1000`,
+        {
+          keyword: '',
+          nameId: false,
+          emailId: false,
+          phoneId: false,
+          imei: false,
+          start_date: startDate,
+          end_date: endDate,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-        // Fetch purchases
-        const purchaseRes = await axios.post(
-          `${API_URL}/search-purchase-invoice?page=1&limit=1000`,
-          {
-            keyword: '',
-            nameId: false,
-            emailId: false,
-            phoneId: false,
-            imei: false,
-            start_date: currentMonthStart,
-            end_date: currentMonthEnd,
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+      setSalesData(salesRes.data?.data?.data || []);
+      setPurchaseData(purchaseRes.data?.data?.data || []);
 
-        setSalesData(salesRes.data?.data?.data || []);
-        setPurchaseData(purchaseRes.data?.data?.data || []);
+    } catch (err) {
+      toast.error('Failed to load profit/loss report data');
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setInitialLoading(false);
+    }
+  };
 
-      } catch (err) {
-        toast.error('Failed to load profit/loss report data');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     fetchReportData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.accessToken]);
 
   // Aggregate function incorporating currency checks
@@ -124,7 +139,7 @@ export default function ProfitLossReport() {
     return count + (inv.products?.length || 1);
   }, 0);
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
@@ -134,9 +149,42 @@ export default function ProfitLossReport() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Profit & Loss Report</h1>
-        <p className="hidden sm:block text-sm text-neutral-500 mt-1">Monthly financial overview indicating profit, loss, and aggregate values (Converted to BDT).</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Profit & Loss Report</h1>
+          <p className="hidden sm:block text-sm text-neutral-500 mt-1">Financial overview indicating profit, loss, and aggregate values (Converted to BDT).</p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div>
+            <label className="block text-xs font-medium text-neutral-500 mb-1">Start Date</label>
+            <input
+              type="date"
+              value={startDate ? startDate.slice(0, 10) : ''}
+              onChange={(e) => setStartDate(e.target.value ? `${e.target.value}T00:00:00.000Z` : "")}
+              className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-neutral-500 mb-1">End Date</label>
+            <input
+              type="date"
+              value={endDate ? endDate.slice(0, 10) : ''}
+              onChange={(e) => setEndDate(e.target.value ? `${e.target.value}T23:59:59.999Z` : "")}
+              className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+          <div className="flex items-end self-stretch sm:self-auto pb-[1px]">
+            <button
+              onClick={fetchReportData}
+              disabled={loading}
+              className="w-full sm:w-auto h-[38px] px-4 bg-black text-white text-sm font-medium rounded-lg hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+              Search
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">

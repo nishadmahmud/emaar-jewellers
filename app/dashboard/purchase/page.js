@@ -35,6 +35,8 @@ export default function PurchasePage() {
   const [savedPaymentMethods, setSavedPaymentMethods] = useState([]);
   const [paymentSummaryText, setPaymentSummaryText] = useState('');
 
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+
   const [formData, setFormData] = useState({
     vendorId: null,
     vendorName: '',
@@ -232,13 +234,17 @@ export default function PurchasePage() {
         headers: { Authorization: `Bearer ${token}` }
       })
       .then(res => {
-        if (res.data?.data) {
-          setPaymentMethods(res.data.data);
-          const cashMethod = res.data.data.find(m => m.type_name?.toLowerCase() === 'cash');
+        const allMethods = Array.isArray(res.data?.data?.data) ? res.data.data.data 
+                         : Array.isArray(res.data?.data) ? res.data.data 
+                         : Array.isArray(res.data) ? res.data : [];
+                         
+        if (allMethods.length > 0) {
+          setPaymentMethods(allMethods);
+          const cashMethod = allMethods.find(m => m.type_name?.toLowerCase() === 'cash');
           if (cashMethod) {
             setFormData(prev => ({ ...prev, paymentMethodId: cashMethod.id, paymentMethodName: cashMethod.type_name }));
-          } else if (res.data.data.length > 0) {
-            setFormData(prev => ({ ...prev, paymentMethodId: res.data.data[0].id, paymentMethodName: res.data.data[0].type_name }));
+          } else {
+            setFormData(prev => ({ ...prev, paymentMethodId: allMethods[0].id, paymentMethodName: allMethods[0].type_name }));
           }
         }
       })
@@ -318,7 +324,15 @@ export default function PurchasePage() {
   const updateCartItem = (id, field, value) => {
     setCart(cart.map(item => {
       if (item.id === id) {
-        return { ...item, [field]: value };
+        const updatedItem = { ...item, [field]: value };
+        if (field === 'qty') {
+          const vori = parseFloat(value) || 0;
+          updatedItem.netWeightGram = value === '' ? '' : (vori * 11.664).toFixed(3);
+        } else if (field === 'netWeightGram') {
+          const gram = parseFloat(value) || 0;
+          updatedItem.qty = value === '' ? '' : (gram / 11.664).toFixed(3);
+        }
+        return updatedItem;
       }
       return item;
     }));
@@ -371,7 +385,11 @@ export default function PurchasePage() {
             payment_amount: effectivePaidAmountToSave,
           }];
 
+      const currentTime = new Date().toISOString().split('T')[1];
+      const created_at = `${selectedDate}T${currentTime}`;
+
       const payload = {
+        created_at,
         vendor_id: formData.vendorId,
         vendor_name: formData.vendorName,
         pay_mode: finalPayMode,
@@ -445,9 +463,20 @@ export default function PurchasePage() {
         <div>
           <h2 className="text-xl sm:text-2xl font-semibold sm:font-medium tracking-wide">Inbound Purchase</h2>
         </div>
-        <button className="flex items-center gap-1.5 bg-white border border-neutral-200 text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-neutral-50 transition-colors shadow-sm">
-          <Download size={15} /> Import Excel
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-neutral-600 hidden sm:inline-block">Date:</span>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-3 py-1.5 border border-neutral-200 rounded-lg text-sm outline-none focus:border-black bg-white"
+            />
+          </div>
+          <button className="flex items-center gap-1.5 bg-white border border-neutral-200 text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-neutral-50 transition-colors shadow-sm">
+            <Download size={15} /> Import Excel
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
