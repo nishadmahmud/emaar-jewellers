@@ -45,6 +45,14 @@ export default function BalanceSheetPage() {
   // Calculate table sums
   const sumBDT = userBalances.reduce((acc, u) => acc + u.bdt, 0);
   const sumAED = userBalances.reduce((acc, u) => acc + u.aed, 0);
+  const grandTotal = sumBDT + (sumAED * aedRate);
+  const totalAssetBalance = grandTotal + stockBalance;
+
+  const colorClass = (val) => {
+    if (val > 0) return 'text-emerald-600';
+    if (val < 0) return 'text-red-600';
+    return 'text-slate-800';
+  };
 
   const apply = async () => {
     if (!token) return;
@@ -140,15 +148,20 @@ export default function BalanceSheetPage() {
         }
       });
 
-      // Group entities by Name
+      // Group entities by Name (strip (BD) and (DH) to merge variations)
       const usersMap = new Map(); // key -> { name, customer_ids: [], vendor_ids: [], accounts: [] }
 
       const addOrUpdateUser = (nameStr, type, dataObj) => {
           if (!nameStr) return;
-          const key = nameStr.trim().toLowerCase();
+          
+          // Strip currency identifiers to group BGN, BGN (BD), BGN (DH) into one "BGN"
+          let baseName = nameStr.replace(/\(BD\)/i, '').replace(/\(DH\)/i, '').replace(/\(AED\)/i, '').trim();
+          
+          const key = baseName.toLowerCase();
           if (!usersMap.has(key)) {
-              usersMap.set(key, { name: nameStr.trim(), customer_ids: [], vendor_ids: [], accounts: [] });
+              usersMap.set(key, { name: baseName, customer_ids: [], vendor_ids: [], accounts: [] });
           }
+          
           if (type === 'customer') usersMap.get(key).customer_ids.push(dataObj.id);
           if (type === 'vendor') usersMap.get(key).vendor_ids.push(dataObj.id);
           if (type === 'account') usersMap.get(key).accounts.push(dataObj);
@@ -418,10 +431,10 @@ export default function BalanceSheetPage() {
                  {userBalances.map((user, idx) => (
                    <tr key={idx} className="hover:bg-neutral-50/50 transition-colors">
                      <td className="px-4 py-2 font-medium text-slate-800">{user.name}</td>
-                     <td className={`px-4 py-2 text-right tabular-nums font-semibold ${user.bdt < 0 ? 'text-red-600' : 'text-blue-700'}`}>
+                     <td className={`px-4 py-2 text-right tabular-nums font-semibold ${colorClass(user.bdt)}`}>
                        {fmt2(user.bdt)}
                      </td>
-                     <td className={`px-4 py-2 text-right tabular-nums font-semibold ${user.aed < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                     <td className={`px-4 py-2 text-right tabular-nums font-semibold ${colorClass(user.aed)}`}>
                        <div className="flex flex-col items-end leading-tight">
                          <span>{fmt2(user.aed)} AED</span>
                          <span className="text-[10px] text-neutral-400 mt-0.5">= {fmt2(user.aed * aedRate)} BDT</span>
@@ -433,22 +446,34 @@ export default function BalanceSheetPage() {
                <tfoot className="bg-neutral-50 font-bold text-slate-900 border-t-2 border-neutral-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] relative z-10">
                  <tr>
                    <td className="px-4 py-3 text-right uppercase tracking-wider text-xs">Total balances</td>
-                   <td className={`px-4 py-3 text-right tabular-nums ${sumBDT < 0 ? 'text-red-600' : 'text-blue-700'}`}>
+                   <td className={`px-4 py-3 text-right tabular-nums ${colorClass(sumBDT)}`}>
                      {fmt2(sumBDT)}
                    </td>
-                   <td className={`px-4 py-3 text-right tabular-nums ${sumAED < 0 ? 'text-red-600' : 'text-emerald-700'}`}>
+                   <td className={`px-4 py-3 text-right tabular-nums ${colorClass(sumAED)}`}>
                      <div className="flex flex-col items-end leading-tight">
                          <span>{fmt2(sumAED)} AED</span>
                          <span className="text-[11px] text-neutral-600 mt-1">Total = {fmt2(sumAED)} * {aedRate} = {fmt2(sumAED * aedRate)} BDT</span>
                      </div>
                    </td>
                  </tr>
+                 <tr className="border-t-2 border-neutral-300 bg-neutral-100">
+                   <td className="px-4 py-4 text-right uppercase tracking-wider text-sm font-extrabold text-slate-900">GRAND SUM TOTAL</td>
+                   <td className={`px-4 py-4 text-right tabular-nums text-lg font-extrabold ${colorClass(grandTotal)}`} colSpan={2}>
+                     {fmt2(grandTotal)} BDT
+                   </td>
+                 </tr>
                  <tr className="border-t border-neutral-200 bg-emerald-50/50">
                    <td className="px-4 py-3 text-right uppercase tracking-wider text-xs text-emerald-800">Stock Balance</td>
-                   <td className="px-4 py-3 text-right tabular-nums text-emerald-800">
+                   <td className={`px-4 py-3 text-right tabular-nums font-bold ${colorClass(stockBalance)}`}>
                      {fmt2(stockBalance)}
                    </td>
                    <td className="px-4 py-3"></td>
+                 </tr>
+                 <tr className="border-t-2 border-neutral-300 bg-neutral-200">
+                   <td className="px-4 py-5 text-right uppercase tracking-wider text-sm font-black text-slate-900">TOTAL ASSET BALANCE</td>
+                   <td className={`px-4 py-5 text-right tabular-nums text-xl font-black ${colorClass(totalAssetBalance)}`} colSpan={2}>
+                     {fmt2(totalAssetBalance)} BDT
+                   </td>
                  </tr>
                </tfoot>
              </table>
