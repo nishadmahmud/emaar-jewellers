@@ -594,7 +594,8 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Due List Grid Layout */}
+      {/* Due List Grid Layout (Hidden as requested) */}
+      {/* 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mt-6">
         <DueListTable 
           title="Client Sell Due" 
@@ -611,6 +612,7 @@ export default function DashboardPage() {
           viewAllUrl="/dashboard/clients?filter=purchase-due"
         />
       </div>
+      */}
 
       {/* Financial Overview Modal */}
       <FinancialOverviewModal

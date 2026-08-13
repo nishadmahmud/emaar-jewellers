@@ -53,118 +53,81 @@ export default function DashboardLayout({ children }) {
   };
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Products', href: '/dashboard/product-list', icon: Package },
-    { name: 'Add Product', href: '/dashboard/add-product', icon: PackagePlus },
-    { name: 'Sell', href: '/dashboard/sell', icon: ShoppingCart },
-    { name: 'Sales History', href: '/dashboard/sales', icon: History },
-    { name: 'Buy', href: '/dashboard/purchase', icon: ArrowDownToLine },
-    { name: 'Purchase History', href: '/dashboard/purchases', icon: History },
-    { name: 'Clients', href: '/dashboard/clients', icon: Users },
-    { name: 'Balance Sheet', href: '/dashboard/balance-sheet', icon: FileText },
-    { name: 'Due Report', href: '/dashboard/due-report', icon: AlertCircle },
-    { name: 'Profit/Loss Report', href: '/dashboard/profit-loss-report', icon: FileText },
-    { name: 'Ledger Statement', href: '/dashboard/ledger-statement-report', icon: FileText },
-    { name: 'Fund Transfer', href: '/dashboard/finance/fund-transfer', icon: ArrowRightLeft },
     {
-      name: 'Expense',
-      icon: Receipt,
-      children: [
+      section: 'Overview',
+      items: [
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Clients', href: '/dashboard/clients', icon: Users },
+      ]
+    },
+    {
+      section: 'Products',
+      items: [
+        { name: 'Add Product', href: '/dashboard/add-product', icon: PackagePlus },
+        { name: 'Product List', href: '/dashboard/product-list', icon: Package },
+      ]
+    },
+    {
+      section: 'Sales',
+      items: [
+        { name: 'Sell', href: '/dashboard/sell', icon: ShoppingCart },
+        { name: 'Sales History', href: '/dashboard/sales', icon: History },
+      ]
+    },
+    {
+      section: 'Purchase',
+      items: [
+        { name: 'Buy', href: '/dashboard/purchase', icon: ArrowDownToLine },
+        { name: 'Purchase History', href: '/dashboard/purchases', icon: History },
+      ]
+    },
+    {
+      section: 'Finance',
+      items: [
+        { name: 'Fund Transfer', href: '/dashboard/finance/fund-transfer', icon: ArrowRightLeft },
+        { name: 'Balance Sheet', href: '/dashboard/balance-sheet', icon: FileText },
+      ]
+    },
+    {
+      section: 'Analytics',
+      items: [
+        { name: 'Ledger Statement Report', href: '/dashboard/ledger-statement-report', icon: FileText },
+        { name: 'Profit Loss Report', href: '/dashboard/profit-loss-report', icon: FileText },
+      ]
+    },
+    {
+      section: 'Management',
+      items: [
         { name: 'Expense List', href: '/dashboard/expense/list', icon: Receipt },
-        { name: 'Expense Category List', href: '/dashboard/expense/categories', icon: Tags },
-      ],
-    },
-    {
-      name: 'Quick Payment',
-      icon: CreditCard,
-      children: [
+        { name: 'Expense Categories', href: '/dashboard/expense/categories', icon: Tags },
         { name: 'Quick Payment List', href: '/dashboard/quick-payment/list', icon: CreditCard },
-        { name: 'Payment Category List', href: '/dashboard/quick-payment/categories', icon: Tags },
-      ],
-    },
-    {
-      name: 'Settings',
-      icon: Settings,
-      children: [
-        { name: 'Payments', href: '/dashboard/settings/payments', icon: CreditCard },
-      ],
-    },
+        { name: 'Payment Categories', href: '/dashboard/quick-payment/categories', icon: Tags },
+        { name: 'Payments Settings', href: '/dashboard/settings/payments', icon: Settings },
+      ]
+    }
   ];
 
   const renderNavItem = (item, isMobile = false) => {
     const Icon = item.icon;
+    const isActive = item.href ? pathname === item.href : false;
 
-    if (item.children) {
-      const isOpen = Boolean(openDropdowns[item.name]);
-      const isAnyChildActive = item.children.some((child) => child.href && pathname === child.href);
-
+    if (item.action === 'quick-payment-modal') {
       return (
-        <div key={item.name} className="space-y-1">
-          <button
-            type="button"
-            onClick={() => toggleDropdown(item.name)}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition-all cursor-pointer font-medium ${
-              isAnyChildActive
-                ? 'bg-neutral-900 text-white shadow-xs'
-                : 'text-neutral-600 hover:text-black hover:bg-neutral-100/80'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <Icon size={18} />
-              <span>{item.name}</span>
-            </div>
-            <ChevronDown
-              size={16}
-              className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
-
-          {isOpen && (
-            <div className="pl-6 space-y-1 border-l-2 border-neutral-200/80 ml-4 py-1">
-              {item.children.map((child) => {
-                const ChildIcon = child.icon;
-                const isChildActive = child.href ? pathname === child.href : false;
-
-                if (child.action === 'quick-payment-modal') {
-                  return (
-                    <button
-                      key={child.name}
-                      type="button"
-                      onClick={() => {
-                        if (isMobile) setIsMobileMenuOpen(false);
-                        setIsQuickPaymentOpen(true);
-                      }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors text-left cursor-pointer"
-                    >
-                      <ChildIcon size={15} />
-                      <span>{child.name}</span>
-                    </button>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={child.name}
-                    href={child.href}
-                    onClick={() => isMobile && setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors font-medium ${
-                      isChildActive
-                        ? 'bg-black text-white font-bold shadow-2xs'
-                        : 'text-neutral-500 hover:text-black hover:bg-neutral-100'
-                    }`}
-                  >
-                    <ChildIcon size={15} />
-                    <span>{child.name}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <button
+          key={item.name}
+          type="button"
+          onClick={() => {
+            if (isMobile) setIsMobileMenuOpen(false);
+            setIsQuickPaymentOpen(true);
+          }}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-600 hover:text-black hover:bg-neutral-100 transition-colors text-left cursor-pointer"
+        >
+          <Icon size={18} />
+          <span>{item.name}</span>
+        </button>
       );
     }
 
-    const isActive = item.href ? pathname === item.href : false;
     return (
       <Link
         key={item.name}
@@ -181,6 +144,15 @@ export default function DashboardLayout({ children }) {
       </Link>
     );
   };
+
+  const renderNavGroup = (group, isMobile = false) => (
+    <div key={group.section} className="mb-6 last:mb-0">
+      <h3 className="px-3 mb-2 text-xs font-bold text-neutral-400 uppercase tracking-wider">{group.section}</h3>
+      <div className="space-y-1">
+        {group.items.map((item) => renderNavItem(item, isMobile))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="h-screen overflow-hidden bg-neutral-50 text-neutral-900 flex print:h-auto print:overflow-visible print:bg-white print:block">
@@ -210,8 +182,8 @@ export default function DashboardLayout({ children }) {
               <h1 className="text-xl font-light tracking-widest text-black">EMAAR</h1>
             </div>
 
-            <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-              {navigation.map((item) => renderNavItem(item, true))}
+            <nav className="flex-1 overflow-y-auto py-6 px-4">
+              {navigation.map((group) => renderNavGroup(group, true))}
             </nav>
 
             <div className="p-4 border-t border-neutral-200 shrink-0">
@@ -233,8 +205,8 @@ export default function DashboardLayout({ children }) {
           <h1 className="text-xl font-light tracking-widest text-black">EMAAR</h1>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
-          {navigation.map((item) => renderNavItem(item, false))}
+        <nav className="flex-1 overflow-y-auto py-6 px-4">
+          {navigation.map((group) => renderNavGroup(group, false))}
         </nav>
 
         <div className="p-4 border-t border-neutral-200 shrink-0">
@@ -321,6 +293,16 @@ export default function DashboardLayout({ children }) {
 
       {/* Global Quick Payment Modal */}
       <QuickPaymentModal open={isQuickPaymentOpen} onClose={() => setIsQuickPaymentOpen(false)} />
+
+      {/* Floating Action Button for Fund Transfer */}
+      <Link
+        href="/dashboard/finance/fund-transfer"
+        className="z-50 bg-black hover:bg-neutral-800 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center print:hidden"
+        style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem' }}
+        title="Fund Transfer"
+      >
+        <ArrowRightLeft size={24} />
+      </Link>
     </div>
   );
 }
