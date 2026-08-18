@@ -15,6 +15,7 @@ export default function FundTransferForm({ accounts = [], onSuccess }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -34,6 +35,8 @@ export default function FundTransferForm({ accounts = [], onSuccess }) {
         account_from: Number(from),
         account_to: Number(to),
         amount: Number(amount),
+        created_at: date,
+        updated_at: date,
       };
       
       const res = await axios.post(`${API_URL}/save-fund-transfer`, payload, {
@@ -63,6 +66,15 @@ export default function FundTransferForm({ accounts = [], onSuccess }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-lg font-semibold text-slate-800">Fund Transfer</h2>
       <div className="flex flex-col md:flex-row md:items-end gap-4">
+        <div className="flex-1 space-y-1.5 min-w-[150px]">
+          <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">Date</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-[16px] md:text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-black/5"
+          />
+        </div>
         <div className="flex-1 space-y-1.5 min-w-[200px]">
           <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">From</label>
           <SearchableSelect

@@ -15,6 +15,7 @@ export default function AddBalanceForm({ accounts = [], onSuccess }) {
   const [accountId, setAccountId] = useState("");
   const [amount, setAmount] = useState("");
   const [name, setName] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAdd = async (e) => {
@@ -32,6 +33,8 @@ export default function AddBalanceForm({ accounts = [], onSuccess }) {
         payment_type_id: Number(selected?.payment_type_id || 1),
         amount: Number(amount),
         name,
+        created_at: date,
+        updated_at: date,
       };
 
       const res = await axios.post(`${API_URL}/save-balance`, payload, {
@@ -61,6 +64,15 @@ export default function AddBalanceForm({ accounts = [], onSuccess }) {
     <form onSubmit={handleAdd} className="space-y-4 border-t border-neutral-100 pt-6 mt-6">
       <h2 className="text-lg font-semibold text-slate-800">Add Balance</h2>
       <div className="flex flex-col md:flex-row md:items-end gap-4">
+        <div className="flex-1 space-y-1.5 min-w-[150px]">
+          <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">Date</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full px-3.5 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-[16px] md:text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-black/5"
+          />
+        </div>
         <div className="flex-1 space-y-1.5">
           <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">Name</label>
           <input
