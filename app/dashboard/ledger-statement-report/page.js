@@ -322,10 +322,11 @@ export default function LedgerStatementReportPage() {
   }, [filters, token]);
 
 
-  const { openingBalance, ledgerEntries } = useMemo(() => {
-    if (!reportData) return { openingBalance: 0, ledgerEntries: [] };
+  const { openingBalanceAED, openingBalanceBDT, ledgerEntries } = useMemo(() => {
+    if (!reportData) return { openingBalanceAED: 0, openingBalanceBDT: 0, ledgerEntries: [] };
     return {
-      openingBalance: Number(reportData.opening_balance) || 0,
+      openingBalanceAED: Number(reportData.opening_balance_aed) || 0,
+      openingBalanceBDT: Number(reportData.opening_balance_bdt) || 0,
       ledgerEntries: Array.isArray(reportData.ledger) ? reportData.ledger : [],
     };
   }, [reportData]);
@@ -335,8 +336,8 @@ export default function LedgerStatementReportPage() {
     const bdt = [];
     if (!Array.isArray(ledgerEntries)) return { ledgerAED: aed, ledgerBDT: bdt };
 
-    let runAed = openingBalance;
-    let runBdt = openingBalance;
+    let runAed = openingBalanceAED;
+    let runBdt = openingBalanceBDT;
 
     ledgerEntries.forEach(entry => {
       const mode = (entry?.pay_mode || "").toUpperCase();
@@ -349,7 +350,7 @@ export default function LedgerStatementReportPage() {
       }
     });
     return { ledgerAED: aed, ledgerBDT: bdt };
-  }, [ledgerEntries, openingBalance]);
+  }, [ledgerEntries, openingBalanceAED, openingBalanceBDT]);
 
   const calculateTotals = (entries, opBalance) => {
     const defaultTotals = { opening_balance: opBalance, closing_balance: opBalance, total_debit: 0, total_credit: 0 };
@@ -370,8 +371,8 @@ export default function LedgerStatementReportPage() {
     };
   };
 
-  const summaryTotalsAED = useMemo(() => calculateTotals(ledgerAED, openingBalance), [ledgerAED, openingBalance]);
-  const summaryTotalsBDT = useMemo(() => calculateTotals(ledgerBDT, openingBalance), [ledgerBDT, openingBalance]);
+  const summaryTotalsAED = useMemo(() => calculateTotals(ledgerAED, openingBalanceAED), [ledgerAED, openingBalanceAED]);
+  const summaryTotalsBDT = useMemo(() => calculateTotals(ledgerBDT, openingBalanceBDT), [ledgerBDT, openingBalanceBDT]);
 
   const { accountsAED, accountsBDT } = useMemo(() => {
     const aed = [];
