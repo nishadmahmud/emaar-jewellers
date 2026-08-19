@@ -64,6 +64,7 @@ export default function LedgerStatementReportPage() {
   const [vendorsLoading, setVendorsLoading] = useState(false);
   
   const [reportData, setReportData] = useState(null);
+  const [matchedAccounts, setMatchedAccounts] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
 
@@ -169,10 +170,17 @@ export default function LedgerStatementReportPage() {
         .catch(() => ({ type: 'party_book', data: null }))
       );
 
+      promises.push(
+        axios.get(`${API_URL}/payment-type-category-list?per_page=1000&t=${Date.now()}`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => ({ type: 'accounts', data: res.data?.data?.data ?? res.data?.data ?? res.data ?? [] }))
+        .catch(() => ({ type: 'accounts', data: [] }))
+      );
+
       const results = await Promise.all(promises);
 
       let allEntries = [];
       let openingBalanceAED = 0;
+      let foundMatchedAccounts = [];
       let openingBalanceBDT = 0;
 
       results.forEach(res => {
@@ -194,6 +202,37 @@ export default function LedgerStatementReportPage() {
                openingBalanceAED = Number(d.aed?.opening_balance || 0);
                openingBalanceBDT = Number(d.cash?.opening_balance || 0);
            }
+        } else if (res.type === 'accounts') {
+           const rawList = res.data;
+           const flattenedAccounts = [];
+           rawList.forEach((item) => {
+             if (Array.isArray(item.payment_type_category)) {
+               item.payment_type_category.forEach((acc) => {
+                 flattenedAccounts.push({
+                   ...acc,
+                   actual_payment_type_id: item.id,
+                   payment_category_name: acc.payment_category_name || acc.name || item.type_name || "Account",
+                   balance: Number(acc.paymentcategory_sum_payment_amount ?? acc.balance ?? acc.amount ?? 0),
+                 });
+               });
+             } else {
+               flattenedAccounts.push({
+                 ...item,
+                 actual_payment_type_id: item.id,
+                 payment_category_name: item.payment_category_name || item.name || item.type_name || "Account",
+                 balance: Number(item.paymentcategory_sum_payment_amount ?? item.balance ?? item.amount ?? 0),
+               });
+             }
+           });
+
+           if (filters.selected_name) {
+             const selectedFirstName = filters.selected_name.trim().split(' ')[0].toLowerCase();
+             foundMatchedAccounts = flattenedAccounts.filter(acc => {
+               if (!acc.payment_category_name) return false;
+               const accFirstName = acc.payment_category_name.trim().split(' ')[0].toLowerCase();
+               return accFirstName === selectedFirstName;
+             });
+           }
         }
       });
 
@@ -205,6 +244,70 @@ export default function LedgerStatementReportPage() {
         opening_balance_bdt: openingBalanceBDT,
         ledger: allEntries
       });
+      
+      // Fetch Cashbook Report for matched accounts
+      if (foundMatchedAccounts.length > 0) {
+          const currentStart = new Date(filters.start_date);
+          const prevStart = new Date(Date.UTC(currentStart.getUTCFullYear(), currentStart.getUTCMonth(), 1, 0, 0, 0, 0));
+          const prevEnd = new Date(currentStart.getTime() - 1); // 1 ms before current start
+          const isPrevPeriodValid = prevEnd.getTime() >= prevStart.getTime();
+
+          const cashbookPromises = foundMatchedAccounts.map(acc => {
+              const sd = new Date(filters.start_date);
+              sd.setHours(0, 0, 0, 0);
+              const ed = new Date(filters.end_date);
+              ed.setHours(23, 59, 59, 999);
+              
+              return axios.post(`${API_URL}/cash-book-report`, {
+                  start_date: sd.toISOString(),
+                  end_date: ed.toISOString(),
+                  view_order: "asc",
+                  payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id)
+              }, { headers: { Authorization: `Bearer ${token}` } })
+              .then(res => ({ acc_id: acc.id, data: res.data }))
+              .catch(() => ({ acc_id: acc.id, data: null }))
+          });
+
+          let prevCashbookPromises = [];
+          if (isPrevPeriodValid) {
+              prevCashbookPromises = foundMatchedAccounts.map(acc => {
+                  return axios.post(`${API_URL}/cash-book-report`, {
+                      start_date: prevStart.toISOString(),
+                      end_date: prevEnd.toISOString(),
+                      view_order: "asc",
+                      payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id)
+                  }, { headers: { Authorization: `Bearer ${token}` } })
+                  .then(res => ({ acc_id: acc.id, data: res.data }))
+                  .catch(() => ({ acc_id: acc.id, data: null }))
+              });
+          }
+          
+          const [cashbookResults, prevCashbookResults] = await Promise.all([
+              Promise.all(cashbookPromises),
+              Promise.all(prevCashbookPromises)
+          ]);
+          
+          foundMatchedAccounts = foundMatchedAccounts.map(acc => {
+             const cb = cashbookResults.find(r => String(r.acc_id) === String(acc.id))?.data;
+             const prevCb = prevCashbookResults.find(r => String(r.acc_id) === String(acc.id))?.data;
+             
+             let computedOpeningBalance = 0;
+             if (isPrevPeriodValid && prevCb) {
+                 computedOpeningBalance = Number(prevCb.closing_balance ?? 0);
+             }
+
+             return {
+                 ...acc,
+                 opening_balance: computedOpeningBalance,
+                 total_credit: Number(cb?.current_total_credit ?? 0),
+                 total_debit: Number(cb?.current_total_debit ?? 0),
+                 closing_balance: computedOpeningBalance + Number(cb?.current_total_credit ?? 0) - Number(cb?.current_total_debit ?? 0),
+                 balance: computedOpeningBalance + Number(cb?.current_total_credit ?? 0) - Number(cb?.current_total_debit ?? 0)
+             };
+          });
+      }
+
+      setMatchedAccounts(foundMatchedAccounts);
 
 
     } catch (err) {
@@ -266,6 +369,32 @@ export default function LedgerStatementReportPage() {
   const summaryTotalsAED = useMemo(() => calculateTotals(ledgerAED, openingBalanceAED), [ledgerAED, openingBalanceAED]);
   const summaryTotalsBDT = useMemo(() => calculateTotals(ledgerBDT, openingBalanceBDT), [ledgerBDT, openingBalanceBDT]);
 
+  const { accountsAED, accountsBDT } = useMemo(() => {
+    const aed = [];
+    const bdt = [];
+    matchedAccounts.forEach(acc => {
+       const name = (acc.payment_category_name || "").toUpperCase();
+       if (name.includes("(DH)") || name.includes("AED")) {
+         aed.push(acc);
+       } else {
+         bdt.push(acc);
+       }
+    });
+    return { accountsAED: aed, accountsBDT: bdt };
+  }, [matchedAccounts]);
+
+  const grandEndingAED = useMemo(() => {
+    let bal = summaryTotalsAED.closing_balance;
+    accountsAED.forEach(acc => bal += (Number(acc.balance) || 0));
+    return bal;
+  }, [summaryTotalsAED.closing_balance, accountsAED]);
+
+  const grandEndingBDT = useMemo(() => {
+    let bal = summaryTotalsBDT.closing_balance;
+    accountsBDT.forEach(acc => bal += (Number(acc.balance) || 0));
+    return bal;
+  }, [summaryTotalsBDT.closing_balance, accountsBDT]);
+
   
   const filterEntries = (entries, q) => {
       if (!q) return entries;
@@ -296,7 +425,7 @@ export default function LedgerStatementReportPage() {
 
   const handleExcelExport = useCallback(() => {
     try {
-      const createSheetData = (entries, totals) => {
+      const createSheetData = (entries, totals, matchedAccs, grandBal) => {
           const ledgerData = entries.map((entry) => ({
             Date: entry.date ? new Date(entry.date).toLocaleDateString() : "-",
             Particulars: entry.particulars || "-",
@@ -315,19 +444,47 @@ export default function LedgerStatementReportPage() {
             Remarks: "",
           });
 
+
+          if (matchedAccs && matchedAccs.length > 0) {
+              ledgerData.push({ Date: "", Particulars: "", Debit: "", Credit: "", Balance: "", Remarks: "" });
+              matchedAccs.forEach(acc => {
+                  ledgerData.push({
+                      Date: "",
+                      Particulars: `Account: ${acc.payment_category_name}`,
+                      Debit: "",
+                      Credit: "",
+                      Balance: "",
+                      Remarks: "",
+                  });
+                  ledgerData.push({ Date: "", Particulars: "Opening Balance", Debit: "", Credit: "", Balance: fmt2(acc.opening_balance), Remarks: "" });
+                  ledgerData.push({ Date: "", Particulars: "Total Debit", Debit: "", Credit: "", Balance: fmt2(acc.total_debit), Remarks: "" });
+                  ledgerData.push({ Date: "", Particulars: "Total Credit", Debit: "", Credit: "", Balance: fmt2(acc.total_credit), Remarks: "" });
+                  ledgerData.push({ Date: "", Particulars: "Closing Balance", Debit: "", Credit: "", Balance: fmt2(acc.closing_balance), Remarks: "" });
+              });
+          }
+
+          ledgerData.push({ Date: "", Particulars: "", Debit: "", Credit: "", Balance: "", Remarks: "" });
+          ledgerData.push({
+              Date: "",
+              Particulars: "GRAND ENDING BALANCE",
+              Debit: "",
+              Credit: "",
+              Balance: fmt2(grandBal),
+              Remarks: "",
+          });
           return ledgerData;
       };
 
       const wb = XLSX.utils.book_new();
 
       if (filteredBDT.length > 0 || summaryTotalsBDT.opening_balance !== 0) {
-          const bdtData = createSheetData(filteredBDT, summaryTotalsBDT);
+          const bdtData = createSheetData(filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT);
           const wsBDT = XLSX.utils.json_to_sheet(bdtData);
           XLSX.utils.book_append_sheet(wb, wsBDT, "Ledger Statement BDT");
       }
 
       if (filteredAED.length > 0 || summaryTotalsAED.opening_balance !== 0) {
-          const aedData = createSheetData(filteredAED, summaryTotalsAED);
+          const aedData = createSheetData(filteredAED, summaryTotalsAED, accountsAED, grandEndingAED);
           const wsAED = XLSX.utils.json_to_sheet(aedData);
           XLSX.utils.book_append_sheet(wb, wsAED, "Ledger Statement AED");
       }
@@ -343,7 +500,7 @@ export default function LedgerStatementReportPage() {
       console.error(err);
       toast.error("Error exporting to Excel.");
     }
-  }, [filteredBDT, summaryTotalsBDT, filteredAED, summaryTotalsAED]);
+  }, [filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT, filteredAED, summaryTotalsAED, accountsAED, grandEndingAED]);
 
   const handlePDFExport = useCallback(async () => {
     try {
@@ -356,6 +513,10 @@ export default function LedgerStatementReportPage() {
           summaryTotalsBDT={summaryTotalsBDT}
           filters={appliedFilters}
           user={session?.user}
+          accountsAED={accountsAED}
+          accountsBDT={accountsBDT}
+          grandEndingAED={grandEndingAED}
+          grandEndingBDT={grandEndingBDT}
           />,
       ).toBlob();
 
@@ -365,7 +526,7 @@ export default function LedgerStatementReportPage() {
       console.error(err);
       toast.error("Error generating PDF.");
     }
-  }, [filteredAED, filteredBDT, summaryTotalsAED, summaryTotalsBDT, appliedFilters, session?.user]);
+  }, [filteredAED, filteredBDT, summaryTotalsAED, summaryTotalsBDT, appliedFilters, session?.user, accountsAED, accountsBDT, grandEndingAED, grandEndingBDT]);
 
   const tableRef = useRef(null);
   const handlePrintTable = useCallback(() => {
@@ -402,7 +563,7 @@ export default function LedgerStatementReportPage() {
 
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const renderLedgerTable = (title, entries, totals) => (
+  const renderLedgerTable = (title, entries, totals, matchedAccs, grandBal) => (
     <div className="mb-12">
       <div className="text-lg font-bold uppercase tracking-wide border-b border-neutral-300 pb-1 mb-4">{title}</div>
       <table className="block md:table w-full border-collapse md:border border-neutral-400 text-xs text-left mb-6">
@@ -478,6 +639,106 @@ export default function LedgerStatementReportPage() {
               <span>{fmt2(totals.closing_balance)}</span>
             </td>
           </tr>
+
+          {(!matchedAccs || matchedAccs.length === 0) && (
+            <>
+              <tr className="block md:table-row bg-neutral-50 border md:border-t-2 border-neutral-400 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+                  <td colSpan={4} className="block md:table-cell border-b md:border md:border-neutral-400 p-2 font-bold md:text-right text-neutral-900 flex justify-between">
+                    <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                    <span>Ledger Closing Balance</span>
+                  </td>
+                  <td className="block md:table-cell p-2 md:border md:border-neutral-400 text-right font-bold tabular-nums text-neutral-900 flex justify-between bg-neutral-200 md:bg-transparent">
+                    <span className="md:hidden font-bold uppercase text-neutral-500">Balance</span>
+                    <span>{fmt2(totals.closing_balance)}</span>
+                  </td>
+              </tr>
+              <tr className="block md:table-row bg-neutral-200 border border-neutral-400 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+                  <td colSpan={4} className="block md:table-cell border-b md:border md:border-neutral-400 p-2 font-bold uppercase md:text-right text-neutral-900 flex justify-between">
+                    <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                    <span>Grand Ending Balance</span>
+                  </td>
+                  <td className="block md:table-cell p-2 md:border md:border-neutral-400 text-right font-bold tabular-nums text-neutral-900 flex justify-between bg-neutral-300 md:bg-transparent">
+                    <span className="md:hidden font-bold uppercase text-neutral-500">Balance</span>
+                    <span>{fmt2(grandBal)}</span>
+                  </td>
+              </tr>
+            </>
+          )}
+
+          {matchedAccs && matchedAccs.length > 0 && (
+            <>
+              <tr className="block md:table-row bg-neutral-50 border md:border-t-2 border-neutral-400 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+                  <td colSpan={4} className="block md:table-cell border-b md:border md:border-neutral-400 p-2 font-bold md:text-right text-neutral-900 flex justify-between">
+                    <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                    <span>Ledger Closing Balance</span>
+                  </td>
+                  <td className="block md:table-cell p-2 md:border md:border-neutral-400 text-right font-bold tabular-nums text-neutral-900 flex justify-between bg-neutral-200 md:bg-transparent">
+                    <span className="md:hidden font-bold uppercase text-neutral-500">Balance</span>
+                    <span>{fmt2(totals.closing_balance)}</span>
+                  </td>
+              </tr>
+              {matchedAccs.map((acc, idx) => (
+                <React.Fragment key={idx}>
+                  <tr className="block md:table-row bg-neutral-100 border md:border-t border-neutral-400 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+                      <td colSpan={5} className="block md:table-cell p-2 font-bold text-neutral-900">
+                        Account: {acc.payment_category_name}
+                      </td>
+                  </tr>
+                  <tr className="block md:table-row bg-white border md:border-t border-neutral-200 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+                      <td colSpan={4} className="block md:table-cell p-2 md:text-right pl-8 flex justify-between">
+                        <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                        <span>Opening Balance</span>
+                      </td>
+                      <td className="block md:table-cell p-2 text-right tabular-nums flex justify-between bg-neutral-50 md:bg-transparent">
+                        <span className="md:hidden font-bold uppercase text-neutral-500">Balance</span>
+                        <span>{fmt2(acc.opening_balance)}</span>
+                      </td>
+                  </tr>
+                  <tr className="block md:table-row bg-white border md:border-t border-neutral-200 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+                      <td colSpan={4} className="block md:table-cell p-2 md:text-right pl-8 flex justify-between">
+                        <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                        <span>Total Debit</span>
+                      </td>
+                      <td className="block md:table-cell p-2 text-right tabular-nums flex justify-between bg-neutral-50 md:bg-transparent">
+                        <span className="md:hidden font-bold uppercase text-neutral-500">Balance</span>
+                        <span>{fmt2(acc.total_debit)}</span>
+                      </td>
+                  </tr>
+                  <tr className="block md:table-row bg-white border md:border-t border-neutral-200 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+                      <td colSpan={4} className="block md:table-cell p-2 md:text-right pl-8 flex justify-between">
+                        <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                        <span>Total Credit</span>
+                      </td>
+                      <td className="block md:table-cell p-2 text-right tabular-nums flex justify-between bg-neutral-50 md:bg-transparent">
+                        <span className="md:hidden font-bold uppercase text-neutral-500">Balance</span>
+                        <span>{fmt2(acc.total_credit)}</span>
+                      </td>
+                  </tr>
+                  <tr className="block md:table-row bg-neutral-50 border md:border-t border-neutral-300 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+                      <td colSpan={4} className="block md:table-cell p-2 font-bold md:text-right pl-8 flex justify-between">
+                        <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                        <span>Closing Balance</span>
+                      </td>
+                      <td className="block md:table-cell p-2 text-right font-bold tabular-nums flex justify-between bg-neutral-100 md:bg-transparent">
+                        <span className="md:hidden font-bold uppercase text-neutral-500">Balance</span>
+                        <span>{fmt2(acc.closing_balance)}</span>
+                      </td>
+                  </tr>
+                </React.Fragment>
+              ))}
+              <tr className="block md:table-row bg-neutral-200 border border-neutral-400 mb-4 md:mb-0 rounded-lg md:rounded-none overflow-hidden">
+                  <td colSpan={4} className="block md:table-cell border-b md:border md:border-neutral-400 p-2 font-bold uppercase md:text-right text-neutral-900 flex justify-between">
+                    <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
+                    <span>Grand Ending Balance</span>
+                  </td>
+                  <td className="block md:table-cell p-2 md:border md:border-neutral-400 text-right font-bold tabular-nums text-neutral-900 flex justify-between bg-neutral-300 md:bg-transparent">
+                    <span className="md:hidden font-bold uppercase text-neutral-500">Balance</span>
+                    <span>{fmt2(grandBal)}</span>
+                  </td>
+              </tr>
+            </>
+          )}
+
 
           
         </tbody>
@@ -636,12 +897,11 @@ export default function LedgerStatementReportPage() {
           <div className="text-center text-red-500 py-10 font-medium">Error loading data.</div>
         ) : (
           <div className="" ref={tableRef}>
-             {(filteredBDT.length > 0 || summaryTotalsBDT.opening_balance !== 0) && renderLedgerTable("LEDGER STATEMENT - BDT", filteredBDT, summaryTotalsBDT)}
+             {(filteredBDT.length > 0 || accountsBDT.length > 0 || summaryTotalsBDT.opening_balance !== 0) && renderLedgerTable("LEDGER STATEMENT - BDT", filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT)}
              
-             {(filteredAED.length > 0 || summaryTotalsAED.opening_balance !== 0) && renderLedgerTable("LEDGER STATEMENT - AED", filteredAED, summaryTotalsAED)}
+             {(filteredAED.length > 0 || accountsAED.length > 0 || summaryTotalsAED.opening_balance !== 0) && renderLedgerTable("LEDGER STATEMENT - AED", filteredAED, summaryTotalsAED, accountsAED, grandEndingAED)}
                           
-             {filteredBDT.length === 0 && summaryTotalsBDT.opening_balance === 0 &&
-              filteredAED.length === 0 && summaryTotalsAED.opening_balance === 0 && (
+             {filteredBDT.length === 0 && accountsBDT.length === 0 && summaryTotalsBDT.opening_balance === 0 && filteredAED.length === 0 && accountsAED.length === 0 && summaryTotalsAED.opening_balance === 0 && (
                 <div className="text-center text-neutral-500 py-8 border border-neutral-400">
                   No ledger data found.
                 </div>
