@@ -489,6 +489,18 @@ export default function DashboardPage() {
 
   const dash = dashboardData?.data || dashboardData || {};
 
+  const calculatedSalesQty = (salesData?.data?.data || salesData?.data || []).reduce((acc, inv) => {
+    return acc + (Array.isArray(inv.sales_details)
+      ? inv.sales_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
+      : 0);
+  }, 0);
+
+  const calculatedPurchaseQty = (purchasesData?.data?.data || purchasesData?.data || []).reduce((acc, inv) => {
+    return acc + (Array.isArray(inv.purchase_details)
+      ? inv.purchase_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
+      : 0);
+  }, 0);
+
   const mainMetrics = [
     {
       title: "Total Sales",
@@ -502,17 +514,16 @@ export default function DashboardPage() {
       link: "/dashboard/sales",
     },
     {
-      title: "Stock Balance",
-      value: dash.total_accessories_stock_value || 0,
-      currency: "AED",
-      icon: "💎",
+      title: "Total Sales Qty",
+      value: calculatedSalesQty,
+      icon: "📦",
       color: "bg-cyan-50/40 border-cyan-100/60",
       textColor: "text-cyan-900",
     },
     {
-      title: "Current Stock",
-      value: dash.total_accessories_stock || 0,
-      icon: "🎧",
+      title: "Total Purchase Qty",
+      value: calculatedPurchaseQty,
+      icon: "📥",
       color: "bg-teal-50/40 border-teal-100/60",
       textColor: "text-teal-900",
     },

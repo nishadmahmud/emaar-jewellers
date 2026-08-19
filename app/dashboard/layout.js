@@ -24,11 +24,12 @@ import {
   ArrowRightLeft,
   AlertCircle,
 } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import QuickPaymentModal from '@/components/quick-payment/QuickPaymentModal';
 
 export default function DashboardLayout({ children }) {
+  const { data: session } = useSession();
   const pathname = usePathname();
   const [currency, setCurrency] = useState('AED');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -189,8 +190,13 @@ export default function DashboardLayout({ children }) {
               </button>
             </div>
 
-            <div className="h-16 flex items-center px-6 border-b border-neutral-200 shrink-0">
+            <div className="flex flex-col justify-center px-6 py-4 border-b border-neutral-200 shrink-0">
               <h1 className="text-xl font-light tracking-widest text-black">EMAAR</h1>
+              {session?.user?.outlet_name && (
+                <div className="font-semibold text-sm text-neutral-500 mt-1">
+                  {session.user.outlet_name}
+                </div>
+              )}
             </div>
 
             <nav className="flex-1 overflow-y-auto py-6 px-4">
@@ -212,9 +218,16 @@ export default function DashboardLayout({ children }) {
 
       {/* Desktop Sidebar */}
       <div className={`hidden md:flex flex-col bg-white border-r border-neutral-200 shrink-0 print:hidden transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
-        <div className="h-16 flex items-center justify-center px-6 border-b border-neutral-200 shrink-0">
+        <div className={`flex flex-col justify-center px-6 py-4 border-b border-neutral-200 shrink-0 ${isSidebarCollapsed ? 'items-center' : 'items-start'}`}>
           {!isSidebarCollapsed ? (
-            <h1 className="text-xl font-light tracking-widest text-black">EMAAR</h1>
+            <>
+              <h1 className="text-xl font-light tracking-widest text-black">EMAAR</h1>
+              {session?.user?.outlet_name && (
+                <div className="font-semibold text-sm text-neutral-500 mt-1 truncate w-full">
+                  {session.user.outlet_name}
+                </div>
+              )}
+            </>
           ) : (
             <h1 className="text-xl font-light tracking-widest text-black">E</h1>
           )}

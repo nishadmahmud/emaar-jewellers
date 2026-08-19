@@ -52,6 +52,7 @@ export const authOption = {
           return {
             id: data.user?.id || data.id || "1",
             name: data.user?.name || data.name || "User",
+            outlet_name: data.user?.outlet_name || data.outlet_name || "",
             email: data.user?.email || data.email || credentials.email,
             accessToken: data.authorisation?.token || data.token || data.access_token || data.jwt || null,
             pinVerified: false,
