@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 const Card = ({ children, className }) => <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 ${className || ''}`}>{children}</div>;
 const CardContent = ({ children, className = '' }) => <div className={className}>{children}</div>;
-import { Search, Loader2, Eye, Receipt, ShoppingCart, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Search, Loader2, Eye, Pencil, Receipt, ShoppingCart, ChevronRight, ChevronLeft } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -154,7 +154,16 @@ export default function SalesHistoryPage() {
                             </span>
                           )}
                         </div>
-                        <ChevronRight size={14} className="text-neutral-400 shrink-0" />
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/sell/edit/${inv.invoice_id}`); }}
+                            className="p-1.5 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Edit Invoice"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <ChevronRight size={14} className="text-neutral-400 shrink-0" />
+                        </div>
                       </div>
                     </div>
                   );
@@ -209,13 +218,22 @@ export default function SalesHistoryPage() {
                             {currency} {Number(dueBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
                           </td>
                           <td className="px-6 py-4 text-center">
-                            <button
-                              onClick={() => router.push(`/dashboard/invoice/sale/${inv.invoice_id}`)}
-                              className="inline-flex items-center justify-center p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 rounded-md transition-colors"
-                              title="View Invoice"
-                            >
-                              <Eye size={18} />
-                            </button>
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => router.push(`/dashboard/invoice/sale/${inv.invoice_id}`)}
+                                className="inline-flex items-center justify-center p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 rounded-md transition-colors"
+                                title="View Invoice"
+                              >
+                                <Eye size={18} />
+                              </button>
+                              <button
+                                onClick={() => router.push(`/dashboard/sell/edit/${inv.invoice_id}`)}
+                                className="inline-flex items-center justify-center p-2 text-neutral-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                title="Edit Invoice"
+                              >
+                                <Pencil size={18} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );

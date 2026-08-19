@@ -124,14 +124,10 @@ export default function ProfitLossReport() {
   const avgPurchasePrice = totalPurchaseQty > 0 ? totalPurchaseBdt / totalPurchaseQty : 0;
   const stockAvailable = totalPurchaseQty - totalSalesQty;
   
-  // If stock is 0, multiply by 1 (so never multiply by 0)
-  const stockMultiplier = stockAvailable === 0 ? 1 : stockAvailable;
-  
-  // Current profit (normal)
-  const currentProfit = (avgSellPrice - avgPurchasePrice) * totalSalesQty;
-
   // Formula: APP * Stock
-  const currentStockPrice = avgPurchasePrice * stockMultiplier;
+  const currentStockPrice = avgPurchasePrice * stockAvailable;
+
+  const currentProfit = (avgSellPrice - avgPurchasePrice) * totalSalesQty;
 
   const totalStockCount = purchaseData.reduce((count, inv) => {
     // Attempting a rough stock sum if quantities are available, else we count invoices.
@@ -514,9 +510,9 @@ export default function ProfitLossReport() {
 
             <div>
               <h4 className="font-semibold text-neutral-900 mb-1">4. Current Stock Price</h4>
-              <p className="text-neutral-500 text-xs mb-2">Avg Purchase Price × Max(1, Stock Available)</p>
+              <p className="text-neutral-500 text-xs mb-2">Avg Purchase Price × Stock Available</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} × {Math.max(1, totalPurchaseQty - totalSalesQty).toFixed(3)} = <span className="font-bold text-neutral-900">{Number(currentStockPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+                {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} × {(totalPurchaseQty - totalSalesQty).toFixed(3)} = <span className="font-bold text-neutral-900">{Number(currentStockPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
               </code>
             </div>
 
@@ -524,7 +520,7 @@ export default function ProfitLossReport() {
               <h4 className="font-semibold text-neutral-900 mb-1">5. Negative Stock Valuation</h4>
               <p className="text-neutral-500 text-xs mb-2">-Stock Available × Avg Sell Price</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                -{Math.max(1, totalPurchaseQty - totalSalesQty).toFixed(3)} × {Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} = <span className="font-bold text-rose-600">{Number(-1 * stockMultiplier * avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+                -{(totalPurchaseQty - totalSalesQty).toFixed(3)} × {Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} = <span className="font-bold text-rose-600">{Number(-1 * stockAvailable * avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
               </code>
             </div>
           </div>

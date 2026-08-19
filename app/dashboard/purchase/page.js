@@ -25,7 +25,7 @@ const CurrencyDropdown = ({ value, onChange }) => {
   );
 };
 
-export default function PurchasePage() {
+export default function PurchasePage({ editMode = false, initialInvoice = null }) {
   const { data: session } = useSession();
   const token = session?.accessToken;
   const API_URL = process.env.NEXT_PUBLIC_API;
@@ -46,6 +46,54 @@ export default function PurchasePage() {
   });
   
   const [cart, setCart] = useState([]);
+
+  // --- Populate Data for Edit Mode ---
+  useEffect(() => {
+    if (editMode && initialInvoice) {
+      setFormData(prev => ({
+        ...prev,
+        vendorId: initialInvoice.vendor_id || initialInvoice.vendor?.id || null,
+        vendorName: initialInvoice.vendor_name || initialInvoice.vendor?.name || '',
+        paidAmount: initialInvoice.paid_amount || '',
+      }));
+      setVendorSearch(initialInvoice.vendor_name || initialInvoice.vendor?.name || '');
+      setSelectedDate(initialInvoice.created_at ? initialInvoice.created_at.split('T')[0] : new Date().toISOString().split('T')[0]);
+
+      if (initialInvoice.purchase_details?.length) {
+        const preloadedCart = initialInvoice.purchase_details.map((detail) => {
+          const qtyNum = parseFloat(detail.qty) || 1;
+          const priceNum = parseFloat(detail.price) || parseFloat(detail.purchase_price) || 0;
+          const ratePerVori = priceNum / qtyNum;
+          const netWeightGram = qtyNum * 11.664;
+          
+          let currency = 'BDT';
+          let aedRate = '';
+          const payModeString = initialInvoice.pay_mode || '';
+          if (payModeString.includes('(AED @')) {
+            currency = 'AED';
+            const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
+            if (aedRateMatch) {
+              aedRate = aedRateMatch[1];
+            }
+          }
+
+          return {
+            id: detail.product_id,
+            name: detail.product_info?.name || detail.product_name || 'Product',
+            have_variant: detail.have_variant || 0,
+            qty: qtyNum.toString(),
+            netWeightGram: netWeightGram.toFixed(3),
+            ratePerVori: ratePerVori.toString(),
+            currency: currency,
+            aedRate: aedRate,
+            detail_id: detail.id || "",
+            imei_id: detail.imei_id || ""
+          };
+        });
+        setCart(preloadedCart);
+      }
+    }
+  }, [editMode, initialInvoice]);
 
   // --- Add Client Modal State ---
   const [showAddClient, setShowAddClient] = useState(false);
@@ -413,15 +461,23 @@ export default function PurchasePage() {
             have_variant: item.have_variant || 0,
             mode: 1,
             size: 1,
+            detail_id: item.detail_id || "",
+            imei_id: item.imei_id || ""
           };
         }),
         payment_method: finalPaymentMethods,
       };
-      const res = await axios.post(`${API_URL}/save-purchase`, payload, {
+
+      if (editMode && initialInvoice?.invoice_id) {
+        payload.invoice_id = initialInvoice.invoice_id;
+      }
+
+      const endpoint = editMode ? '/update-purchase' : '/save-purchase';
+      const res = await axios.post(`${API_URL}${endpoint}`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data) {
-        toast.success('Purchase recorded successfully!');
+        toast.success(editMode ? 'Purchase updated successfully!' : 'Purchase recorded successfully!');
         setCart([]);
         setFormData({
           vendorId: null,
@@ -433,10 +489,9 @@ export default function PurchasePage() {
           paidAmount: ''
         });
         
-        if (res.data.data?.invoice_id) {
-          router.push(`/dashboard/invoice/purchase/${res.data.data.invoice_id}`);
-        } else if (res.data.invoice_id) {
-          router.push(`/dashboard/invoice/purchase/${res.data.invoice_id}`);
+        const invoiceIdToRedirect = res.data?.data?.invoice_id || res.data?.invoice_id || (editMode ? initialInvoice?.invoice_id : null);
+        if (invoiceIdToRedirect) {
+          router.push(`/dashboard/invoice/purchase/${invoiceIdToRedirect}`);
         }
       }
     } catch (err) {
@@ -460,8 +515,15 @@ export default function PurchasePage() {
   return (
     <div className="max-w-7xl mx-auto text-black">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <div>
+        <div className="flex items-center gap-3">
           <h2 className="text-xl sm:text-2xl font-semibold sm:font-medium tracking-wide">Inbound Purchase</h2>
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-red-50 text-red-600 border border-red-200 rounded-full text-xs font-semibold uppercase tracking-wider">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#f87171' }}></span>
+              <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: '#ef4444' }}></span>
+            </span>
+            PURCHASE
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">

@@ -62,7 +62,8 @@ export default function BalanceSheetPage() {
       setUserBalances([]);
       setProgressMsg('Fetching master data (Customers, Vendors, Invoices, Accounts)...');
 
-      // 1. Fetch Master Data
+      const startDateFormatted = filters.start_date.slice(0, 10);
+      const endDateFormatted = filters.end_date.slice(0, 10);
       const currentStart = new Date(filters.start_date);
       const prevStart = new Date(Date.UTC(currentStart.getUTCFullYear(), currentStart.getUTCMonth(), 1, 0, 0, 0, 0));
       const prevEnd = new Date(currentStart.getTime() - 1); 
@@ -74,14 +75,9 @@ export default function BalanceSheetPage() {
         axios.get(`${API_URL}/customer-lists?page=1&limit=5000`, baseHeaders).then(res => res.data?.data?.data || []),
         axios.get(`${API_URL}/vendor-lists?page=1&limit=5000`, baseHeaders).then(res => res.data?.data?.data || []),
         axios.get(`${API_URL}/payment-type-category-list?t=${Date.now()}`, baseHeaders).then(res => res.data?.data?.data || res.data?.data || res.data || []),
-        axios.post(`${API_URL}/search-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, product: false, startDate: filters.start_date, endDate: filters.end_date, dueOnly: false }, baseHeaders).then(res => res.data?.data?.data || []),
-        axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, product: false, startDate: filters.start_date, endDate: filters.end_date, dueOnly: false }, baseHeaders).then(res => res.data?.data?.data || []),
+        axios.post(`${API_URL}/search-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, product: false, startDate: startDateFormatted, endDate: endDateFormatted, dueOnly: false }, baseHeaders).then(res => res.data?.data?.data || []),
+        axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, imei: false, start_date: startDateFormatted, end_date: endDateFormatted }, baseHeaders).then(res => res.data?.data?.data || []),
       ];
-
-      if (isPrevPeriodValid) {
-        masterPromises.push(axios.post(`${API_URL}/search-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, product: false, startDate: prevStart.toISOString(), endDate: prevEnd.toISOString(), dueOnly: false }, baseHeaders).then(res => res.data?.data?.data || []).catch(()=>[]));
-        masterPromises.push(axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, product: false, startDate: prevStart.toISOString(), endDate: prevEnd.toISOString(), dueOnly: false }, baseHeaders).then(res => res.data?.data?.data || []).catch(()=>[]));
-      }
 
       const masterResults = await Promise.all(masterPromises);
       
@@ -90,18 +86,6 @@ export default function BalanceSheetPage() {
       const accountsRaw = masterResults[2];
       const salesInvoices = masterResults[3];
       const purchaseInvoices = masterResults[4];
-      const prevSalesInvoices = isPrevPeriodValid ? masterResults[5] : [];
-      const prevPurchaseInvoices = isPrevPeriodValid ? masterResults[6] : [];
-
-      // Build Maps for Invoices
-      const salesMap = new Map();
-      const purchaseMap = new Map();
-      const prevSalesMap = new Map();
-      const prevPurchaseMap = new Map();
-      
-      salesInvoices.forEach(inv => salesMap.set(inv.invoice_id, inv));
-      purchaseInvoices.forEach(inv => purchaseMap.set(inv.invoice_id, inv));
-      prevPurchaseInvoices.forEach(inv => prevPurchaseMap.set(inv.invoice_id, inv));
 
       // Calculate Stock Balance (same logic as Profit & Loss report)
       const aggregateTotal = (invoices) => {
@@ -131,8 +115,7 @@ export default function BalanceSheetPage() {
 
       const avgPurchasePrice = totalPurchaseQty > 0 ? totalPurchaseBdt / totalPurchaseQty : 0;
       const stockAvailable = totalPurchaseQty - totalSalesQty;
-      const stockMultiplier = stockAvailable === 0 ? 1 : stockAvailable;
-      const currentStockPrice = avgPurchasePrice * stockMultiplier;
+      const currentStockPrice = avgPurchasePrice * stockAvailable;
       
       setStockBalance(currentStockPrice);
 
@@ -154,25 +137,18 @@ export default function BalanceSheetPage() {
       const addOrUpdateUser = (nameStr, type, dataObj) => {
           if (!nameStr) return;
           
-          // Strip currency identifiers to group BGN, BGN (BD), BGN (DH) into one "BGN"
           let baseName = nameStr.replace(/\(BD\)/i, '').replace(/\(DH\)/i, '').replace(/\(AED\)/i, '').trim();
           
           const key = baseName.toLowerCase();
           if (!usersMap.has(key)) {
-              usersMap.set(key, { name: baseName, customer_ids: [], vendor_ids: [], accounts: [] });
+              usersMap.set(key, { name: baseName, accounts: [] });
           }
-          
-          if (type === 'customer') usersMap.get(key).customer_ids.push(dataObj.id);
-          if (type === 'vendor') usersMap.get(key).vendor_ids.push(dataObj.id);
           if (type === 'account') usersMap.get(key).accounts.push(dataObj);
       };
 
       customers.forEach(c => addOrUpdateUser(c.name || `Customer #${c.id}`, 'customer', c));
       vendors.forEach(v => addOrUpdateUser(v.name || `Vendor #${v.id}`, 'vendor', v));
       flattenedAccounts.forEach(a => addOrUpdateUser(a.payment_category_name, 'account', a));
-
-      // We need to match Cashbook accounts to names more fuzzily like in fund-transfer, 
-      // but let's assume the exact lowercase match is what we want since we are grouping them globally.
 
       const allUsers = Array.from(usersMap.values());
 
@@ -184,25 +160,44 @@ export default function BalanceSheetPage() {
 
         const chunkPromises = [];
         chunk.forEach(user => {
-            const payload = { start_date: filters.start_date, end_date: filters.end_date };
-            const prevPayload = { start_date: prevStart.toISOString(), end_date: prevEnd.toISOString() };
+            // 1. Party Ledger Report
+            chunkPromises.push(
+                axios.post(`${API_URL}/party-ledger-report`, {
+                    start_date: startDateFormatted,
+                    end_date: endDateFormatted,
+                    name: user.name
+                }, baseHeaders)
+                .then(res => ({ user, type: 'party_ledger', data: res.data?.ledger || [] }))
+                .catch(() => ({ user, type: 'party_ledger', data: [] }))
+            );
 
-            user.customer_ids.forEach(cid => {
-                chunkPromises.push(axios.post(`${API_URL}/ledger-statement-report`, { ...payload, customer_id: cid }, baseHeaders).then(res => ({ user, type: 'ledger_curr', entityType: 'customer', data: res.data?.data || res.data })).catch(() => ({ user, type: 'ledger_curr', entityType: 'customer', data: null })));
-                if (isPrevPeriodValid) chunkPromises.push(axios.post(`${API_URL}/ledger-statement-report`, { ...prevPayload, customer_id: cid }, baseHeaders).then(res => ({ user, type: 'ledger_prev', entityType: 'customer', data: res.data?.data || res.data })).catch(() => ({ user, type: 'ledger_prev', entityType: 'customer', data: null })));
-            });
+            // 2. Party Book Report (Opening Balance)
+            chunkPromises.push(
+                axios.post(`${API_URL}/party-book-report`, {
+                    date: startDateFormatted,
+                    search: user.name
+                }, baseHeaders)
+                .then(res => ({ user, type: 'party_book', data: res.data?.data?.[0] || null }))
+                .catch(() => ({ user, type: 'party_book', data: null }))
+            );
 
-            user.vendor_ids.forEach(vid => {
-                chunkPromises.push(axios.post(`${API_URL}/ledger-statement-report`, { ...payload, vendor_id: vid }, baseHeaders).then(res => ({ user, type: 'ledger_curr', entityType: 'vendor', data: res.data?.data || res.data })).catch(() => ({ user, type: 'ledger_curr', entityType: 'vendor', data: null })));
-                if (isPrevPeriodValid) chunkPromises.push(axios.post(`${API_URL}/ledger-statement-report`, { ...prevPayload, vendor_id: vid }, baseHeaders).then(res => ({ user, type: 'ledger_prev', entityType: 'vendor', data: res.data?.data || res.data })).catch(() => ({ user, type: 'ledger_prev', entityType: 'vendor', data: null })));
-            });
-
+            // 3. Cashbook for matching accounts
             user.accounts.forEach(acc => {
-                const cbPayload = { start_date: payload.start_date, end_date: payload.end_date, view_order: "asc", payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) };
-                const cbPrevPayload = { start_date: prevPayload.start_date, end_date: prevPayload.end_date, view_order: "asc", payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) };
-                
-                chunkPromises.push(axios.post(`${API_URL}/cash-book-report`, cbPayload, baseHeaders).then(res => ({ user, acc, type: 'cb_curr', data: res.data })).catch(() => ({ user, acc, type: 'cb_curr', data: null })));
-                if (isPrevPeriodValid) chunkPromises.push(axios.post(`${API_URL}/cash-book-report`, cbPrevPayload, baseHeaders).then(res => ({ user, acc, type: 'cb_prev', data: res.data })).catch(() => ({ user, acc, type: 'cb_prev', data: null })));
+                const cbPayload = { start_date: filters.start_date, end_date: filters.end_date, view_order: "asc", payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) };
+                const cbPrevPayload = { start_date: prevStart.toISOString(), end_date: prevEnd.toISOString(), view_order: "asc", payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) };
+
+                chunkPromises.push(
+                    axios.post(`${API_URL}/cash-book-report`, cbPayload, baseHeaders)
+                    .then(res => ({ user, acc, type: 'cb_curr', data: res.data }))
+                    .catch(() => ({ user, acc, type: 'cb_curr', data: null }))
+                );
+                if (isPrevPeriodValid) {
+                    chunkPromises.push(
+                        axios.post(`${API_URL}/cash-book-report`, cbPrevPayload, baseHeaders)
+                        .then(res => ({ user, acc, type: 'cb_prev', data: res.data }))
+                        .catch(() => ({ user, acc, type: 'cb_prev', data: null }))
+                    );
+                }
             });
         });
 
@@ -214,73 +209,30 @@ export default function BalanceSheetPage() {
             let userCashAED = 0;
             let userCashBDT = 0;
 
-            // 1. Process Ledger
-            // For each customer/vendor id, compute their balance separately and add to running total
-            const processLedger = (id, eType) => {
-                const currDataList = chunkResults.filter(r => r.user.name === user.name && r.type === 'ledger_curr' && r.entityType === eType && r.data);
-                const prevDataList = chunkResults.filter(r => r.user.name === user.name && r.type === 'ledger_prev' && r.entityType === eType && r.data);
-                
-                currDataList.forEach((currRes, idx) => {
-                    const prevRes = prevDataList[idx]; // Assume matching index for same id (technically we should match by ID, but since we pushed them sequentially per user, this is fine. Let's make it robust though)
-                    
-                    let currentEntries = Array.isArray(currRes?.data?.ledger) ? currRes.data.ledger : [];
-                    let prevEntries = Array.isArray(prevRes?.data?.ledger) ? prevRes.data.ledger : [];
+            // Extract Opening Balance
+            const partyBookRes = chunkResults.find(r => r.user.name === user.name && r.type === 'party_book');
+            if (partyBookRes && partyBookRes.data) {
+                userLedgerAED = Number(partyBookRes.data.aed?.opening_balance || 0);
+                userLedgerBDT = Number(partyBookRes.data.cash?.opening_balance || 0);
+            }
 
-                    let prevTotalDebit = 0;
-                    let prevTotalCredit = 0;
-                    prevEntries.forEach(e => {
-                        let amt = Number(e.balance) || Number(e.amount) || Number(e.sub_total) || 0;
-                        if (e.invoice_id) {
-                            if (e.invoice_id.startsWith("INV-") && prevSalesMap.has(e.invoice_id)) {
-                                const inv = prevSalesMap.get(e.invoice_id);
-                                amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
-                            } else if (e.invoice_id.startsWith("PUR-") && prevPurchaseMap.has(e.invoice_id)) {
-                                const inv = prevPurchaseMap.get(e.invoice_id);
-                                amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
-                            }
-                        }
-                        if (eType === 'vendor') prevTotalDebit += amt;
-                        if (eType === 'customer') prevTotalCredit += amt;
-                    });
-                    
-                    let opBalance = prevTotalCredit - prevTotalDebit;
-                    
-                    currentEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-                    
-                    let runAed = opBalance;
-                    let runBdt = opBalance;
+            // Process Ledger Transactions
+            const partyLedgerRes = chunkResults.find(r => r.user.name === user.name && r.type === 'party_ledger');
+            const ledgerEntries = partyLedgerRes?.data || [];
+            
+            ledgerEntries.forEach(e => {
+                const credit = Number(e.credit) || 0;
+                const debit = Number(e.debit) || 0;
+                const mode = (e.pay_mode || "").toUpperCase();
 
-                    currentEntries.forEach(e => {
-                        let amt = Number(e.balance) || Number(e.amount) || Number(e.sub_total) || 0;
-                        if (e.invoice_id) {
-                            if (e.invoice_id.startsWith("INV-") && salesMap.has(e.invoice_id)) {
-                                const inv = salesMap.get(e.invoice_id);
-                                amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
-                            } else if (e.invoice_id.startsWith("PUR-") && purchaseMap.has(e.invoice_id)) {
-                                const inv = purchaseMap.get(e.invoice_id);
-                                amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
-                            }
-                        }
-                        let debit = eType === 'vendor' ? amt : 0;
-                        let credit = eType === 'customer' ? amt : 0;
+                if (mode.includes("AED")) {
+                    userLedgerAED = userLedgerAED + credit - debit;
+                } else {
+                    userLedgerBDT = userLedgerBDT + credit - debit;
+                }
+            });
 
-                        const mode = (e?.pay_mode || "").toUpperCase();
-                        if (mode.includes("AED")) {
-                            runAed = runAed + credit - debit;
-                        } else {
-                            runBdt = runBdt + credit - debit;
-                        }
-                    });
-
-                    userLedgerAED += runAed;
-                    userLedgerBDT += runBdt;
-                });
-            };
-
-            processLedger('any', 'customer');
-            processLedger('any', 'vendor');
-
-            // 2. Process Cashbook
+            // Process Cashbook
             user.accounts.forEach(acc => {
                 const cb = chunkResults.find(r => r.user.name === user.name && r.type === 'cb_curr' && r.acc.id === acc.id)?.data;
                 const prevCb = chunkResults.find(r => r.user.name === user.name && r.type === 'cb_prev' && r.acc.id === acc.id)?.data;
