@@ -181,46 +181,46 @@ export default function LedgerStatementReportPDF({
   summaryTotalsAED, 
   summaryTotalsBDT, 
   filters, 
-  user, 
-  accountsAED = [], 
-  accountsBDT = [], 
-  grandEndingAED = 0, 
-  grandEndingBDT = 0 
+  user 
 }) {
   const startDate = new Date(filters.start_date).toLocaleDateString()
   const endDate = new Date(filters.end_date).toLocaleDateString()
   const logo = logoUrl || null;
 
-  const RenderTable = ({ title, entries, totals, matchedAccounts, grandBal }) => (
-    <View style={{ marginBottom: 30 }}>
-      <Text style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 5 }}>{title}</Text>
+  const RenderTable = ({ title, entries, totals }) => (
+    <View style={styles.tableWrapper}>
+      <Text style={styles.tableTitle}>{title}</Text>
       <View style={styles.table}>
-        <View style={styles.tableRow}>
-          <Text style={{ ...styles.tableHeaderCell, flex: 1.5 }}>Date</Text>
-          <Text style={{ ...styles.tableHeaderCell, flex: 3.5 }}>Particulars</Text>
-          <Text style={{ ...styles.tableHeaderCell, flex: 1.5, textAlign: "right" }}>Debit</Text>
-          <Text style={{ ...styles.tableHeaderCell, flex: 1.5, textAlign: "right" }}>Credit</Text>
-          <Text style={{ ...styles.tableHeaderCell, flex: 1.5, textAlign: "right" }}>Balance</Text>
-          <Text style={{ ...styles.tableHeaderCell, flex: 1.5 }}>Remarks</Text>
+        <View style={{ ...styles.tableRow, ...styles.tableHeader }}>
+          <Text style={{ ...styles.tableCell, flex: 1.5 }}>DATE</Text>
+          <Text style={{ ...styles.tableCell, flex: 3.5 }}>PARTICULARS</Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>DEBIT</Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>CREDIT</Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>BALANCE</Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5 }}>REMARKS</Text>
         </View>
 
-        <View style={{ ...styles.tableRow, ...styles.openingBalanceRow }}>
+        <View style={styles.tableRow}>
           <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-          <Text style={{ ...styles.tableCell, flex: 3.5 }}>Opening Balance</Text>
+          <Text style={{ ...styles.tableCell, flex: 3.5, fontFamily: "Helvetica-Bold" }}>Opening Balance</Text>
           <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
           <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(totals?.opening_balance)}</Text>
+          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right", fontFamily: "Helvetica-Bold" }}>
+            {fmt2(totals?.opening_balance)}
+          </Text>
           <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
         </View>
 
         {entries?.map((entry, idx) => (
-          <View style={styles.tableRow} key={idx}>
-            <Text style={{ ...styles.tableCell, flex: 1.5 }}>{entry.date ? new Date(entry.date).toLocaleDateString() : "-"}</Text>
-            <Text style={{ ...styles.tableCell, flex: 3.5 }}>{entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "-")}</Text>
+          <View key={idx} style={styles.tableRow}>
+            <Text style={{ ...styles.tableCell, flex: 1.5 }}>{entry.date ? new Date(entry.date).toLocaleDateString("en-GB") : ""}</Text>
+            <Text style={{ ...styles.tableCell, flex: 3.5 }}>
+              {entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "")}
+            </Text>
             <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{entry.debit ? fmt2(entry.debit) : "-"}</Text>
             <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{entry.credit ? fmt2(entry.credit) : "-"}</Text>
-            <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(entry.balance)}</Text>
-            <Text style={{ ...styles.tableCell, flex: 1.5 }}>{entry.remarks || "-"}</Text>
+            <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right", fontFamily: "Helvetica-Bold" }}>{fmt2(entry.balance)}</Text>
+            <Text style={{ ...styles.tableCell, flex: 1.5 }}>{entry.remarks || ""}</Text>
           </View>
         ))}
 
@@ -233,43 +233,6 @@ export default function LedgerStatementReportPDF({
           <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
         </View>
       </View>
-
-      {matchedAccounts && matchedAccounts.length > 0 && (
-        <View style={styles.accountsContainer}>
-          <View style={styles.accountRow}>
-            <Text style={styles.accountRowLabel}>Ledger Closing Balance</Text>
-            <Text style={styles.accountRowValue}>{fmt2(totals?.closing_balance)}</Text>
-          </View>
-          {matchedAccounts.map((acc, idx) => (
-            <View key={`acc-${idx}`}>
-              <View style={{...styles.accountRow, backgroundColor: '#f9f9f9'}}>
-                <Text style={{...styles.accountRowLabel, borderRightWidth: 0, fontWeight: 'bold'}}>Account: {acc.payment_category_name}</Text>
-                <Text style={styles.accountRowValue}></Text>
-              </View>
-              <View style={styles.accountRow}>
-                <Text style={{...styles.accountRowLabel, paddingLeft: 15}}>Opening Balance</Text>
-                <Text style={styles.accountRowValue}>{fmt2(acc.opening_balance)}</Text>
-              </View>
-              <View style={styles.accountRow}>
-                <Text style={{...styles.accountRowLabel, paddingLeft: 15}}>Total Debit</Text>
-                <Text style={styles.accountRowValue}>{fmt2(acc.total_debit)}</Text>
-              </View>
-              <View style={styles.accountRow}>
-                <Text style={{...styles.accountRowLabel, paddingLeft: 15}}>Total Credit</Text>
-                <Text style={styles.accountRowValue}>{fmt2(acc.total_credit)}</Text>
-              </View>
-              <View style={styles.accountRow}>
-                <Text style={{...styles.accountRowLabel, paddingLeft: 15, fontWeight: 'bold'}}>Closing Balance</Text>
-                <Text style={{...styles.accountRowValue, fontWeight: 'bold'}}>{fmt2(acc.closing_balance)}</Text>
-              </View>
-            </View>
-          ))}
-          <View style={styles.grandTotalRow}>
-            <Text style={styles.grandTotalLabel}>GRAND ENDING BALANCE</Text>
-            <Text style={styles.grandTotalValue}>{fmt2(grandBal)}</Text>
-          </View>
-        </View>
-      )}
     </View>
   );
 
@@ -316,27 +279,23 @@ export default function LedgerStatementReportPDF({
                           {endDate}
                         </Text>
 
-        {(ledgerBDT?.length > 0 || accountsBDT?.length > 0) && (
+        {(ledgerBDT?.length > 0 || summaryTotalsBDT?.opening_balance !== 0) && (
           <RenderTable 
             title="LEDGER STATEMENT - BDT" 
             entries={ledgerBDT} 
             totals={summaryTotalsBDT} 
-            matchedAccounts={accountsBDT} 
-            grandBal={grandEndingBDT} 
           />
         )}
-        {(ledgerAED?.length > 0 || accountsAED?.length > 0) && (
+        {(ledgerAED?.length > 0 || summaryTotalsAED?.opening_balance !== 0) && (
           <RenderTable 
             title="LEDGER STATEMENT - AED" 
             entries={ledgerAED} 
             totals={summaryTotalsAED} 
-            matchedAccounts={accountsAED} 
-            grandBal={grandEndingAED} 
           />
         )}
         
-        {(!ledgerBDT || ledgerBDT.length === 0) && (!accountsBDT || accountsBDT.length === 0) && 
-         (!ledgerAED || ledgerAED.length === 0) && (!accountsAED || accountsAED.length === 0) && (
+        {(!ledgerBDT || ledgerBDT.length === 0) && (summaryTotalsBDT?.opening_balance === 0 || !summaryTotalsBDT) &&
+         (!ledgerAED || ledgerAED.length === 0) && (summaryTotalsAED?.opening_balance === 0 || !summaryTotalsAED) && (
           <View style={{ marginBottom: 30, padding: 20, textAlign: 'center' }}>
              <Text style={{ fontSize: 12, color: '#666' }}>No ledger data found.</Text>
           </View>
