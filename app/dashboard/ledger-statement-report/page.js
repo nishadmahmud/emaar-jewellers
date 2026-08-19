@@ -137,7 +137,7 @@ export default function LedgerStatementReportPage() {
     if (!token) return;
     setAppliedFilters(filters);
     
-    if (!filters.customer_id && !filters.vendor_id) {
+    if (!filters.selected_name) {
         toast.error("Please select a Customer or Vendor first");
         return;
     }
@@ -146,126 +146,64 @@ export default function LedgerStatementReportPage() {
       setIsLoading(true);
       setError(false);
 
+      const startDateFormatted = filters.start_date.slice(0, 10);
+      const endDateFormatted = filters.end_date.slice(0, 10);
+
       const promises = [];
 
-      // Calculate previous period dates for opening balance calculation
-      const currentStart = new Date(filters.start_date);
-      const prevStart = new Date(Date.UTC(currentStart.getUTCFullYear(), currentStart.getUTCMonth(), 1, 0, 0, 0, 0));
-      const prevEnd = new Date(currentStart.getTime() - 1); // 1 ms before current start
-      const isPrevPeriodValid = prevEnd.getTime() >= prevStart.getTime();
+      // 1. Party Ledger Report - gives ledger entries with debit/credit/pay_mode
+      promises.push(
+        axios.post(`${API_URL}/party-ledger-report`, {
+          start_date: startDateFormatted,
+          end_date: endDateFormatted,
+          name: filters.selected_name
+        }, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => ({ type: 'party_ledger', data: res.data?.ledger || [] }))
+        .catch(() => ({ type: 'party_ledger', data: [] }))
+      );
 
-      if (filters.customer_id) {
-        promises.push(
-          axios.post(`${API_URL}/ledger-statement-report`, {
-            start_date: filters.start_date,
-            end_date: filters.end_date,
-            customer_id: filters.customer_id
-          }, { headers: { Authorization: `Bearer ${token}` } })
-          .then(res => ({ type: 'customer', data: res.data?.data || res.data }))
-        );
-        if (isPrevPeriodValid) {
-            promises.push(
-              axios.post(`${API_URL}/ledger-statement-report`, {
-                start_date: prevStart.toISOString(),
-                end_date: prevEnd.toISOString(),
-                customer_id: filters.customer_id
-              }, { headers: { Authorization: `Bearer ${token}` } })
-              .then(res => ({ type: 'prev_customer', data: res.data?.data || res.data }))
-              .catch(() => ({ type: 'prev_customer', data: [] }))
-            );
-        }
-      }
+      // 2. Party Book Report - gives opening balance for BDT and AED
+      promises.push(
+        axios.post(`${API_URL}/party-book-report`, {
+          date: startDateFormatted,
+          search: filters.selected_name
+        }, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => ({ type: 'party_book', data: res.data?.data?.[0] || null }))
+        .catch(() => ({ type: 'party_book', data: null }))
+      );
 
-      if (filters.vendor_id) {
-        promises.push(
-          axios.post(`${API_URL}/ledger-statement-report`, {
-            start_date: filters.start_date,
-            end_date: filters.end_date,
-            vendor_id: filters.vendor_id
-          }, { headers: { Authorization: `Bearer ${token}` } })
-          .then(res => ({ type: 'vendor', data: res.data?.data || res.data }))
-        );
-        if (isPrevPeriodValid) {
-            promises.push(
-              axios.post(`${API_URL}/ledger-statement-report`, {
-                start_date: prevStart.toISOString(),
-                end_date: prevEnd.toISOString(),
-                vendor_id: filters.vendor_id
-              }, { headers: { Authorization: `Bearer ${token}` } })
-              .then(res => ({ type: 'prev_vendor', data: res.data?.data || res.data }))
-              .catch(() => ({ type: 'prev_vendor', data: [] }))
-            );
-        }
-      }
-
-      // Fetch accounts to match against selected name
+      // 3. Payment Type Category List - for matching accounts
       promises.push(
         axios.get(`${API_URL}/payment-type-category-list?per_page=1000&t=${Date.now()}`, { headers: { Authorization: `Bearer ${token}` } })
         .then(res => ({ type: 'accounts', data: res.data?.data?.data ?? res.data?.data ?? res.data ?? [] }))
+        .catch(() => ({ type: 'accounts', data: [] }))
       );
-
-      // Fetch all sales invoices for the date range
-      promises.push(
-        axios.post(`${API_URL}/search-invoice?page=1&limit=5000`, {
-           keyword: "", nameId: false, emailId: false, phoneId: false, product: false,
-           startDate: filters.start_date, endDate: filters.end_date, dueOnly: false
-        }, { headers: { Authorization: `Bearer ${token}` } })
-        .then(res => ({ type: 'sales_invoices', data: res.data?.data?.data || [] }))
-        .catch(() => ({ type: 'sales_invoices', data: [] }))
-      );
-      if (isPrevPeriodValid) {
-          promises.push(
-            axios.post(`${API_URL}/search-invoice?page=1&limit=5000`, {
-               keyword: "", nameId: false, emailId: false, phoneId: false, product: false,
-               startDate: prevStart.toISOString(), endDate: prevEnd.toISOString(), dueOnly: false
-            }, { headers: { Authorization: `Bearer ${token}` } })
-            .then(res => ({ type: 'prev_sales_invoices', data: res.data?.data?.data || [] }))
-            .catch(() => ({ type: 'prev_sales_invoices', data: [] }))
-          );
-      }
-
-      // Fetch all purchase invoices for the date range
-      promises.push(
-        axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=5000`, {
-           keyword: "", nameId: false, emailId: false, phoneId: false, product: false,
-           startDate: filters.start_date, endDate: filters.end_date, dueOnly: false
-        }, { headers: { Authorization: `Bearer ${token}` } })
-        .then(res => ({ type: 'purchase_invoices', data: res.data?.data?.data || [] }))
-        .catch(() => ({ type: 'purchase_invoices', data: [] }))
-      );
-      if (isPrevPeriodValid) {
-          promises.push(
-            axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=5000`, {
-               keyword: "", nameId: false, emailId: false, phoneId: false, product: false,
-               startDate: prevStart.toISOString(), endDate: prevEnd.toISOString(), dueOnly: false
-            }, { headers: { Authorization: `Bearer ${token}` } })
-            .then(res => ({ type: 'prev_purchase_invoices', data: res.data?.data?.data || [] }))
-            .catch(() => ({ type: 'prev_purchase_invoices', data: [] }))
-          );
-      }
 
       const results = await Promise.all(promises);
 
-      let totalOpeningBalance = 0;
+      let openingBalanceAED = 0;
+      let openingBalanceBDT = 0;
       let allEntries = [];
       let foundMatchedAccounts = [];
-      
-      const salesMap = new Map();
-      const purchaseMap = new Map();
-
-      let prevAllEntries = [];
-      const prevSalesMap = new Map();
-      const prevPurchaseMap = new Map();
 
       results.forEach(res => {
-        if (res.type === 'sales_invoices') {
-           res.data.forEach(inv => salesMap.set(inv.invoice_id, inv));
-        } else if (res.type === 'purchase_invoices') {
-           res.data.forEach(inv => purchaseMap.set(inv.invoice_id, inv));
-        } else if (res.type === 'prev_sales_invoices') {
-           res.data.forEach(inv => prevSalesMap.set(inv.invoice_id, inv));
-        } else if (res.type === 'prev_purchase_invoices') {
-           res.data.forEach(inv => prevPurchaseMap.set(inv.invoice_id, inv));
+        if (res.type === 'party_ledger') {
+           allEntries = res.data.map(e => ({
+                date: e.date,
+                invoice_id: e.invoice || e.transaction_id,
+                particulars: e.description,
+                debit: Number(e.debit) || 0,
+                credit: Number(e.credit) || 0,
+                balance: 0, // calculated later
+                remarks: e.type,
+                pay_mode: e.pay_mode || "Cash"
+            }));
+        } else if (res.type === 'party_book') {
+           const d = res.data;
+           if (d) {
+               openingBalanceAED = Number(d.aed?.opening_balance || 0);
+               openingBalanceBDT = Number(d.cash?.opening_balance || 0);
+           }
         } else if (res.type === 'accounts') {
            const rawList = res.data;
            const flattenedAccounts = [];
@@ -274,7 +212,7 @@ export default function LedgerStatementReportPage() {
                item.payment_type_category.forEach((acc) => {
                  flattenedAccounts.push({
                    ...acc,
-                   actual_payment_type_id: item.id, // Parent's ID is the true payment type ID
+                   actual_payment_type_id: item.id,
                    payment_category_name: acc.payment_category_name || acc.name || item.type_name || "Account",
                    balance: Number(acc.paymentcategory_sum_payment_amount ?? acc.balance ?? acc.amount ?? 0),
                  });
@@ -282,7 +220,7 @@ export default function LedgerStatementReportPage() {
              } else {
                flattenedAccounts.push({
                  ...item,
-                 actual_payment_type_id: item.id, // This is the type itself
+                 actual_payment_type_id: item.id,
                  payment_category_name: item.payment_category_name || item.name || item.type_name || "Account",
                  balance: Number(item.paymentcategory_sum_payment_amount ?? item.balance ?? item.amount ?? 0),
                });
@@ -297,88 +235,25 @@ export default function LedgerStatementReportPage() {
                return accFirstName === selectedFirstName;
              });
            }
-         } else if (res.type === 'customer' || res.type === 'vendor') {
-           const type = res.type;
-           const d = res.data;
-           const entries = Array.isArray(d.ledger) ? d.ledger : [];
-
-           const mappedEntries = entries.map(e => ({
-              ...e,
-              source_type: type,
-           }));
-           
-           allEntries = allEntries.concat(mappedEntries);
-         } else if (res.type === 'prev_customer' || res.type === 'prev_vendor') {
-            const type = res.type.replace('prev_', '');
-            const d = res.data;
-            const entries = Array.isArray(d.ledger) ? d.ledger : [];
-            const mappedEntries = entries.map(e => ({
-               ...e,
-               source_type: type,
-            }));
-            prevAllEntries = prevAllEntries.concat(mappedEntries);
-         }
+        }
       });
-
-      // Calculate dynamic opening balance from previous period ledger entries
-      if (isPrevPeriodValid) {
-          let prevTotalDebit = 0;
-          let prevTotalCredit = 0;
-          prevAllEntries.forEach(e => {
-              let amt = Number(e.balance) || Number(e.amount) || Number(e.sub_total) || 0;
-              if (e.invoice_id) {
-                 if (e.invoice_id.startsWith("INV-") && prevSalesMap.has(e.invoice_id)) {
-                    const inv = prevSalesMap.get(e.invoice_id);
-                    amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
-                 } else if (e.invoice_id.startsWith("PUR-") && prevPurchaseMap.has(e.invoice_id)) {
-                    const inv = prevPurchaseMap.get(e.invoice_id);
-                    amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
-                 }
-              }
-              if (e.source_type === 'vendor') prevTotalDebit += amt;
-              if (e.source_type === 'customer') prevTotalCredit += amt;
-          });
-          totalOpeningBalance = prevTotalCredit - prevTotalDebit;
-      } else {
-          totalOpeningBalance = 0;
-      }
 
       // Sort serially by date ascending
-      allEntries.sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-        return dateA - dateB;
-      });
-
-      // Separate transaction amount into Debit (Purchase) or Credit (Sale).
-      allEntries = allEntries.map(e => {
-        let amt = Number(e.balance) || Number(e.amount) || Number(e.sub_total) || 0;
-        
-        if (e.invoice_id) {
-           if (e.invoice_id.startsWith("INV-") && salesMap.has(e.invoice_id)) {
-              const inv = salesMap.get(e.invoice_id);
-              amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
-           } else if (e.invoice_id.startsWith("PUR-") && purchaseMap.has(e.invoice_id)) {
-              const inv = purchaseMap.get(e.invoice_id);
-              amt = Number(inv.sub_total || 0) - Number(inv.discount || 0);
-           }
-        }
-
-        return {
-          ...e,
-          debit: e.source_type === 'vendor' ? amt : 0,
-          credit: e.source_type === 'customer' ? amt : 0,
-          balance: 0, // Will be calculated cumulatively later
-        };
-      });
+      allEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
       setReportData({
-        opening_balance: totalOpeningBalance,
+        opening_balance_aed: openingBalanceAED,
+        opening_balance_bdt: openingBalanceBDT,
         ledger: allEntries
       });
       
       // Fetch Cashbook Report for matched accounts
       if (foundMatchedAccounts.length > 0) {
+          const currentStart = new Date(filters.start_date);
+          const prevStart = new Date(Date.UTC(currentStart.getUTCFullYear(), currentStart.getUTCMonth(), 1, 0, 0, 0, 0));
+          const prevEnd = new Date(currentStart.getTime() - 1);
+          const isPrevPeriodValid = prevEnd.getTime() >= prevStart.getTime();
+
           const cashbookPromises = foundMatchedAccounts.map(acc => {
               const sd = new Date(filters.start_date);
               sd.setHours(0, 0, 0, 0);
