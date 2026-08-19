@@ -32,6 +32,7 @@ export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const [currency, setCurrency] = useState('AED');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isQuickPaymentOpen, setIsQuickPaymentOpen] = useState(false);
 
   const [openDropdowns, setOpenDropdowns] = useState({});
@@ -110,6 +111,7 @@ export default function DashboardLayout({ children }) {
   const renderNavItem = (item, isMobile = false) => {
     const Icon = item.icon;
     const isActive = item.href ? pathname === item.href : false;
+    const isCollapsed = !isMobile && isSidebarCollapsed;
 
     if (item.action === 'quick-payment-modal') {
       return (
@@ -120,10 +122,11 @@ export default function DashboardLayout({ children }) {
             if (isMobile) setIsMobileMenuOpen(false);
             setIsQuickPaymentOpen(true);
           }}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-600 hover:text-black hover:bg-neutral-100 transition-colors text-left cursor-pointer"
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-600 hover:text-black hover:bg-neutral-100 transition-colors text-left cursor-pointer ${isCollapsed ? 'justify-center' : ''}`}
+          title={isCollapsed ? item.name : undefined}
         >
-          <Icon size={18} />
-          <span>{item.name}</span>
+          <Icon size={18} className="shrink-0" />
+          {!isCollapsed && <span>{item.name}</span>}
         </button>
       );
     }
@@ -137,22 +140,30 @@ export default function DashboardLayout({ children }) {
           isActive
             ? 'bg-black text-white font-medium shadow-xs'
             : 'text-neutral-600 hover:text-black hover:bg-neutral-100'
-        }`}
+        } ${isCollapsed ? 'justify-center' : ''}`}
+        title={isCollapsed ? item.name : undefined}
       >
-        <Icon size={18} />
-        <span>{item.name}</span>
+        <Icon size={18} className="shrink-0" />
+        {!isCollapsed && <span>{item.name}</span>}
       </Link>
     );
   };
 
-  const renderNavGroup = (group, isMobile = false) => (
-    <div key={group.section} className="mb-6 last:mb-0">
-      <h3 className="px-3 mb-2 text-xs font-bold text-neutral-400 uppercase tracking-wider">{group.section}</h3>
-      <div className="space-y-1">
-        {group.items.map((item) => renderNavItem(item, isMobile))}
+  const renderNavGroup = (group, isMobile = false) => {
+    const isCollapsed = !isMobile && isSidebarCollapsed;
+    return (
+      <div key={group.section} className="mb-6 last:mb-0">
+        {!isCollapsed ? (
+          <h3 className="px-3 mb-2 text-xs font-bold text-neutral-400 uppercase tracking-wider">{group.section}</h3>
+        ) : (
+          <div className="px-3 mb-2 h-4" />
+        )}
+        <div className="space-y-1">
+          {group.items.map((item) => renderNavItem(item, isMobile))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="h-screen overflow-hidden bg-neutral-50 text-neutral-900 flex print:h-auto print:overflow-visible print:bg-white print:block">
@@ -200,9 +211,13 @@ export default function DashboardLayout({ children }) {
       )}
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex w-64 flex-col bg-white border-r border-neutral-200 shrink-0 print:hidden">
-        <div className="h-16 flex items-center px-6 border-b border-neutral-200 shrink-0">
-          <h1 className="text-xl font-light tracking-widest text-black">EMAAR</h1>
+      <div className={`hidden md:flex flex-col bg-white border-r border-neutral-200 shrink-0 print:hidden transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+        <div className="h-16 flex items-center justify-center px-6 border-b border-neutral-200 shrink-0">
+          {!isSidebarCollapsed ? (
+            <h1 className="text-xl font-light tracking-widest text-black">EMAAR</h1>
+          ) : (
+            <h1 className="text-xl font-light tracking-widest text-black">E</h1>
+          )}
         </div>
 
         <nav className="flex-1 overflow-y-auto py-6 px-4">
@@ -212,10 +227,11 @@ export default function DashboardLayout({ children }) {
         <div className="p-4 border-t border-neutral-200 shrink-0">
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors"
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors ${isSidebarCollapsed ? 'justify-center' : ''}`}
+            title={isSidebarCollapsed ? "Sign Out" : undefined}
           >
-            <LogOut size={18} />
-            Sign Out
+            <LogOut size={18} className="shrink-0" />
+            {!isSidebarCollapsed && <span>Sign Out</span>}
           </button>
         </div>
       </div>
@@ -230,7 +246,15 @@ export default function DashboardLayout({ children }) {
               className="md:hidden p-2 -ml-2 text-neutral-500 hover:text-black transition-colors"
               onClick={() => setIsMobileMenuOpen(true)}
             >
-              <span className="sr-only">Open sidebar</span>
+              <span className="sr-only">Open mobile menu</span>
+              <Menu size={24} />
+            </button>
+            <button
+              type="button"
+              className="hidden md:block p-2 -ml-2 text-neutral-500 hover:text-black transition-colors"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            >
+              <span className="sr-only">Toggle sidebar</span>
               <Menu size={24} />
             </button>
             <div className="relative max-w-md w-full hidden sm:block">
