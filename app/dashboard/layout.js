@@ -98,6 +98,16 @@ export default function DashboardLayout({ children }) {
       ]
     },
     {
+      section: 'HRM',
+      items: [
+        { name: 'Departments', href: '/dashboard/hrm/departments', icon: Users },
+        { name: 'Designations', href: '/dashboard/hrm/designations', icon: Users },
+        { name: 'Roles', href: '/dashboard/hrm/roles', icon: Users },
+        { name: 'Employees', href: '/dashboard/hrm/employees', icon: Users },
+        { name: 'Payroll', href: '/dashboard/hrm/employees-salary', icon: Receipt },
+      ]
+    },
+    {
       section: 'Management',
       items: [
         { name: 'Expense List', href: '/dashboard/expense/list', icon: Receipt },

@@ -453,6 +453,35 @@ export default function DashboardPage() {
   );
 
   const postFetcher = useMemo(() => ([url, body]) => axios.post(url, body, { headers: { Authorization: `Bearer ${session?.accessToken}` } }).then(res => res.data), [session?.accessToken]);
+  
+  const intervalDates = useMemo(() => {
+    const end = new Date();
+    const start = new Date();
+    if (interval === 'weekly') {
+      start.setDate(end.getDate() - 6);
+    } else if (interval === 'monthly') {
+      start.setDate(end.getDate() - 29);
+    } else if (interval === 'yearly') {
+      start.setDate(end.getDate() - 364);
+    }
+    return {
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0]
+    };
+  }, [interval]);
+
+  const fullSalesKey = useMemo(() => session?.accessToken ? [`${process.env.NEXT_PUBLIC_API}/search-invoice?page=1&limit=10000`, { 
+    keyword: "", nameId: false, emailId: false, phoneId: false, product: false, 
+    startDate: intervalDates.startDate, endDate: intervalDates.endDate, dueOnly: false 
+  }] : null, [session?.accessToken, intervalDates]);
+
+  const fullPurchasesKey = useMemo(() => session?.accessToken ? [`${process.env.NEXT_PUBLIC_API}/search-purchase-invoice?page=1&limit=10000`, { 
+    keyword: "", nameId: false, emailId: false, phoneId: false, imei: false, 
+    start_date: intervalDates.startDate, end_date: intervalDates.endDate 
+  }] : null, [session?.accessToken, intervalDates]);
+
+  const { data: fullSalesData } = useSWR(fullSalesKey, postFetcher, { revalidateOnFocus: false, dedupingInterval: 60000 });
+  const { data: fullPurchasesData } = useSWR(fullPurchasesKey, postFetcher, { revalidateOnFocus: false, dedupingInterval: 60000 });
   const dueListDates = useMemo(() => {
     const now = new Date();
     const past = new Date();
@@ -489,17 +518,66 @@ export default function DashboardPage() {
 
   const dash = dashboardData?.data || dashboardData || {};
 
-  const calculatedSalesQty = (salesData?.data?.data || salesData?.data || []).reduce((acc, inv) => {
+  const filterByInterval = (invDateStr) => {
+    if (!invDateStr) return false;
+    const invDate = new Date(invDateStr);
+    if (isNaN(invDate.getTime())) return false;
+    
+    const now = new Date();
+    const invDay = new Date(invDate.getFullYear(), invDate.getMonth(), invDate.getDate());
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    const diffDays = Math.floor((today.getTime() - invDay.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (interval === 'daily') return diffDays === 0;
+    if (interval === 'weekly') return diffDays >= 0 && diffDays <= 6;
+    if (interval === 'monthly') return diffDays >= 0 && diffDays <= 29;
+    if (interval === 'yearly') return diffDays >= 0 && diffDays <= 364;
+    return true;
+  };
+
+  const fullSalesList = fullSalesData?.data?.data || fullSalesData?.data || [];
+  const fullPurchasesList = fullPurchasesData?.data?.data || fullPurchasesData?.data || [];
+
+  const calculatedSalesQty = fullSalesList.reduce((acc, inv) => {
+    if (!filterByInterval(inv.date || inv.created_at)) return acc;
     return acc + (Array.isArray(inv.sales_details)
       ? inv.sales_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
       : 0);
   }, 0);
 
-  const calculatedPurchaseQty = (purchasesData?.data?.data || purchasesData?.data || []).reduce((acc, inv) => {
+  const calculatedPurchaseQty = fullPurchasesList.reduce((acc, inv) => {
+    if (!filterByInterval(inv.date || inv.created_at)) return acc;
     return acc + (Array.isArray(inv.purchase_details)
       ? inv.purchase_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
       : 0);
   }, 0);
+
+  let totalSalesBDT = 0;
+  let totalSalesAED = 0;
+  fullSalesList.forEach(inv => {
+    if (!filterByInterval(inv.date || inv.created_at)) return;
+    const { total } = calculatePayment(inv);
+    const payMode = inv.pay_mode || '';
+    if (payMode.includes('AED') || payMode.includes('(AED @')) {
+      totalSalesAED += total;
+    } else {
+      totalSalesBDT += total;
+    }
+  });
+
+  let totalPurchaseBDT = 0;
+  let totalPurchaseAED = 0;
+  fullPurchasesList.forEach(inv => {
+    if (!filterByInterval(inv.date || inv.created_at)) return;
+    const { total } = calculatePayment(inv);
+    const payMode = inv.pay_mode || '';
+    if (payMode.includes('AED') || payMode.includes('(AED @')) {
+      totalPurchaseAED += total;
+    } else {
+      totalPurchaseBDT += total;
+    }
+  });
 
   const mainMetrics = [
     {
@@ -521,13 +599,6 @@ export default function DashboardPage() {
       textColor: "text-cyan-900",
     },
     {
-      title: "Total Purchase Qty",
-      value: calculatedPurchaseQty,
-      icon: "📥",
-      color: "bg-teal-50/40 border-teal-100/60",
-      textColor: "text-teal-900",
-    },
-    {
       title: "Total Purchase",
       value: dash.purchase || 0,
       currency: "AED",
@@ -536,6 +607,45 @@ export default function DashboardPage() {
       color: "bg-amber-50/40 border-amber-100/60",
       textColor: "text-amber-900",
       link: "/dashboard/purchases",
+    },
+    {
+      title: "Total Purchase Qty",
+      value: calculatedPurchaseQty,
+      icon: "📥",
+      color: "bg-teal-50/40 border-teal-100/60",
+      textColor: "text-teal-900",
+    },
+    {
+      title: "Total Sales (BDT)",
+      value: totalSalesBDT,
+      currency: "BDT",
+      icon: "৳",
+      color: "bg-indigo-50/40 border-indigo-100/60",
+      textColor: "text-indigo-900",
+    },
+    {
+      title: "Total Sales (AED)",
+      value: totalSalesAED,
+      currency: "AED",
+      icon: "د.إ",
+      color: "bg-violet-50/40 border-violet-100/60",
+      textColor: "text-violet-900",
+    },
+    {
+      title: "Total Purchase (BDT)",
+      value: totalPurchaseBDT,
+      currency: "BDT",
+      icon: "৳",
+      color: "bg-rose-50/40 border-rose-100/60",
+      textColor: "text-rose-900",
+    },
+    {
+      title: "Total Purchase (AED)",
+      value: totalPurchaseAED,
+      currency: "AED",
+      icon: "د.إ",
+      color: "bg-fuchsia-50/40 border-fuchsia-100/60",
+      textColor: "text-fuchsia-900",
     },
   ];
 

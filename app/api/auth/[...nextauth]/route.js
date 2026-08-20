@@ -48,6 +48,23 @@ export const authOption = {
             throw new Error(data.message || data.error || "Invalid credentials");
           }
 
+          const employee = data?.employee || null;
+          const employeeDetails = employee
+            ? {
+                id: employee.id,
+                employee_id: employee.employee_id,
+                name: employee.name,
+                email: employee.email,
+                mobile_number: employee.mobile_number,
+                warehouse_id: employee.warehouse_id,
+                role_id: employee.role_id,
+                role: {
+                  id: employee.role?.id,
+                  name: employee.role?.name,
+                },
+              }
+            : null;
+
           // Return user object formatted for NextAuth based on backend response
           return {
             id: data.user?.id || data.id || "1",
@@ -56,6 +73,9 @@ export const authOption = {
             email: data.user?.email || data.email || credentials.email,
             accessToken: data.authorisation?.token || data.token || data.access_token || data.jwt || null,
             pinVerified: false,
+            isEmployee: !!employee,
+            employeeId: employee?.id || null,
+            employee: employeeDetails,
           };
         } catch (error) {
           throw new Error(error.message || "Failed to authenticate");
@@ -69,6 +89,9 @@ export const authOption = {
         token.accessToken = user.accessToken;
         token.pinVerified = user.pinVerified;
         token.user = user;
+        token.isEmployee = user.isEmployee;
+        token.employeeId = user.employeeId;
+        token.employee = user.employee;
       }
       if (trigger === "update" && session) {
         if (session.pinVerified !== undefined) {
@@ -81,6 +104,9 @@ export const authOption = {
       session.accessToken = token.accessToken;
       session.pinVerified = token.pinVerified;
       session.user = token.user;
+      session.isEmployee = token.isEmployee;
+      session.employeeId = token.employeeId;
+      session.employee = token.employee;
       return session;
     },
   },

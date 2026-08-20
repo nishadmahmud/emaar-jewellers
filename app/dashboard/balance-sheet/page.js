@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import axios from 'axios';
-import { Loader2, Calendar, Search } from 'lucide-react';
+import { Loader2, Calendar, Search, FileText, Printer, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { pdf } from '@react-pdf/renderer';
+import BalanceSheetPDF from './balance-sheet-pdf';
 
 function todayStartISO() {
   const d = new Date();
@@ -38,6 +40,7 @@ export default function BalanceSheetPage() {
   const [progressMsg, setProgressMsg] = useState('');
   const [aedRate, setAedRate] = useState(34);
   const [stockBalance, setStockBalance] = useState(0);
+  const tableRef = useRef(null);
   
   // Array of user balances: { name: string, bdt: number, aed: number }
   const [userBalances, setUserBalances] = useState([]);
@@ -289,6 +292,103 @@ export default function BalanceSheetPage() {
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handlePDFExport = useCallback(async () => {
+    try {
+      const blob = await pdf(
+        <BalanceSheetPDF
+          logoUrl={session?.user?.profile_pic || null}
+          userBalances={userBalances}
+          aedRate={aedRate}
+          sumBDT={sumBDT}
+          sumAED={sumAED}
+          grandTotal={grandTotal}
+          stockBalance={stockBalance}
+          totalAssetBalance={totalAssetBalance}
+          filters={filters}
+          user={session?.user}
+        />,
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (err) {
+      console.error(err);
+      toast.error("Error generating PDF.");
+    }
+  }, [userBalances, aedRate, sumBDT, sumAED, grandTotal, stockBalance, totalAssetBalance, filters, session?.user]);
+
+  const handlePDFDownload = useCallback(async () => {
+    try {
+      const blob = await pdf(
+        <BalanceSheetPDF
+          logoUrl={session?.user?.profile_pic || null}
+          userBalances={userBalances}
+          aedRate={aedRate}
+          sumBDT={sumBDT}
+          sumAED={sumAED}
+          grandTotal={grandTotal}
+          stockBalance={stockBalance}
+          totalAssetBalance={totalAssetBalance}
+          filters={filters}
+          user={session?.user}
+        />,
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `balance-sheet-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      toast.error("Error downloading PDF.");
+    }
+  }, [userBalances, aedRate, sumBDT, sumAED, grandTotal, stockBalance, totalAssetBalance, filters, session?.user]);
+
+  const handlePrintTable = useCallback(() => {
+    try {
+      if (!tableRef.current) return;
+      const content = tableRef.current.innerHTML;
+      const w = window.open("", "PRINT", "height=900,width=1200");
+      if (!w) return;
+      w.document.write(`
+        <html>
+          <head>
+            <title>Balance Sheet</title>
+            <style>
+              * { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+              table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+              thead th { background: #f3f4f6; text-align: left; }
+              th, td { border: 1px solid #000; padding: 6px 8px; font-size: 12px; vertical-align: top; }
+              tfoot td { font-weight: bold; }
+              .text-right { text-align: right; }
+              .text-emerald-600 { color: #059669; }
+              .text-red-600 { color: #dc2626; }
+              .text-slate-800 { color: #1e293b; }
+              .text-slate-900 { color: #0f172a; }
+              .text-emerald-800 { color: #065f46; }
+              .text-neutral-400 { color: #a3a3a3; }
+              .text-neutral-600 { color: #525252; }
+              .tabular-nums { font-variant-numeric: tabular-nums; }
+              .font-semibold { font-weight: 600; }
+              .font-bold { font-weight: 700; }
+              .font-extrabold { font-weight: 800; }
+              .font-black { font-weight: 900; }
+            </style>
+          </head>
+          <body>${content}
+            <script>window.onload = function(){ window.print(); window.close(); }<\/script>
+          </body>
+        </html>
+      `);
+      w.document.close();
+    } catch (err) {
+      console.error(err);
+      toast.error("Error printing table.");
+    }
+  }, []);
+
   return (
     <div className="max-w-7xl mx-auto text-black p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
@@ -301,6 +401,34 @@ export default function BalanceSheetPage() {
             Grand Ending Balance for all users.
           </p>
         </div>
+        {userBalances.length > 0 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePDFExport}
+              className="flex items-center gap-1.5 bg-white border border-neutral-200 text-neutral-700 text-xs sm:text-sm font-medium px-3 py-2 rounded-lg hover:bg-neutral-50 transition-colors shadow-sm"
+              title="View PDF"
+            >
+              <FileText size={16} />
+              PDF
+            </button>
+            <button
+              onClick={handlePDFDownload}
+              className="flex items-center gap-1.5 bg-white border border-neutral-200 text-neutral-700 text-xs sm:text-sm font-medium px-3 py-2 rounded-lg hover:bg-neutral-50 transition-colors shadow-sm"
+              title="Download PDF"
+            >
+              <Download size={16} />
+              Download
+            </button>
+            <button
+              onClick={handlePrintTable}
+              className="flex items-center gap-1.5 bg-white border border-neutral-200 text-neutral-700 text-xs sm:text-sm font-medium px-3 py-2 rounded-lg hover:bg-neutral-50 transition-colors shadow-sm"
+              title="Print"
+            >
+              <Printer size={16} />
+              Print
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-4 sm:p-6 flex items-center mb-6">
@@ -369,7 +497,7 @@ export default function BalanceSheetPage() {
       )}
 
       {userBalances.length > 0 && (
-         <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
+         <div ref={tableRef} className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
            <div className="overflow-x-auto">
              <table className="w-full text-left text-sm text-neutral-600">
                <thead className="bg-neutral-50 border-b border-neutral-200 text-xs uppercase tracking-wider text-neutral-500 font-semibold">
