@@ -116,7 +116,9 @@ export default function BalanceSheetPage() {
           : 0);
       }, 0);
 
-      const avgPurchasePrice = totalPurchaseQty > 0 ? totalPurchaseBdt / totalPurchaseQty : 0;
+      const avgPurchasePrice = totalPurchaseQty > 0 
+        ? totalPurchaseBdt / totalPurchaseQty 
+        : (totalSalesQty > 0 ? totalSalesBdt / totalSalesQty : 0);
       const stockAvailable = totalPurchaseQty - totalSalesQty;
       const currentStockPrice = avgPurchasePrice * stockAvailable;
       
