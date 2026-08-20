@@ -193,7 +193,7 @@ export default function SaleInvoicePage() {
                           )}
                         </td>
                         <td className="px-4 py-4 text-center text-neutral-600">{item.qty || 1}</td>
-                        <td className="px-4 py-4 text-center text-neutral-600">{(itemQty * 11.664).toFixed(3)}</td>
+                        <td className="px-4 py-4 text-center text-neutral-600">{(itemQty * 116.64).toFixed(3)}</td>
                         <td className="px-4 py-4 text-right text-neutral-600">{displayCurrency} {itemRateDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                         <td className="px-4 py-4 text-right font-medium text-neutral-900">
                           {displayCurrency} {itemTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}

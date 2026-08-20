@@ -426,7 +426,7 @@ function StatCard({ title, value, currency, trend, trendText, icon, color, textC
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const [interval, setInterval] = useState('daily');
+  const interval = 'yearly';
   const [isFinancialModalOpen, setIsFinancialModalOpen] = useState(false);
   const fetcher = (url) => axios.get(url, { headers: { Authorization: `Bearer ${session?.accessToken}` } }).then(res => res.data);
 
@@ -662,26 +662,6 @@ export default function DashboardPage() {
           <span>Financial Overview</span>
         </button>
 
-        <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-neutral-200 shadow-sm">
-          {[
-            { value: 'daily', label: 'Daily' },
-            { value: 'weekly', label: 'Weekly' },
-            { value: 'monthly', label: 'Monthly' },
-            { value: 'yearly', label: 'Yearly' },
-          ].map((item) => (
-            <button
-              key={item.value}
-              onClick={() => setInterval(item.value)}
-              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                interval === item.value
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-neutral-600 hover:bg-neutral-100'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
       </div>
 
       {loading ? (

@@ -75,7 +75,7 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
           const qtyNum = parseFloat(detail.qty) || 1;
           const priceNum = parseFloat(detail.price) || 0;
           const ratePerVori = priceNum / qtyNum;
-          const netWeightGram = qtyNum * 11.664;
+          const netWeightGram = qtyNum * 116.64;
           
           let currency = 'BDT';
           let aedRate = '';
@@ -410,10 +410,10 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
         const updatedItem = { ...item, [field]: value };
         if (field === 'qty') {
           const vori = parseFloat(value) || 0;
-          updatedItem.goldGram = value === '' ? '' : (vori * 11.664).toFixed(3);
+          updatedItem.goldGram = value === '' ? '' : (vori * 116.64).toFixed(3);
         } else if (field === 'goldGram') {
           const gram = parseFloat(value) || 0;
-          updatedItem.qty = value === '' ? '' : (gram / 11.664).toFixed(3);
+          updatedItem.qty = value === '' ? '' : (gram / 116.64).toFixed(3);
         }
         return updatedItem;
       }
