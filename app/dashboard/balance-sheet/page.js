@@ -78,8 +78,8 @@ export default function BalanceSheetPage() {
         axios.get(`${API_URL}/customer-lists?page=1&limit=5000`, baseHeaders).then(res => res.data?.data?.data || []),
         axios.get(`${API_URL}/vendor-lists?page=1&limit=5000`, baseHeaders).then(res => res.data?.data?.data || []),
         axios.get(`${API_URL}/payment-type-category-list?t=${Date.now()}`, baseHeaders).then(res => res.data?.data?.data || res.data?.data || res.data || []),
-        axios.post(`${API_URL}/search-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, product: false, startDate: startDateFormatted, endDate: endDateFormatted, dueOnly: false }, baseHeaders).then(res => res.data?.data?.data || []),
-        axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, imei: false, start_date: startDateFormatted, end_date: endDateFormatted }, baseHeaders).then(res => res.data?.data?.data || []),
+        axios.post(`${API_URL}/search-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, product: false, startDate: 0, endDate: endDateFormatted, dueOnly: false }, baseHeaders).then(res => res.data?.data?.data || []),
+        axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=10000`, { keyword: "", nameId: false, emailId: false, phoneId: false, imei: false, start_date: 0, end_date: endDateFormatted }, baseHeaders).then(res => res.data?.data?.data || []),
       ];
 
       const masterResults = await Promise.all(masterPromises);
