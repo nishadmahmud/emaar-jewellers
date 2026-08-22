@@ -18,6 +18,8 @@ export default function SalesHistoryPage() {
   const [limit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const router = useRouter();
   const { data: session } = useSession();
 
@@ -36,8 +38,8 @@ export default function SalesHistoryPage() {
             emailId: false,
             phoneId: false,
             product: false,
-            startDate: 0,
-            endDate: new Date().toISOString(),
+            startDate: startDate || 0,
+            endDate: endDate || new Date().toISOString(),
             dueOnly: false,
           },
           {
@@ -64,33 +66,63 @@ export default function SalesHistoryPage() {
     }, 400);
 
     return () => clearTimeout(delayDebounce);
-  }, [search, currentPage, limit, session?.accessToken]);
+  }, [search, startDate, endDate, currentPage, limit, session?.accessToken]);
 
   const totalPages = Math.ceil(totalInvoices / limit);
 
+  const pageTotalQty = invoices.reduce((acc, inv) => {
+    const q = Array.isArray(inv.sales_details) ? inv.sales_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0) : 0;
+    return acc + q;
+  }, 0);
+
+  const pageTotalAmount = invoices.reduce((acc, inv) => {
+    return acc + ((inv.sub_total || 0) - (inv.discount || 0));
+  }, 0);
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Sales History</h1>
           <p className="text-sm text-neutral-500 mt-1">View and manage all your past sales invoices.</p>
         </div>
         
-        {/* Search */}
-        <div className="relative w-full sm:w-72">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-neutral-400" />
-          </div>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
           <input
-            type="text"
-            placeholder="Search by ID or customer..."
-            value={search}
+            type="date"
+            value={startDate}
             onChange={(e) => {
-              setSearch(e.target.value);
+              setStartDate(e.target.value);
               setCurrentPage(1);
             }}
-            className="block w-full pl-10 pr-3 py-2 border border-neutral-200 rounded-lg text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-shadow"
+            className="block w-full sm:w-auto px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
+          <span className="text-neutral-400 hidden sm:block">to</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="block w-full sm:w-auto px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          />
+          <div className="relative w-full sm:w-72">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-neutral-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by ID or customer..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="block w-full pl-10 pr-3 py-2 border border-neutral-200 rounded-lg text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-shadow"
+            />
+          </div>
         </div>
       </div>
 
@@ -115,12 +147,11 @@ export default function SalesHistoryPage() {
                 {invoices.map((inv) => {
                   const payModeString = inv.pay_mode || '';
                   const isAed = payModeString.includes('(AED @');
-                  const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
-                  const aedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
                   const currency = isAed ? 'AED' : 'BDT';
 
                   const totalBdt = inv.sub_total - inv.discount;
                   const dueBdt = Math.max(totalBdt - inv.paid_amount, 0);
+                  const qty = Array.isArray(inv.sales_details) ? inv.sales_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0) : 0;
 
                   return (
                     <div
@@ -136,7 +167,7 @@ export default function SalesHistoryPage() {
                           <p className="font-semibold text-xs text-neutral-900 truncate">{inv.invoice_id}</p>
                           <p className="text-xs text-neutral-600 truncate">{inv.customer_name || 'Walk-in Customer'}</p>
                           <p className="text-[10px] text-neutral-400 mt-0.5 truncate">
-                            {new Date(inv.created_at).toLocaleDateString()} {inv.customer_phone && `• ${inv.customer_phone}`}
+                            {new Date(inv.created_at).toLocaleDateString()} • Qty: {qty}
                           </p>
                         </div>
                       </div>
@@ -168,6 +199,13 @@ export default function SalesHistoryPage() {
                     </div>
                   );
                 })}
+                <div className="px-3 py-3 bg-neutral-50 flex items-center justify-between border-t border-neutral-200">
+                  <span className="font-bold text-sm text-neutral-900">Page Total:</span>
+                  <div className="text-right">
+                    <p className="text-xs text-neutral-600">Qty: <span className="font-bold text-neutral-900">{pageTotalQty}</span></p>
+                    <p className="text-xs text-neutral-600">Total: <span className="font-bold text-neutral-900">{Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 2})}</span></p>
+                  </div>
+                </div>
               </div>
 
               {/* Desktop Table View */}
@@ -178,6 +216,7 @@ export default function SalesHistoryPage() {
                       <th className="px-6 py-4 font-medium">Invoice ID</th>
                       <th className="px-6 py-4 font-medium">Date</th>
                       <th className="px-6 py-4 font-medium">Customer</th>
+                      <th className="px-6 py-4 font-medium text-center">Qty</th>
                       <th className="px-6 py-4 font-medium text-right">Total</th>
                       <th className="px-6 py-4 font-medium text-right">Paid</th>
                       <th className="px-6 py-4 font-medium text-right">Due</th>
@@ -195,6 +234,7 @@ export default function SalesHistoryPage() {
                       const totalBdt = inv.sub_total - inv.discount;
                       const paidBdt = inv.paid_amount;
                       const dueBdt = Math.max(totalBdt - paidBdt, 0);
+                      const qty = Array.isArray(inv.sales_details) ? inv.sales_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0) : 0;
 
                       return (
                         <tr key={inv.id} className="hover:bg-neutral-50/50 transition-colors">
@@ -207,6 +247,9 @@ export default function SalesHistoryPage() {
                           <td className="px-6 py-4 text-neutral-700">
                             {inv.customer_name || 'Walk-in Customer'}
                             {inv.customer_phone && <span className="block text-xs text-neutral-400">{inv.customer_phone}</span>}
+                          </td>
+                          <td className="px-6 py-4 text-center text-neutral-900 font-medium">
+                            {qty}
                           </td>
                           <td className="px-6 py-4 text-right text-neutral-900 font-medium">
                             {currency} {Number(totalBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
@@ -239,6 +282,16 @@ export default function SalesHistoryPage() {
                       );
                     })}
                   </tbody>
+                  <tfoot className="bg-neutral-50 text-neutral-900 font-bold border-t border-neutral-200">
+                    <tr>
+                      <td colSpan="3" className="px-6 py-4 text-right">Page Total:</td>
+                      <td className="px-6 py-4 text-center">{pageTotalQty}</td>
+                      <td className="px-6 py-4 text-right">
+                         {Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                      </td>
+                      <td colSpan="3"></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </>

@@ -580,7 +580,7 @@ export default function DashboardPage() {
   });
 
   const mainMetrics = [
-    {
+    /* {
       title: "Total Sales",
       value: dash.sales || 0,
       currency: "AED",
@@ -590,7 +590,7 @@ export default function DashboardPage() {
       color: "bg-blue-50/40 border-blue-100/60",
       textColor: "text-blue-900",
       link: "/dashboard/sales",
-    },
+    }, */
     {
       title: "Total Sales Qty",
       value: calculatedSalesQty,
