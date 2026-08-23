@@ -188,16 +188,25 @@ export default function LedgerStatementReportPage() {
 
       results.forEach(res => {
         if (res.type === 'party_ledger') {
-           allEntries = res.data.map(e => ({
-                date: e.date,
-                invoice_id: e.invoice || e.transaction_id,
-                particulars: e.description,
-                debit: Number(e.debit) || 0,
-                credit: Number(e.credit) || 0,
-                balance: 0, // calculated later
-                remarks: e.type,
-                pay_mode: e.pay_mode || "Cash"
-            }));
+           allEntries = res.data.map(e => {
+                let particulars = e.description || "";
+                let qty = null;
+                const match = particulars.match(/:\s*([\d.]+)\s*@/);
+                if (match) {
+                    qty = Number(match[1]);
+                }
+                return {
+                    date: e.date,
+                    invoice_id: e.invoice || e.transaction_id,
+                    particulars: particulars,
+                    qty: qty,
+                    debit: Number(e.debit) || 0,
+                    credit: Number(e.credit) || 0,
+                    balance: 0, // calculated later
+                    remarks: e.type,
+                    pay_mode: e.pay_mode || "Cash"
+                };
+            });
         } else if (res.type === 'party_book') {
            const d = res.data;
            if (d) {
@@ -724,6 +733,7 @@ export default function LedgerStatementReportPage() {
           <tr className="bg-neutral-200 text-neutral-900">
             <th className="border border-neutral-400 p-2 uppercase w-[12%]">DATE</th>
             <th className="border border-neutral-400 p-2 uppercase">PARTICULARS</th>
+            <th className="border border-neutral-400 p-2 text-right w-[10%] uppercase">QTY</th>
             <th className="border border-neutral-400 p-2 text-right w-[13%] uppercase">DEBIT</th>
             <th className="border border-neutral-400 p-2 text-right w-[13%] uppercase">CREDIT</th>
             <th className="border border-neutral-400 p-2 text-right w-[13%] uppercase">BALANCE</th>
@@ -736,6 +746,7 @@ export default function LedgerStatementReportPage() {
               <span className="md:hidden font-bold uppercase text-neutral-500">Particulars</span>
               <span>Opening Balance</span>
             </td>
+            <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
             <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
             <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
             <td className="block md:table-cell p-2 md:border border-neutral-400 text-right font-bold text-neutral-900 whitespace-nowrap flex justify-between bg-neutral-100 md:bg-transparent">
@@ -756,6 +767,10 @@ export default function LedgerStatementReportPage() {
                   <span className="block whitespace-normal break-words text-right sm:text-left">
                       {entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "-")}
                   </span>
+                </td>
+                <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right text-neutral-900 tabular-nums flex justify-between">
+                  <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Qty</span>
+                  <span>{entry.qty || "-"}</span>
                 </td>
                 <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right text-neutral-900 tabular-nums flex justify-between">
                   <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Debit</span>
@@ -780,6 +795,7 @@ export default function LedgerStatementReportPage() {
                 <span>Total</span>
               </td>
               <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
+              <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
               <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums flex justify-between">
                 <span className="md:hidden font-bold uppercase text-neutral-500">Total Debit</span>
                 <span>{fmt2(totals.total_debit)}</span>
@@ -797,7 +813,7 @@ export default function LedgerStatementReportPage() {
 
           {entries.length === 0 && (
             <tr className="block md:table-row">
-              <td colSpan={6} className="block md:table-cell text-center text-neutral-500 py-8 border border-neutral-400">
+              <td colSpan={7} className="block md:table-cell text-center text-neutral-500 py-8 border border-neutral-400">
                 No ledger data found.
               </td>
             </tr>

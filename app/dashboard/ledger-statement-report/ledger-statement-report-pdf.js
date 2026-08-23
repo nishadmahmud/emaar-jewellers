@@ -4,354 +4,273 @@
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer"
 
 const fmt2 = (n) =>
-  Number(n ?? 0).toLocaleString(undefined, {
+  Number(n ?? 0).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
 
+const formatBal = (n) => {
+  const val = Number(n ?? 0);
+  const absVal = Math.abs(val);
+  const str = absVal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (val === 0) return str;
+  // If positive, it's typically DR for customers, but the reference image showed CR reducing with DR.
+  // I will just append CR/DR based on standard: positive = CR, negative = DR, or vice-versa. 
+  // Wait, if Debit was 20,000 and Balance went from 1.46M CR to 1.44M CR, then Debit reduces CR. So CR is positive.
+  // I will just use the standard fmt2 to avoid confusing accounting logic, but if I must, I'll use CR for pos, DR for neg.
+  return val >= 0 ? `${str} CR` : `${str} DR`;
+}
+
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, fontFamily: "Helvetica" },
-  header: { marginBottom: 20, textAlign: "center" },
-  title: { fontSize: 18, fontWeight: "bold", marginBottom: 5 },
-  subtitle: { fontSize: 12, color: "#666", marginBottom: 15 },
-  dateRange: { fontSize: 9, color: "#999", marginBottom: 10 },
-   dateRanget: {
-    textAlign: "center",
-    fontSize: 10,
-    color: "#666",
-    marginBottom: 15,
-    marginTop: 10,
-  },
-  summarySection: {
-    marginBottom: 20,
-    padding: 10,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 4,
-  },
-  summaryRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 5 },
-  summaryLabel: { fontSize: 10, fontWeight: "bold" },
-  summaryValue: { fontSize: 10, fontWeight: "bold", textAlign: "right" },
-  table: { marginTop: 10, marginBottom: 20, borderWidth: 1, borderColor: "#999" },
-  tableRow: { flexDirection: "row" },
-  tableHeaderCell: {
-    flex: 1,
-    padding: 5,
-    fontSize: 9,
-    fontWeight: "bold",
-    backgroundColor: "#e5e5e5",
-    borderRightWidth: 1,
-    borderRightColor: "#999",
-  },
-  headerContainer: {
+  page: { padding: 20, fontSize: 8, fontFamily: "Helvetica" },
+  headerWrapper: {
+    borderTopWidth: 2,
+    borderTopColor: "red",
+    borderBottomWidth: 2,
+    borderBottomColor: "red",
+    paddingVertical: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 10,
-    paddingBottom: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: "#cccccc",
   },
-    logoImg: {
-    width: 100,
-    height: 100,
-    marginTop: 0,
-  },
-
-  imageBorder: {
-    width: "30%",
-    borderRight: 1,
-    borderColor: "#b0b0b0",
-    marginRight: 15,
-  },
-
-  leftSection: {
-    width: "60%",
+  headerLeft: {
+    width: "35%",
     flexDirection: "column",
-    paddingBottom: 10,
-    paddingTop: 10,
-    borderRight: 1,
-    borderColor: "#b0b0b0",
-    paddingRight: 15,
   },
-  businessName: {
-    fontSize: 14,
+  headerCenter: {
+    width: "30%",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerRight: {
+    width: "35%",
+    alignItems: "flex-end",
+    flexDirection: "column",
+  },
+  title: { fontSize: 12, fontWeight: "bold", marginBottom: 4 },
+  headerText: { fontSize: 8, marginBottom: 2, color: "#333" },
+  businessName: { fontSize: 12, fontWeight: "bold", marginBottom: 4 },
+  logoImg: {
+    width: 60,
+    height: 60,
+    objectFit: "contain",
+  },
+  infoBoxes: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
+  },
+  box: {
+    width: "48%",
+    borderWidth: 1,
+    borderColor: "#999",
+    padding: 5,
+  },
+  boxTitle: {
+    fontSize: 9,
     fontWeight: "bold",
     marginBottom: 5,
   },
-  addressLine: {
-    fontSize: 9,
-    marginTop: 1,
+  boxText: {
+    fontSize: 8,
+    marginBottom: 2,
     color: "#333",
   },
-  infoText: {
-    fontSize: 9,
-    marginTop: 1,
-    color: "#333",
-  },
-  rightSection: {
-    width: "40%",
-    alignItems: "flex-end",
-    flexDirection: "column",
-  },
-
-   refBox: {
-    alignItems: "flex-end",
-  },
-  refText: {
-    fontSize: 10,
-    marginTop: 2,
-  },
- reportTitle: {
-    textAlign: "center",
-    fontSize: 14,
-    fontWeight: 600,
-    paddingBottom: 7,
-    borderBottom: 1,
-    borderColor: "#b0b0b0",
-    color: "#000",
-  },
-
- 
-  tableCell: {
-    flex: 1,
-    padding: 5,
-    fontSize: 9,
-    borderTopWidth: 1,
-    borderTopColor: "#999",
-    borderRightWidth: 1,
-    borderRightColor: "#999",
-  },
-  textRight: { textAlign: "right" },
-  openingBalanceRow: { backgroundColor: "#e3f2fd", fontWeight: "bold" },
-  totalRow: { backgroundColor: "#f7dcda", color: "#d94338", fontWeight: 600, borderTopWidth: 0, borderTopColor: "#ddd" },
+  table: { width: "100%", borderWidth: 1, borderColor: "#000" },
+  tableRow: { flexDirection: "row" },
+  tableHeaderGroup: { backgroundColor: "#e5e5e5", borderBottomWidth: 1, borderBottomColor: "#000" },
+  colBranch: { width: "6%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "center" },
+  colVoucher: { width: "15%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "center" },
+  colDate: { width: "7%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "center" },
+  colNarration: { width: "17%", borderRightWidth: 1, borderColor: "#000", padding: 4 },
+  colQty: { width: "7%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "center" },
+  colAmtGrp: { width: "24%", borderRightWidth: 1, borderColor: "#000", flexDirection: "column" },
+  colWtGrp: { width: "24%", flexDirection: "column" },
   
-  accountsContainer: {
-    marginTop: 20,
-    alignSelf: 'flex-end',
-    width: '45%',
-    borderWidth: 1,
-    borderColor: '#999',
-  },
-  accountRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-  },
-  accountRowLabel: {
-    flex: 1,
-    padding: 5,
-    fontSize: 9,
-    color: '#333',
-    borderRightWidth: 1,
-    borderRightColor: '#999',
-  },
-  accountRowValue: {
-    flex: 1,
-    padding: 5,
-    fontSize: 9,
-    textAlign: 'right',
-    color: '#333',
-  },
-  grandTotalRow: {
-    flexDirection: 'row',
-    backgroundColor: '#e5e5e5',
-  },
-  grandTotalLabel: {
-    flex: 1,
-    padding: 5,
-    fontSize: 9,
-    fontWeight: 'bold',
-    borderRightWidth: 1,
-    borderRightColor: '#999',
-  },
-  grandTotalValue: {
-    flex: 1,
-    padding: 5,
-    fontSize: 9,
-    fontWeight: 'bold',
-    textAlign: 'right',
-  },
+  colHeaderMain: { padding: 4, textAlign: "center", borderBottomWidth: 1, borderColor: "#000", fontWeight: "bold" },
+  colSubGroup: { flexDirection: "row", flex: 1 },
+  colDr: { flex: 1, borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "right" },
+  colCr: { flex: 1, borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "right" },
+  colBal: { flex: 1, padding: 4, textAlign: "right" },
+  
+  tableCell: { fontSize: 7, justifyContent: "center" },
+  tableCellRight: { fontSize: 7, textAlign: "right" },
+  
+  cellBranch: { width: "6%", borderRightWidth: 1, borderColor: "#000", padding: 4 },
+  cellVoucher: { width: "15%", borderRightWidth: 1, borderColor: "#000", padding: 4 },
+  cellDate: { width: "7%", borderRightWidth: 1, borderColor: "#000", padding: 4 },
+  cellNarration: { width: "17%", borderRightWidth: 1, borderColor: "#000", padding: 4 },
+  cellQty: { width: "7%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "right" },
+  cellDr: { width: "8%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "right" },
+  cellCr: { width: "8%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "right" },
+  cellBal: { width: "8%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "right", fontWeight: "bold" },
+  cellDrLast: { width: "8%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "right" },
+  cellCrLast: { width: "8%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "right" },
+  cellBalLast: { width: "8%", padding: 4, textAlign: "right", fontWeight: "bold" },
 
+  boldRow: { backgroundColor: "#f9f9f9", fontWeight: "bold" },
+  footerRow: { borderTopWidth: 1, borderColor: "#000", backgroundColor: "#e5e5e5", fontWeight: "bold" },
+  
   footer: { marginTop: 30, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#ccc", fontSize: 8, color: "#999", textAlign: "center" },
 })
 
 export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT, summaryTotalsAED, summaryTotalsBDT, filters, user, accountsAED = [], accountsBDT = [], grandEndingAED = 0, grandEndingBDT = 0 }) {
-  const startDate = new Date(filters.start_date).toLocaleDateString()
-  const endDate = new Date(filters.end_date).toLocaleDateString()
+  const startDate = new Date(filters.start_date).toLocaleDateString("en-GB")
+  const endDate = new Date(filters.end_date).toLocaleDateString("en-GB")
   const logo = logoUrl || null;
 
-  const RenderTable = ({ title, entries, totals, matchedAccounts, grandBal }) => (
-    <View style={styles.tableWrapper}>
-      <Text style={styles.tableTitle}>{title}</Text>
-      <View style={styles.table}>
-        <View style={{ ...styles.tableRow, ...styles.tableHeader }}>
-          <Text style={{ ...styles.tableCell, flex: 1.5 }}>DATE</Text>
-          <Text style={{ ...styles.tableCell, flex: 3.5 }}>PARTICULARS</Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>DEBIT</Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>CREDIT</Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>BALANCE</Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5 }}>REMARKS</Text>
-        </View>
+  // Combine and sort
+  const combinedEntries = [...(ledgerAED || []), ...(ledgerBDT || [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  let currentAedBalance = summaryTotalsAED?.opening_balance || 0;
+  let currentBdtBalance = summaryTotalsBDT?.opening_balance || 0;
+  
+  const tableRows = combinedEntries.map(entry => {
+    // Check which array it belongs to
+    const isAed = ledgerAED?.some(e => e.date === entry.date && e.invoice_id === entry.invoice_id && e.debit === entry.debit && e.credit === entry.credit);
+    
+    if (isAed) {
+      currentAedBalance = entry.balance;
+    } else {
+      currentBdtBalance = entry.balance;
+    }
 
-        <View style={styles.tableRow}>
-          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-          <Text style={{ ...styles.tableCell, flex: 3.5, fontFamily: "Helvetica-Bold" }}>Opening Balance</Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right", fontFamily: "Helvetica-Bold" }}>
-            {fmt2(totals?.opening_balance)}
-          </Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-        </View>
-
-        {entries?.map((entry, idx) => (
-          <View key={idx} style={styles.tableRow}>
-            <Text style={{ ...styles.tableCell, flex: 1.5 }}>{entry.date ? new Date(entry.date).toLocaleDateString("en-GB") : ""}</Text>
-            <Text style={{ ...styles.tableCell, flex: 3.5 }}>
-              {entry.invoice_id ? `${entry.invoice_id} ${entry.particulars ? `> ${entry.particulars}` : ""}` : (entry.particulars || "")}
-            </Text>
-            <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{entry.debit ? fmt2(entry.debit) : "-"}</Text>
-            <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{entry.credit ? fmt2(entry.credit) : "-"}</Text>
-            <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right", fontFamily: "Helvetica-Bold" }}>{fmt2(entry.balance)}</Text>
-            <Text style={{ ...styles.tableCell, flex: 1.5 }}>{entry.remarks || ""}</Text>
-          </View>
-        ))}
-
-        <View style={{ ...styles.tableRow, ...styles.totalRow }}>
-          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-          <Text style={{ ...styles.tableCell, flex: 3.5 }}>Total</Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(totals?.total_debit)}</Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(totals?.total_credit)}</Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5, textAlign: "right" }}>{fmt2(totals?.closing_balance)}</Text>
-          <Text style={{ ...styles.tableCell, flex: 1.5 }}></Text>
-        </View>
-      </View>
-
-      <View style={styles.accountsContainer}>
-        {(!matchedAccounts || matchedAccounts.length === 0) && (
-          <View>
-            <View style={styles.accountRow}>
-              <Text style={styles.accountRowLabel}>Ledger Closing Balance</Text>
-              <Text style={styles.accountRowValue}>{fmt2(totals?.closing_balance)}</Text>
-            </View>
-            <View style={styles.grandTotalRow}>
-              <Text style={styles.grandTotalLabel}>GRAND ENDING BALANCE</Text>
-              <Text style={styles.grandTotalValue}>{fmt2(grandBal)}</Text>
-            </View>
-          </View>
-        )}
-
-        {matchedAccounts && matchedAccounts.length > 0 && (
-          <View>
-            <View style={styles.accountRow}>
-              <Text style={styles.accountRowLabel}>Ledger Closing Balance</Text>
-              <Text style={styles.accountRowValue}>{fmt2(totals?.closing_balance)}</Text>
-            </View>
-            {matchedAccounts.map((acc, idx) => (
-              <View key={`acc-${idx}`}>
-                <View style={{...styles.accountRow, backgroundColor: '#f9f9f9'}}>
-                  <Text style={{...styles.accountRowLabel, borderRightWidth: 0, fontWeight: 'bold'}}>Account: {acc.payment_category_name}</Text>
-                  <Text style={styles.accountRowValue}></Text>
-                </View>
-                <View style={styles.accountRow}>
-                  <Text style={{...styles.accountRowLabel, paddingLeft: 15}}>Opening Balance</Text>
-                  <Text style={styles.accountRowValue}>{fmt2(acc.opening_balance)}</Text>
-                </View>
-                <View style={styles.accountRow}>
-                  <Text style={{...styles.accountRowLabel, paddingLeft: 15}}>Total Debit</Text>
-                  <Text style={styles.accountRowValue}>{fmt2(acc.total_debit)}</Text>
-                </View>
-                <View style={styles.accountRow}>
-                  <Text style={{...styles.accountRowLabel, paddingLeft: 15}}>Total Credit</Text>
-                  <Text style={styles.accountRowValue}>{fmt2(acc.total_credit)}</Text>
-                </View>
-                <View style={styles.accountRow}>
-                  <Text style={{...styles.accountRowLabel, paddingLeft: 15, fontWeight: 'bold'}}>Closing Balance</Text>
-                  <Text style={{...styles.accountRowValue, fontWeight: 'bold'}}>{fmt2(acc.closing_balance)}</Text>
-                </View>
-              </View>
-            ))}
-            <View style={styles.grandTotalRow}>
-              <Text style={styles.grandTotalLabel}>GRAND ENDING BALANCE</Text>
-              <Text style={styles.grandTotalValue}>{fmt2(grandBal)}</Text>
-            </View>
-          </View>
-        )}
-      </View>
-
-    </View>
-  );
+    return {
+      ...entry,
+      isAed,
+      aedDebit: isAed ? entry.debit : null,
+      aedCredit: isAed ? entry.credit : null,
+      aedBalance: currentAedBalance,
+      bdtDebit: !isAed ? entry.debit : null,
+      bdtCredit: !isAed ? entry.credit : null,
+      bdtBalance: currentBdtBalance,
+    };
+  });
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" orientation="landscape" style={styles.page}>
+        
         {/* Header */}
-         <View style={styles.headerContainer}>
-                  <View style={styles.imageBorder}>
-                    {logo ? (
-                        <Image src={logo} style={styles.logoImg} />
-                    ) : (
-                        <Text style={{fontSize: 10, color: '#999', marginTop: 40}}>NO LOGO</Text>
-                    )}
-                  </View>
-                  {/* LEFT SIDE - BUSINESS INFO */}
-                  <View style={styles.leftSection}>
-                    <Text style={styles.businessName}>{user?.outlet_name || "EMAAR JEWELLERS"}</Text>
-                    <Text style={styles.addressLine}>{user?.address || "Address Line 1"}</Text>
-                    <Text style={styles.infoText}>Mobile: {user?.phone || "-"}</Text>
-                    <Text style={styles.infoText}>Email: {user?.email || "-"}</Text>
-                    {user?.web_address && <Text style={styles.infoText}>Web: {user.web_address}</Text>}
-                  </View>
-        
-                  {/* RIGHT SIDE - LOGO & BARCODE */}
-                  <View style={styles.rightSection}>
-                    <View style={styles.refBox}>
-                      {user?.barcode && (
-                        <Image src={user.barcode || "/placeholder.svg"} style={{ height: 30, marginBottom: 5 }} cache={false} />
-                      )}
-                      <Text style={styles.refText}>Ref No: {user?.ref_no || "---"}</Text>
-                      <Text style={styles.refText}>Date: {new Date().toLocaleDateString() || "---"}</Text>
-                    </View>
-                  </View>
-                </View>
-
-                <Text style={styles.reportTitle}>LEDGER STATEMENT REPORT</Text>
-                
-                        <Text style={styles.dateRanget}>
-                          Statement For: {filters.selected_name || "All"}
-                        </Text>
-                        <Text style={styles.dateRanget}>
-                          Start Date: {startDate}                             End Date:{" "}
-                          {endDate}
-                        </Text>
-
-        {(ledgerBDT?.length > 0 || accountsBDT?.length > 0 || summaryTotalsBDT?.opening_balance !== 0) && (
-          <RenderTable 
-            title="LEDGER STATEMENT - BDT" 
-            entries={ledgerBDT} 
-            totals={summaryTotalsBDT}
-            matchedAccounts={accountsBDT}
-            grandBal={grandEndingBDT} 
-          />
-        )}
-        {(ledgerAED?.length > 0 || accountsAED?.length > 0 || summaryTotalsAED?.opening_balance !== 0) && (
-          <RenderTable 
-            title="LEDGER STATEMENT - AED" 
-            entries={ledgerAED} 
-            totals={summaryTotalsAED}
-            matchedAccounts={accountsAED}
-            grandBal={grandEndingAED} 
-          />
-        )}
-        
-        {(!ledgerBDT || ledgerBDT.length === 0) && (!accountsBDT || accountsBDT.length === 0) && (summaryTotalsBDT?.opening_balance === 0 || !summaryTotalsBDT) && (!ledgerAED || ledgerAED.length === 0) && (!accountsAED || accountsAED.length === 0) && (summaryTotalsAED?.opening_balance === 0 || !summaryTotalsAED) && (
-          <View style={{ marginBottom: 30, padding: 20, textAlign: 'center' }}>
-             <Text style={{ fontSize: 12, color: '#666' }}>No ledger data found.</Text>
+        <View style={styles.headerWrapper}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>STATEMENT OF ACCOUNT</Text>
+            <Text style={styles.headerText}>From {startDate} To {endDate} (AED and BDT)</Text>
+            <Text style={styles.headerText}>BRANCH : {user?.outlet_name || "N/A"}</Text>
+            <Text style={styles.headerText}>Order By : Trans Date</Text>
           </View>
-        )}
+          <View style={styles.headerCenter}>
+             {logo ? (
+                 <Image src={logo} style={styles.logoImg} />
+             ) : (
+                 <Text style={{fontSize: 10, color: '#999'}}>NO LOGO</Text>
+             )}
+          </View>
+          <View style={styles.headerRight}>
+            <Text style={styles.businessName}>{user?.outlet_name || "EMAAR JEWELLERS"}</Text>
+            <Text style={styles.headerText}>{user?.address || "Address Line 1"}</Text>
+            <Text style={styles.headerText}>Tel : {user?.phone || "-"}</Text>
+            {user?.email && <Text style={styles.headerText}>Email : {user.email}</Text>}
+            {user?.web_address && <Text style={styles.headerText}>Web : {user.web_address}</Text>}
+          </View>
+        </View>
 
-        {/* Footer */}
+        {/* Info Boxes */}
+        <View style={styles.infoBoxes}>
+          <View style={styles.box}>
+            <Text style={styles.boxTitle}>To</Text>
+            <Text style={{...styles.boxText, fontWeight: "bold", fontSize: 9}}>{filters.selected_name || "N/A"}</Text>
+            <Text style={styles.boxText}> </Text>
+          </View>
+          <View style={styles.box}>
+            <Text style={styles.boxTitle}>Contact Details</Text>
+            <Text style={{...styles.boxText, fontWeight: "bold", fontSize: 9}}>{filters.selected_name || "N/A"}</Text>
+            <Text style={styles.boxText}>TEL1. : </Text>
+            <Text style={styles.boxText}>Email : </Text>
+          </View>
+        </View>
+
+        {/* Table */}
+        <View style={styles.table}>
+          {/* Table Header */}
+          <View style={{...styles.tableRow, ...styles.tableHeaderGroup}}>
+            <View style={styles.colBranch}><Text style={{marginTop: 10}}>Branch</Text></View>
+            <View style={styles.colVoucher}><Text style={{marginTop: 10}}>Voucher</Text></View>
+            <View style={styles.colDate}><Text style={{marginTop: 10}}>Voc Date</Text></View>
+            <View style={styles.colNarration}><Text style={{marginTop: 10}}>Narration</Text></View>
+            <View style={styles.colQty}><Text style={{marginTop: 10}}>Qty</Text></View>
+            <View style={styles.colAmtGrp}>
+              <Text style={styles.colHeaderMain}>AMOUNT IN (AED)</Text>
+              <View style={styles.colSubGroup}>
+                <Text style={styles.colDr}>Debit</Text>
+                <Text style={styles.colCr}>Credit</Text>
+                <Text style={styles.colBal}>Balance</Text>
+              </View>
+            </View>
+            <View style={styles.colWtGrp}>
+              <Text style={styles.colHeaderMain}>AMOUNT IN (BDT)</Text>
+              <View style={styles.colSubGroup}>
+                <Text style={styles.colDr}>Debit</Text>
+                <Text style={styles.colCr}>Credit</Text>
+                <Text style={styles.colBal}>Balance</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Opening Balance Row */}
+          <View style={{...styles.tableRow, ...styles.boldRow, borderBottomWidth: 1, borderColor: "#000"}}>
+            <Text style={styles.cellBranch}>{user?.outlet_name || "N/A"}</Text>
+            <Text style={styles.cellVoucher}></Text>
+            <Text style={styles.cellDate}></Text>
+            <Text style={{...styles.cellNarration, textAlign: "center"}}>Balance B/F</Text>
+            <Text style={styles.cellQty}></Text>
+            <Text style={styles.cellDr}></Text>
+            <Text style={styles.cellCr}></Text>
+            <Text style={styles.cellBal}>{formatBal(summaryTotalsAED?.opening_balance)}</Text>
+            <Text style={styles.cellDrLast}></Text>
+            <Text style={styles.cellCrLast}></Text>
+            <Text style={styles.cellBalLast}>{formatBal(summaryTotalsBDT?.opening_balance)}</Text>
+          </View>
+
+          {/* Data Rows */}
+          {tableRows.map((row, idx) => (
+            <View key={idx} style={{...styles.tableRow, borderBottomWidth: 1, borderColor: "#ccc"}}>
+              <Text style={styles.cellBranch}>{user?.outlet_name || "N/A"}</Text>
+              <Text style={styles.cellVoucher}>{row.invoice_id ? row.invoice_id.replace(/-/g, '-\u200B') : "-"}</Text>
+              <Text style={styles.cellDate}>{row.date ? new Date(row.date).toLocaleDateString("en-GB") : ""}</Text>
+              <Text style={styles.cellNarration}>{row.particulars || "-"}</Text>
+              <Text style={styles.cellQty}>{row.qty || ""}</Text>
+              
+              {/* AED Columns */}
+              <Text style={styles.cellDr}>{row.aedDebit ? fmt2(row.aedDebit) : ""}</Text>
+              <Text style={styles.cellCr}>{row.aedCredit ? fmt2(row.aedCredit) : ""}</Text>
+              <Text style={styles.cellBal}>{formatBal(row.aedBalance)}</Text>
+              
+              {/* BDT Columns */}
+              <Text style={styles.cellDrLast}>{row.bdtDebit ? fmt2(row.bdtDebit) : ""}</Text>
+              <Text style={styles.cellCrLast}>{row.bdtCredit ? fmt2(row.bdtCredit) : ""}</Text>
+              <Text style={styles.cellBalLast}>{formatBal(row.bdtBalance)}</Text>
+            </View>
+          ))}
+
+          {/* Footer Total Row */}
+          <View style={{...styles.tableRow, ...styles.footerRow}}>
+             <Text style={styles.cellBranch}></Text>
+             <Text style={styles.cellVoucher}></Text>
+             <Text style={styles.cellDate}></Text>
+             <Text style={{...styles.cellNarration, textAlign: "center"}}>Sub Total</Text>
+             <Text style={styles.cellQty}></Text>
+             <Text style={styles.cellDr}>{fmt2(summaryTotalsAED?.total_debit)}</Text>
+             <Text style={styles.cellCr}>{fmt2(summaryTotalsAED?.total_credit)}</Text>
+             <Text style={styles.cellBal}>{formatBal(summaryTotalsAED?.closing_balance)}</Text>
+             <Text style={styles.cellDrLast}>{fmt2(summaryTotalsBDT?.total_debit)}</Text>
+             <Text style={styles.cellCrLast}>{fmt2(summaryTotalsBDT?.total_credit)}</Text>
+             <Text style={styles.cellBalLast}>{formatBal(summaryTotalsBDT?.closing_balance)}</Text>
+          </View>
+        </View>
+
         <View style={styles.footer}>
-          <Text>Generated on {new Date().toLocaleString()}</Text>
+          <Text>Printed By : ADMIN                                                                                                       Printed On : {new Date().toLocaleString()}</Text>
         </View>
       </Page>
     </Document>
