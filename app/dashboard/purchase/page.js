@@ -457,7 +457,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
             qty: qtyNum,
             price: totalLineAmount,
             purchase_price: totalLineAmount,
-            retails_price: 0,
+            retails_price: rateNum,
             have_variant: item.have_variant || 0,
             mode: 1,
             size: 1,

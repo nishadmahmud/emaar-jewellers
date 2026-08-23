@@ -513,7 +513,7 @@ const discountNum = parseFloat(formData.discount) || 0;
             product_id: item.id,
             qty: qtyNum,
             price: totalLineAmount,
-            purchase_price: 0,
+            purchase_price: rateNum,
             retails_price: totalLineAmount,
             have_variant: item.have_variant || 0,
             mode: 1,

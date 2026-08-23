@@ -114,25 +114,57 @@ const styles = StyleSheet.create({
   footer: { marginTop: 30, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#ccc", fontSize: 8, color: "#999", textAlign: "center" },
 })
 
-export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT, summaryTotalsAED, summaryTotalsBDT, filters, user, accountsAED = [], accountsBDT = [], grandEndingAED = 0, grandEndingBDT = 0 }) {
+export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT, summaryTotalsAED, summaryTotalsBDT, filters, user, accountsAED = [], accountsBDT = [], cashbookAED, cashbookBDT, grandEndingAED = 0, grandEndingBDT = 0 }) {
   const startDate = new Date(filters.start_date).toLocaleDateString("en-GB")
   const endDate = new Date(filters.end_date).toLocaleDateString("en-GB")
   const logo = logoUrl || null;
 
-  // Combine and sort
-  const combinedEntries = [...(ledgerAED || []), ...(ledgerBDT || [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  // Format cashbook rows to match ledger rows format
+  const formatCb = (rows, isAed) => {
+    if (!rows) return [];
+    return rows.map(r => ({
+      date: r.date,
+      invoice_id: r.invoice_id || r.type || "-",
+      particulars: r.type_name || "Payment",
+      qty: "", 
+      debit: r.debit || 0,
+      credit: r.credit || 0,
+      _isAedObj: isAed,
+      _isCashbook: true
+    }));
+  };
+
+  const formattedCbAed = formatCb(cashbookAED?.rows, true);
+  const formattedCbBdt = formatCb(cashbookBDT?.rows, false);
+
+  const formattedLedgerAed = (ledgerAED || []).map(r => ({ ...r, _isAedObj: true }));
+  const formattedLedgerBdt = (ledgerBDT || []).map(r => ({ ...r, _isAedObj: false }));
+
+  const combinedEntries = [...formattedLedgerAed, ...formattedLedgerBdt, ...formattedCbAed, ...formattedCbBdt].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
-  let currentAedBalance = summaryTotalsAED?.opening_balance || 0;
-  let currentBdtBalance = summaryTotalsBDT?.opening_balance || 0;
+  // Calculate unified opening balances
+  const unifiedOpAed = (summaryTotalsAED?.opening_balance || 0) + (cashbookAED?.opening_balance || 0);
+  const unifiedOpBdt = (summaryTotalsBDT?.opening_balance || 0) + (cashbookBDT?.opening_balance || 0);
+
+  let currentAedBalance = unifiedOpAed;
+  let currentBdtBalance = unifiedOpBdt;
   
+  let totalAedDr = 0;
+  let totalAedCr = 0;
+  let totalBdtDr = 0;
+  let totalBdtCr = 0;
+
   const tableRows = combinedEntries.map(entry => {
-    // Check which array it belongs to
-    const isAed = ledgerAED?.some(e => e.date === entry.date && e.invoice_id === entry.invoice_id && e.debit === entry.debit && e.credit === entry.credit);
+    const isAed = entry._isAedObj;
     
     if (isAed) {
-      currentAedBalance = entry.balance;
+      currentAedBalance = currentAedBalance + (entry.credit || 0) - (entry.debit || 0);
+      totalAedDr += (entry.debit || 0);
+      totalAedCr += (entry.credit || 0);
     } else {
-      currentBdtBalance = entry.balance;
+      currentBdtBalance = currentBdtBalance + (entry.credit || 0) - (entry.debit || 0);
+      totalBdtDr += (entry.debit || 0);
+      totalBdtCr += (entry.credit || 0);
     }
 
     return {
@@ -226,17 +258,17 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
             <Text style={styles.cellQty}></Text>
             <Text style={styles.cellDr}></Text>
             <Text style={styles.cellCr}></Text>
-            <Text style={styles.cellBal}>{formatBal(summaryTotalsAED?.opening_balance)}</Text>
+            <Text style={styles.cellBal}>{formatBal(unifiedOpAed)}</Text>
             <Text style={styles.cellDrLast}></Text>
             <Text style={styles.cellCrLast}></Text>
-            <Text style={styles.cellBalLast}>{formatBal(summaryTotalsBDT?.opening_balance)}</Text>
+            <Text style={styles.cellBalLast}>{formatBal(unifiedOpBdt)}</Text>
           </View>
 
           {/* Data Rows */}
           {tableRows.map((row, idx) => (
             <View key={idx} style={{...styles.tableRow, borderBottomWidth: 1, borderColor: "#ccc"}}>
               <Text style={styles.cellBranch}>{user?.outlet_name || "N/A"}</Text>
-              <Text style={styles.cellVoucher}>{row.invoice_id ? row.invoice_id.replace(/-/g, '-\u200B') : "-"}</Text>
+              <Text style={styles.cellVoucher}>{row.invoice_id ? String(row.invoice_id).replace(/-/g, '-\u200B') : "-"}</Text>
               <Text style={styles.cellDate}>{row.date ? new Date(row.date).toLocaleDateString("en-GB") : ""}</Text>
               <Text style={styles.cellNarration}>{row.particulars || "-"}</Text>
               <Text style={styles.cellQty}>{row.qty || ""}</Text>
@@ -260,12 +292,12 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
              <Text style={styles.cellDate}></Text>
              <Text style={{...styles.cellNarration, textAlign: "center"}}>Sub Total</Text>
              <Text style={styles.cellQty}></Text>
-             <Text style={styles.cellDr}>{fmt2(summaryTotalsAED?.total_debit)}</Text>
-             <Text style={styles.cellCr}>{fmt2(summaryTotalsAED?.total_credit)}</Text>
-             <Text style={styles.cellBal}>{formatBal(summaryTotalsAED?.closing_balance)}</Text>
-             <Text style={styles.cellDrLast}>{fmt2(summaryTotalsBDT?.total_debit)}</Text>
-             <Text style={styles.cellCrLast}>{fmt2(summaryTotalsBDT?.total_credit)}</Text>
-             <Text style={styles.cellBalLast}>{formatBal(summaryTotalsBDT?.closing_balance)}</Text>
+             <Text style={styles.cellDr}>{fmt2(totalAedDr)}</Text>
+             <Text style={styles.cellCr}>{fmt2(totalAedCr)}</Text>
+             <Text style={styles.cellBal}>{formatBal(currentAedBalance)}</Text>
+             <Text style={styles.cellDrLast}>{fmt2(totalBdtDr)}</Text>
+             <Text style={styles.cellCrLast}>{fmt2(totalBdtCr)}</Text>
+             <Text style={styles.cellBalLast}>{formatBal(currentBdtBalance)}</Text>
           </View>
         </View>
 

@@ -564,6 +564,8 @@ export default function LedgerStatementReportPage() {
           user={session?.user}
           accountsAED={accountsAED}
           accountsBDT={accountsBDT}
+          cashbookAED={cashbookAED}
+          cashbookBDT={cashbookBDT}
           grandEndingAED={grandEndingAED}
           grandEndingBDT={grandEndingBDT}
         />,
