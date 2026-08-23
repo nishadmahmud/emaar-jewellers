@@ -79,19 +79,19 @@ const styles = StyleSheet.create({
   table: { width: "100%", borderWidth: 1, borderColor: "#000" },
   tableRow: { flexDirection: "row" },
   tableHeaderGroup: { backgroundColor: "#e5e5e5", borderBottomWidth: 1, borderBottomColor: "#000" },
-  colBranch: { width: "6%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "center" },
-  colVoucher: { width: "15%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "center" },
-  colDate: { width: "7%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "center" },
-  colNarration: { width: "17%", borderRightWidth: 1, borderColor: "#000", padding: 4 },
-  colQty: { width: "7%", borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "center" },
+  colBranch: { width: "6%", borderRightWidth: 1, borderColor: "#000", padding: 4, justifyContent: "center", alignItems: "center" },
+  colVoucher: { width: "15%", borderRightWidth: 1, borderColor: "#000", padding: 4, justifyContent: "center", alignItems: "center" },
+  colDate: { width: "7%", borderRightWidth: 1, borderColor: "#000", padding: 4, justifyContent: "center", alignItems: "center" },
+  colNarration: { width: "17%", borderRightWidth: 1, borderColor: "#000", padding: 4, justifyContent: "center", alignItems: "center" },
+  colQty: { width: "7%", borderRightWidth: 1, borderColor: "#000", padding: 4, justifyContent: "center", alignItems: "center" },
   colAmtGrp: { width: "24%", borderRightWidth: 1, borderColor: "#000", flexDirection: "column" },
   colWtGrp: { width: "24%", flexDirection: "column" },
   
   colHeaderMain: { padding: 4, textAlign: "center", borderBottomWidth: 1, borderColor: "#000", fontWeight: "bold" },
-  colSubGroup: { flexDirection: "row", flex: 1 },
-  colDr: { flex: 1, borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "right" },
-  colCr: { flex: 1, borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "right" },
-  colBal: { flex: 1, padding: 4, textAlign: "right" },
+  colSubGroup: { flexDirection: "row" },
+  colDr: { flex: 1, borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "center" },
+  colCr: { flex: 1, borderRightWidth: 1, borderColor: "#000", padding: 4, textAlign: "center" },
+  colBal: { flex: 1, padding: 4, textAlign: "center" },
   
   tableCell: { fontSize: 7, justifyContent: "center" },
   tableCellRight: { fontSize: 7, textAlign: "right" },
@@ -194,11 +194,11 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
         <View style={styles.table}>
           {/* Table Header */}
           <View style={{...styles.tableRow, ...styles.tableHeaderGroup}}>
-            <View style={styles.colBranch}><Text style={{marginTop: 10}}>Branch</Text></View>
-            <View style={styles.colVoucher}><Text style={{marginTop: 10}}>Voucher</Text></View>
-            <View style={styles.colDate}><Text style={{marginTop: 10}}>Voc Date</Text></View>
-            <View style={styles.colNarration}><Text style={{marginTop: 10}}>Narration</Text></View>
-            <View style={styles.colQty}><Text style={{marginTop: 10}}>Qty</Text></View>
+            <View style={styles.colBranch}><Text>Branch</Text></View>
+            <View style={styles.colVoucher}><Text>Voucher</Text></View>
+            <View style={styles.colDate}><Text>Voc Date</Text></View>
+            <View style={styles.colNarration}><Text>Narration</Text></View>
+            <View style={styles.colQty}><Text>Qty</Text></View>
             <View style={styles.colAmtGrp}>
               <Text style={styles.colHeaderMain}>AMOUNT IN (AED)</Text>
               <View style={styles.colSubGroup}>
