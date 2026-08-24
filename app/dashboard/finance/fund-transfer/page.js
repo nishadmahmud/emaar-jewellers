@@ -234,11 +234,6 @@ export default function FundTransferPage() {
       
       // Fetch Cashbook Report for matched accounts
       if (foundMatchedAccounts.length > 0) {
-          const currentStart = new Date(filters.start_date);
-          const prevStart = new Date(Date.UTC(currentStart.getUTCFullYear(), currentStart.getUTCMonth(), 1, 0, 0, 0, 0));
-          const prevEnd = new Date(currentStart.getTime() - 1);
-          const isPrevPeriodValid = prevEnd.getTime() >= prevStart.getTime();
-
           const cashbookPromises = foundMatchedAccounts.map(acc => {
               const sd = new Date(filters.start_date);
               sd.setHours(0, 0, 0, 0);
@@ -255,33 +250,12 @@ export default function FundTransferPage() {
               .catch(() => ({ acc_id: acc.id, data: null }))
           });
 
-          let prevCashbookPromises = [];
-          if (isPrevPeriodValid) {
-              prevCashbookPromises = foundMatchedAccounts.map(acc => {
-                  return axios.post(`${API_URL}/cash-book-report`, {
-                      start_date: prevStart.toISOString(),
-                      end_date: prevEnd.toISOString(),
-                      view_order: "asc",
-                      payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id)
-                  }, { headers: { Authorization: `Bearer ${token}` } })
-                  .then(res => ({ acc_id: acc.id, data: res.data }))
-                  .catch(() => ({ acc_id: acc.id, data: null }))
-              });
-          }
-          
-          const [cashbookResults, prevCashbookResults] = await Promise.all([
-              Promise.all(cashbookPromises),
-              Promise.all(prevCashbookPromises)
-          ]);
+          const cashbookResults = await Promise.all(cashbookPromises);
           
           foundMatchedAccounts = foundMatchedAccounts.map(acc => {
              const cb = cashbookResults.find(r => String(r.acc_id) === String(acc.id))?.data;
-             const prevCb = prevCashbookResults.find(r => String(r.acc_id) === String(acc.id))?.data;
              
-             let computedOpeningBalance = 0;
-             if (isPrevPeriodValid && prevCb) {
-                 computedOpeningBalance = Number(prevCb.closing_balance ?? 0);
-             }
+             let computedOpeningBalance = Number(cb?.opening_balance ?? 0);
 
              return {
                  ...acc,

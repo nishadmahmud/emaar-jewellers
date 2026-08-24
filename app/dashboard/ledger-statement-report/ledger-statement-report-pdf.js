@@ -195,7 +195,7 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
              {logo ? (
                  <Image src={logo} style={styles.logoImg} />
              ) : (
-                 <Text style={{fontSize: 10, color: '#999'}}>NO LOGO</Text>
+                 <Text style={{fontSize: 18, fontWeight: "bold", color: '#333'}}>EMAAR JEWELLERS</Text>
              )}
           </View>
           <View style={styles.headerRight}>

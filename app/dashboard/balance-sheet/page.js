@@ -67,10 +67,6 @@ export default function BalanceSheetPage() {
 
       const startDateFormatted = filters.start_date.slice(0, 10);
       const endDateFormatted = filters.end_date.slice(0, 10);
-      const currentStart = new Date(filters.start_date);
-      const prevStart = new Date(Date.UTC(currentStart.getUTCFullYear(), currentStart.getUTCMonth(), 1, 0, 0, 0, 0));
-      const prevEnd = new Date(currentStart.getTime() - 1); 
-      const isPrevPeriodValid = prevEnd.getTime() >= prevStart.getTime();
 
       const baseHeaders = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -189,20 +185,12 @@ export default function BalanceSheetPage() {
             // 3. Cashbook for matching accounts
             user.accounts.forEach(acc => {
                 const cbPayload = { start_date: filters.start_date, end_date: filters.end_date, view_order: "asc", payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) };
-                const cbPrevPayload = { start_date: prevStart.toISOString(), end_date: prevEnd.toISOString(), view_order: "asc", payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) };
 
                 chunkPromises.push(
                     axios.post(`${API_URL}/cash-book-report`, cbPayload, baseHeaders)
                     .then(res => ({ user, acc, type: 'cb_curr', data: res.data }))
                     .catch(() => ({ user, acc, type: 'cb_curr', data: null }))
                 );
-                if (isPrevPeriodValid) {
-                    chunkPromises.push(
-                        axios.post(`${API_URL}/cash-book-report`, cbPrevPayload, baseHeaders)
-                        .then(res => ({ user, acc, type: 'cb_prev', data: res.data }))
-                        .catch(() => ({ user, acc, type: 'cb_prev', data: null }))
-                    );
-                }
             });
         });
 
@@ -240,12 +228,8 @@ export default function BalanceSheetPage() {
             // Process Cashbook
             user.accounts.forEach(acc => {
                 const cb = chunkResults.find(r => r.user.name === user.name && r.type === 'cb_curr' && r.acc.id === acc.id)?.data;
-                const prevCb = chunkResults.find(r => r.user.name === user.name && r.type === 'cb_prev' && r.acc.id === acc.id)?.data;
 
-                let opBal = 0;
-                if (isPrevPeriodValid && prevCb) {
-                    opBal = Number(prevCb.closing_balance ?? 0);
-                }
+                let opBal = Number(cb?.opening_balance ?? 0);
                 
                 let rawData = cb?.data || [];
                 rawData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
