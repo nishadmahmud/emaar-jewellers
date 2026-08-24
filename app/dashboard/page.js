@@ -456,19 +456,11 @@ export default function DashboardPage() {
   
   const intervalDates = useMemo(() => {
     const end = new Date();
-    const start = new Date();
-    if (interval === 'weekly') {
-      start.setDate(end.getDate() - 6);
-    } else if (interval === 'monthly') {
-      start.setDate(end.getDate() - 29);
-    } else if (interval === 'yearly') {
-      start.setDate(end.getDate() - 364);
-    }
     return {
-      startDate: start.toISOString().split('T')[0],
+      startDate: "2000-01-01",
       endDate: end.toISOString().split('T')[0]
     };
-  }, [interval]);
+  }, []);
 
   const fullSalesKey = useMemo(() => session?.accessToken ? [`${process.env.NEXT_PUBLIC_API}/search-invoice?page=1&limit=10000`, { 
     keyword: "", nameId: false, emailId: false, phoneId: false, product: false, 
@@ -518,134 +510,133 @@ export default function DashboardPage() {
 
   const dash = dashboardData?.data || dashboardData || {};
 
-  const filterByInterval = (invDateStr) => {
-    if (!invDateStr) return false;
-    const invDate = new Date(invDateStr);
-    if (isNaN(invDate.getTime())) return false;
-    
-    const now = new Date();
-    const invDay = new Date(invDate.getFullYear(), invDate.getMonth(), invDate.getDate());
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    const diffDays = Math.floor((today.getTime() - invDay.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (interval === 'daily') return diffDays === 0;
-    if (interval === 'weekly') return diffDays >= 0 && diffDays <= 6;
-    if (interval === 'monthly') return diffDays >= 0 && diffDays <= 29;
-    if (interval === 'yearly') return diffDays >= 0 && diffDays <= 364;
-    return true;
-  };
-
   const fullSalesList = fullSalesData?.data?.data || fullSalesData?.data || [];
   const fullPurchasesList = fullPurchasesData?.data?.data || fullPurchasesData?.data || [];
 
-  const calculatedSalesQty = fullSalesList.reduce((acc, inv) => {
-    if (!filterByInterval(inv.date || inv.created_at)) return acc;
-    return acc + (Array.isArray(inv.sales_details)
-      ? inv.sales_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
-      : 0);
-  }, 0);
+  let previousBuyQty = 0;
+  let previousSaleQty = 0;
 
-  const calculatedPurchaseQty = fullPurchasesList.reduce((acc, inv) => {
-    if (!filterByInterval(inv.date || inv.created_at)) return acc;
-    return acc + (Array.isArray(inv.purchase_details)
-      ? inv.purchase_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
-      : 0);
-  }, 0);
+  let todayBuyQty = 0;
+  let todaySaleQty = 0;
 
-  let totalSalesBDT = 0;
-  let totalSalesAED = 0;
+  let todaySalesAED = 0;
+  let todaySalesBDT = 0;
+  let todayPurchaseAED = 0;
+  let todayPurchaseBDT = 0;
+
+  const isDateToday = (dateStr) => {
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    const now = new Date();
+    return date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  };
+
   fullSalesList.forEach(inv => {
-    if (!filterByInterval(inv.date || inv.created_at)) return;
-    const { total } = calculatePayment(inv);
-    const payMode = inv.pay_mode || '';
-    if (payMode.includes('AED') || payMode.includes('(AED @')) {
-      totalSalesAED += total;
+    const invDateStr = inv.date || inv.created_at;
+    const qty = Array.isArray(inv.sales_details)
+        ? inv.sales_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
+        : 0;
+
+    if (isDateToday(invDateStr)) {
+      todaySaleQty += qty;
+      const { total } = calculatePayment(inv);
+      const payMode = inv.pay_mode || '';
+      if (payMode.includes('AED') || payMode.includes('(AED @')) {
+        todaySalesAED += total;
+      } else {
+        todaySalesBDT += total;
+      }
     } else {
-      totalSalesBDT += total;
+      previousSaleQty += qty;
     }
   });
 
-  let totalPurchaseBDT = 0;
-  let totalPurchaseAED = 0;
   fullPurchasesList.forEach(inv => {
-    if (!filterByInterval(inv.date || inv.created_at)) return;
-    const { total } = calculatePayment(inv);
-    const payMode = inv.pay_mode || '';
-    if (payMode.includes('AED') || payMode.includes('(AED @')) {
-      totalPurchaseAED += total;
+    const invDateStr = inv.date || inv.created_at;
+    const qty = Array.isArray(inv.purchase_details)
+        ? inv.purchase_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
+        : 0;
+
+    if (isDateToday(invDateStr)) {
+      todayBuyQty += qty;
+      const { total } = calculatePayment(inv);
+      const payMode = inv.pay_mode || '';
+      if (payMode.includes('AED') || payMode.includes('(AED @')) {
+        todayPurchaseAED += total;
+      } else {
+        todayPurchaseBDT += total;
+      }
     } else {
-      totalPurchaseBDT += total;
+      previousBuyQty += qty;
     }
   });
 
-  const mainMetrics = [
-    /* {
-      title: "Total Sales",
-      value: dash.sales || 0,
-      currency: "AED",
-      trend: dash.sales_change !== undefined ? dash.sales_change : "0%",
-      trendText: dash.sales_report || "less than last day",
-      icon: "📊",
-      color: "bg-blue-50/40 border-blue-100/60",
-      textColor: "text-blue-900",
-      link: "/dashboard/sales",
-    }, */
+  const previousStock = previousBuyQty - previousSaleQty;
+  const finalStock = previousStock + todayBuyQty - todaySaleQty;
+
+  const row1Metrics = [
     {
-      title: "Total Sales Qty",
-      value: calculatedSalesQty,
+      title: "Previous Stock",
+      value: previousStock,
       icon: "📦",
-      color: "bg-cyan-50/40 border-cyan-100/60",
-      textColor: "text-cyan-900",
+      color: "bg-slate-50/40 border-slate-100/60",
+      textColor: "text-slate-900",
     },
     {
-      title: "Total Purchase",
-      value: dash.purchase || 0,
-      currency: "AED",
-      trend: dash.purchase_percentage,
-      icon: "🛒",
-      color: "bg-amber-50/40 border-amber-100/60",
-      textColor: "text-amber-900",
-      link: "/dashboard/purchases",
-    },
-    {
-      title: "Total Purchase Qty",
-      value: calculatedPurchaseQty,
+      title: "Buy Qty (Today)",
+      value: todayBuyQty,
       icon: "📥",
       color: "bg-teal-50/40 border-teal-100/60",
       textColor: "text-teal-900",
     },
     {
-      title: "Total Sales (BDT)",
-      value: totalSalesBDT,
-      currency: "BDT",
-      icon: "৳",
-      color: "bg-indigo-50/40 border-indigo-100/60",
-      textColor: "text-indigo-900",
+      title: "Sale Qty (Today)",
+      value: todaySaleQty,
+      icon: "📤",
+      color: "bg-orange-50/40 border-orange-100/60",
+      textColor: "text-orange-900",
     },
     {
-      title: "Total Sales (AED)",
-      value: totalSalesAED,
+      title: "Final Stock",
+      value: finalStock,
+      icon: "✅",
+      color: "bg-emerald-50/40 border-emerald-100/60",
+      textColor: "text-emerald-900",
+    },
+  ];
+
+  const row2Metrics = [
+    {
+      title: "Daily Sales (AED)",
+      value: todaySalesAED,
       currency: "AED",
       icon: "د.إ",
       color: "bg-violet-50/40 border-violet-100/60",
       textColor: "text-violet-900",
     },
     {
-      title: "Total Purchase (BDT)",
-      value: totalPurchaseBDT,
+      title: "Daily Sales (BDT)",
+      value: todaySalesBDT,
       currency: "BDT",
       icon: "৳",
-      color: "bg-rose-50/40 border-rose-100/60",
-      textColor: "text-rose-900",
+      color: "bg-indigo-50/40 border-indigo-100/60",
+      textColor: "text-indigo-900",
     },
     {
-      title: "Total Purchase (AED)",
-      value: totalPurchaseAED,
+      title: "Daily Purchase (AED)",
+      value: todayPurchaseAED,
       currency: "AED",
       icon: "د.إ",
       color: "bg-fuchsia-50/40 border-fuchsia-100/60",
       textColor: "text-fuchsia-900",
+    },
+    {
+      title: "Daily Purchase (BDT)",
+      value: todayPurchaseBDT,
+      currency: "BDT",
+      icon: "৳",
+      color: "bg-rose-50/40 border-rose-100/60",
+      textColor: "text-rose-900",
     },
   ];
 
@@ -670,9 +661,15 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-2.5">
-          {/* Main 4 KPI Cards Grid */}
+          {/* Main 4 KPI Cards Grid - Row 1 */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-            {mainMetrics.map((m) => (
+            {row1Metrics.map((m) => (
+              <StatCard key={m.title} {...m} />
+            ))}
+          </div>
+          {/* Main 4 KPI Cards Grid - Row 2 */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {row2Metrics.map((m) => (
               <StatCard key={m.title} {...m} />
             ))}
           </div>

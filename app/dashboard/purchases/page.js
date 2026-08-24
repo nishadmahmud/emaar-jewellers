@@ -18,6 +18,8 @@ export default function PurchaseHistoryPage() {
   const [limit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const router = useRouter();
   const { data: session } = useSession();
 
@@ -36,8 +38,8 @@ export default function PurchaseHistoryPage() {
             emailId: false,
             phoneId: false,
             imei: false,
-            start_date: 0,
-            end_date: new Date().toISOString(),
+            start_date: startDate || 0,
+            end_date: endDate || new Date().toISOString(),
           },
           {
             headers: { Authorization: `Bearer ${token}` }
@@ -63,7 +65,7 @@ export default function PurchaseHistoryPage() {
     }, 400);
 
     return () => clearTimeout(delayDebounce);
-  }, [search, currentPage, limit, session?.accessToken]);
+  }, [search, startDate, endDate, currentPage, limit, session?.accessToken]);
 
   const totalPages = Math.ceil(totalInvoices / limit);
 
@@ -75,21 +77,42 @@ export default function PurchaseHistoryPage() {
           <p className="text-sm text-neutral-500 mt-1">View and manage all past inventory purchases.</p>
         </div>
         
-        {/* Search */}
-        <div className="relative w-full sm:w-72">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-neutral-400" />
-          </div>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
           <input
-            type="text"
-            placeholder="Search by ID or vendor..."
-            value={search}
+            type="date"
+            value={startDate}
             onChange={(e) => {
-              setSearch(e.target.value);
+              setStartDate(e.target.value);
               setCurrentPage(1);
             }}
-            className="block w-full pl-10 pr-3 py-2 border border-neutral-200 rounded-lg text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-shadow"
+            className="block w-full sm:w-auto px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
           />
+          <span className="text-neutral-400 hidden sm:block">to</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="block w-full sm:w-auto px-3 py-2 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          />
+          <div className="relative w-full sm:w-72">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-neutral-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search by ID or vendor..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="block w-full pl-10 pr-3 py-2 border border-neutral-200 rounded-lg text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-shadow"
+            />
+          </div>
         </div>
       </div>
 

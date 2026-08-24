@@ -32,8 +32,7 @@ export default function BalanceSheetPage() {
   const API_URL = process.env.NEXT_PUBLIC_API;
 
   const [filters, setFilters] = useState({
-    start_date: todayStartISO(),
-    end_date: todayEndISO(),
+    date: todayStartISO().slice(0, 10),
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -65,8 +64,8 @@ export default function BalanceSheetPage() {
       setUserBalances([]);
       setProgressMsg('Fetching master data (Customers, Vendors, Invoices, Accounts)...');
 
-      const startDateFormatted = filters.start_date.slice(0, 10);
-      const endDateFormatted = filters.end_date.slice(0, 10);
+      const startDateFormatted = filters.date;
+      const endDateFormatted = filters.date;
 
       const baseHeaders = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -184,7 +183,7 @@ export default function BalanceSheetPage() {
 
             // 3. Cashbook for matching accounts
             user.accounts.forEach(acc => {
-                const cbPayload = { start_date: filters.start_date, end_date: filters.end_date, view_order: "asc", payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) };
+                const cbPayload = { start_date: `${filters.date}T00:00:00.000Z`, end_date: `${filters.date}T23:59:59.999Z`, view_order: "asc", payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) };
 
                 chunkPromises.push(
                     axios.post(`${API_URL}/cash-book-report`, cbPayload, baseHeaders)
@@ -421,28 +420,14 @@ export default function BalanceSheetPage() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 sm:gap-4 w-full">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-[11px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                Start Date
+                Date
               </label>
               <div className="relative">
                 <Calendar size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
                 <input
                   type="date"
-                  value={filters.start_date.slice(0, 10)}
-                  onChange={(e) => handleFilterChange("start_date", e.target.value ? `${e.target.value}T00:00:00.000Z` : "")}
-                  className="w-full pl-9 pr-3 py-2 sm:py-2.5 border border-neutral-200 rounded-lg text-xs sm:text-sm text-neutral-700 bg-neutral-50/50 focus:outline-none focus:ring-2 focus:ring-black transition-all"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col gap-1 flex-1">
-              <label className="text-[11px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wider">
-                End Date
-              </label>
-              <div className="relative">
-                <Calendar size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-                <input
-                  type="date"
-                  value={filters.end_date.slice(0, 10)}
-                  onChange={(e) => handleFilterChange("end_date", e.target.value ? `${e.target.value}T23:59:59.999Z` : "")}
+                  value={filters.date}
+                  onChange={(e) => handleFilterChange("date", e.target.value)}
                   className="w-full pl-9 pr-3 py-2 sm:py-2.5 border border-neutral-200 rounded-lg text-xs sm:text-sm text-neutral-700 bg-neutral-50/50 focus:outline-none focus:ring-2 focus:ring-black transition-all"
                 />
               </div>
