@@ -69,6 +69,15 @@ export default function PurchaseHistoryPage() {
 
   const totalPages = Math.ceil(totalInvoices / limit);
 
+  const pageTotalQty = invoices.reduce((acc, inv) => {
+    const q = Array.isArray(inv.purchase_details) ? inv.purchase_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0) : 0;
+    return acc + q;
+  }, 0);
+
+  const pageTotalAmount = invoices.reduce((acc, inv) => {
+    return acc + ((inv.sub_total || 0) - (inv.discount || 0));
+  }, 0);
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -190,6 +199,13 @@ export default function PurchaseHistoryPage() {
                     </div>
                   );
                 })}
+                <div className="px-3 py-3 bg-neutral-50 flex items-center justify-between border-t border-neutral-200">
+                  <span className="font-bold text-sm text-neutral-900">Page Total:</span>
+                  <div className="text-right">
+                    <p className="text-xs text-neutral-600">Qty: <span className="font-bold text-neutral-900">{pageTotalQty}</span></p>
+                    <p className="text-xs text-neutral-600">Total: <span className="font-bold text-neutral-900">{Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 2})}</span></p>
+                  </div>
+                </div>
               </div>
 
               <div className="hidden sm:block overflow-x-auto">
@@ -259,6 +275,15 @@ export default function PurchaseHistoryPage() {
                       );
                     })}
                   </tbody>
+                  <tfoot className="bg-neutral-50 text-neutral-900 font-bold border-t border-neutral-200">
+                    <tr>
+                      <td colSpan="3" className="px-6 py-4 text-right">Page Total:</td>
+                      <td className="px-6 py-4 text-right">
+                         {Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                      </td>
+                      <td colSpan="3"></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </>
