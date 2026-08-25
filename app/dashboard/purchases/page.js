@@ -215,6 +215,7 @@ export default function PurchaseHistoryPage() {
                       <th className="px-6 py-4 font-medium">Invoice ID</th>
                       <th className="px-6 py-4 font-medium">Date</th>
                       <th className="px-6 py-4 font-medium">Vendor</th>
+                      <th className="px-6 py-4 font-medium text-center">Qty</th>
                       <th className="px-6 py-4 font-medium text-right">Total</th>
                       <th className="px-6 py-4 font-medium text-right">Paid</th>
                       <th className="px-6 py-4 font-medium text-right">Due</th>
@@ -232,6 +233,7 @@ export default function PurchaseHistoryPage() {
                       const totalBdt = inv.sub_total - inv.discount;
                       const paidBdt = inv.paid_amount;
                       const dueBdt = Math.max(totalBdt - paidBdt, 0);
+                      const qty = Array.isArray(inv.purchase_details) ? inv.purchase_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0) : 0;
 
                       return (
                         <tr key={inv.id} className="hover:bg-neutral-50/50 transition-colors">
@@ -243,6 +245,9 @@ export default function PurchaseHistoryPage() {
                           </td>
                           <td className="px-6 py-4 text-neutral-700">
                             {inv.vendor_name || 'Unknown Vendor'}
+                          </td>
+                          <td className="px-6 py-4 text-center text-neutral-900 font-medium">
+                            {qty}
                           </td>
                           <td className="px-6 py-4 text-right text-neutral-900 font-medium">
                             {currency} {Number(totalBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
@@ -278,6 +283,7 @@ export default function PurchaseHistoryPage() {
                   <tfoot className="bg-neutral-50 text-neutral-900 font-bold border-t border-neutral-200">
                     <tr>
                       <td colSpan="3" className="px-6 py-4 text-right">Page Total:</td>
+                      <td className="px-6 py-4 text-center">{pageTotalQty}</td>
                       <td className="px-6 py-4 text-right">
                          {Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 2})}
                       </td>
