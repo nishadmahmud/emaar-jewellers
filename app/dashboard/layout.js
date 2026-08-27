@@ -93,6 +93,7 @@ export default function DashboardLayout({ children }) {
     {
       section: 'Analytics',
       items: [
+        { name: 'Transfer History', href: '/dashboard/transfer-history', icon: History },
         { name: 'Ledger Statement Report', href: '/dashboard/ledger-statement-report', icon: FileText },
         { name: 'Profit Loss Report', href: '/dashboard/profit-loss-report', icon: FileText },
       ]
@@ -310,13 +311,7 @@ export default function DashboardLayout({ children }) {
               </Link>
             </div>
 
-            <button
-              onClick={() => setIsQuickPaymentOpen(true)}
-              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 bg-black hover:bg-neutral-800 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-            >
-              <CreditCard size={15} />
-              <span>Quick Payment</span>
-            </button>
+
 
             <div className="h-8 w-px bg-neutral-200" />
 

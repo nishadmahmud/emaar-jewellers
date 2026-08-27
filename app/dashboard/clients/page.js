@@ -38,6 +38,9 @@ function ClientsContent() {
   });
   const [savingClient, setSavingClient] = useState(false);
 
+  // Edit Client State
+  const [editingClient, setEditingClient] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const fetchClients = useCallback(async (searchQuery = "") => {
     if (!token) return;
     setLoading(true);
@@ -234,6 +237,101 @@ function ClientsContent() {
     }
   };
 
+  const handleUpdateClient = async (e) => {
+    e.preventDefault();
+    if (!token || !editingClient) return;
+    
+    if (!editingClient.name || !editingClient.mobile_number) {
+        return toast.error("Name and Mobile Number are required");
+    }
+
+    setSavingEdit(true);
+    
+    try {
+        const promises = [];
+        
+        // Update Customer
+        if (editingClient.customer_id) {
+            const customerPayload = {
+                id: Number(editingClient.customer_id),
+                customer_id: Number(editingClient.customer_id),
+                name: editingClient.name,
+                email: editingClient.email,
+                mobile_number: editingClient.mobile_number,
+                address: editingClient.address,
+                is_member: 0
+            };
+            promises.push(axios.post(`${API_URL}/save-customer`, customerPayload, { headers: { Authorization: `Bearer ${token}` } }));
+        }
+
+        // Update Vendor
+        if (editingClient.vendor_id) {
+            const vendorPayload = {
+                id: Number(editingClient.vendor_id),
+                vendor_id: Number(editingClient.vendor_id),
+                name: editingClient.name,
+                email: editingClient.email,
+                mobile_number: editingClient.mobile_number,
+                address: editingClient.address
+            };
+            promises.push(axios.post(`${API_URL}/save-vendor`, vendorPayload, { headers: { Authorization: `Bearer ${token}` } }));
+        }
+
+        // Handle name change for associated accounts/types
+        if (editingClient.name !== editingClient.old_name) {
+            const oldNameDH = `${editingClient.old_name} (DH)`;
+            const oldNameBD = `${editingClient.old_name} (BD)`;
+            const newNameDH = `${editingClient.name} (DH)`;
+            const newNameBD = `${editingClient.name} (BD)`;
+            const newIconLetter = editingClient.name.charAt(0).toUpperCase();
+
+            const [payTypesRes, payCategoriesRes, expenseTypesRes] = await Promise.all([
+                axios.get(`${API_URL}/payment-type-list?per_page=5000&limit=5000&t=${Date.now()}`, { headers: { Authorization: `Bearer ${token}` } }),
+                axios.get(`${API_URL}/payment-type-category-list?per_page=5000&limit=5000&t=${Date.now()}`, { headers: { Authorization: `Bearer ${token}` } }),
+                axios.get(`${API_URL}/get-expense-type-list?per_page=5000&limit=5000&t=${Date.now()}`, { headers: { Authorization: `Bearer ${token}` } })
+            ]);
+
+            const payTypes = Array.isArray(payTypesRes.data?.data?.data) ? payTypesRes.data.data.data : Array.isArray(payTypesRes.data?.data) ? payTypesRes.data.data : Array.isArray(payTypesRes.data) ? payTypesRes.data : [];
+            const payCategories = Array.isArray(payCategoriesRes.data?.data?.data) ? payCategoriesRes.data.data.data : Array.isArray(payCategoriesRes.data?.data) ? payCategoriesRes.data.data : Array.isArray(payCategoriesRes.data) ? payCategoriesRes.data : [];
+            const expenseTypes = Array.isArray(expenseTypesRes.data?.data) ? expenseTypesRes.data.data : Array.isArray(expenseTypesRes.data) ? expenseTypesRes.data : [];
+
+            const cleanCompare = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase();
+
+            // Payment Types
+            const oldTypeDH = payTypes.find(t => cleanCompare(t.type_name, oldNameDH));
+            const oldTypeBD = payTypes.find(t => cleanCompare(t.type_name, oldNameBD));
+            if (oldTypeDH) promises.push(axios.post(`${API_URL}/payment-type-update`, { ...oldTypeDH, id: oldTypeDH.id, type_name: newNameDH, icon_letter: newIconLetter }, { headers: { Authorization: `Bearer ${token}` } }));
+            if (oldTypeBD) promises.push(axios.post(`${API_URL}/payment-type-update`, { ...oldTypeBD, id: oldTypeBD.id, type_name: newNameBD, icon_letter: newIconLetter }, { headers: { Authorization: `Bearer ${token}` } }));
+
+            // Payment Categories - Extracting from the payment type itself to completely bypass any pagination issues with the category list API
+            const oldCatDH = payCategories.find(c => cleanCompare(c.payment_category_name, oldNameDH)) || oldTypeDH?.payment_type_category?.find(c => cleanCompare(c.payment_category_name, oldNameDH)) || (oldTypeDH?.payment_type_category && oldTypeDH.payment_type_category[0]);
+            const oldCatBD = payCategories.find(c => cleanCompare(c.payment_category_name, oldNameBD)) || oldTypeBD?.payment_type_category?.find(c => cleanCompare(c.payment_category_name, oldNameBD)) || (oldTypeBD?.payment_type_category && oldTypeBD.payment_type_category[0]);
+            
+            if (oldCatDH && oldTypeDH) promises.push(axios.post(`${API_URL}/payment-type-category-update`, { ...oldCatDH, id: oldCatDH.id, payment_category_name: newNameDH, account_number: oldCatDH.account_number || '1', branch_name: oldCatDH.branch_name || '', payment_type_id: oldTypeDH.id }, { headers: { Authorization: `Bearer ${token}` } }));
+            if (oldCatBD && oldTypeBD) promises.push(axios.post(`${API_URL}/payment-type-category-update`, { ...oldCatBD, id: oldCatBD.id, payment_category_name: newNameBD, account_number: oldCatBD.account_number || '1', branch_name: oldCatBD.branch_name || '', payment_type_id: oldTypeBD.id }, { headers: { Authorization: `Bearer ${token}` } }));
+
+            // Expense Types
+            const oldExpDH = expenseTypes.find(e => cleanCompare(e.expense_name, oldNameDH));
+            const oldExpBD = expenseTypes.find(e => cleanCompare(e.expense_name, oldNameBD));
+            if (oldExpDH) promises.push(axios.post(`${API_URL}/update-expense-type/${oldExpDH.id}`, { ...oldExpDH, expense_name: newNameDH, transaction_category: oldExpDH.transaction_category || 'Quick Payment', expense_description: oldExpDH.expense_description || '', transaction_type_id: oldExpDH.transaction_type_id || 0 }, { headers: { Authorization: `Bearer ${token}` } }));
+            if (oldExpBD) promises.push(axios.post(`${API_URL}/update-expense-type/${oldExpBD.id}`, { ...oldExpBD, expense_name: newNameBD, transaction_category: oldExpBD.transaction_category || 'Quick Payment', expense_description: oldExpBD.expense_description || '', transaction_type_id: oldExpBD.transaction_type_id || 0 }, { headers: { Authorization: `Bearer ${token}` } }));
+        }
+
+        if (promises.length > 0) {
+            await Promise.all(promises);
+        }
+
+        toast.success("Client updated successfully!");
+        setEditingClient(null);
+        fetchClients(keyword); 
+    } catch (err) {
+        toast.error("Failed to update client");
+        console.error(err);
+    } finally {
+        setSavingEdit(false);
+    }
+  };
+
 
   return (
     <div className="max-w-7xl mx-auto text-black pb-12">
@@ -327,15 +425,29 @@ function ClientsContent() {
                           {client.purchase_due > 0 ? client.purchase_due.toLocaleString('en-US') : '-'}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(href);
-                            }}
-                            className="px-3 py-1.5 text-xs font-medium text-white bg-black rounded-lg hover:bg-neutral-800 transition-colors shadow-sm"
-                          >
-                            View
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingClient({
+                                  ...client,
+                                  old_name: client.name
+                                });
+                              }}
+                              className="px-3 py-1.5 text-xs font-medium text-neutral-600 bg-neutral-100 rounded-lg hover:bg-neutral-200 hover:text-black transition-colors shadow-sm"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(href);
+                              }}
+                              className="px-3 py-1.5 text-xs font-medium text-white bg-black rounded-lg hover:bg-neutral-800 transition-colors shadow-sm"
+                            >
+                              View
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -446,6 +558,112 @@ function ClientsContent() {
                 >
                   {savingClient ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                   {savingClient ? 'Saving Client...' : 'Save Client'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Client Modal */}
+      {editingClient && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !savingEdit && setEditingClient(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-5 border-b border-neutral-100 bg-neutral-50/50">
+              <div>
+                <h3 className="text-lg font-semibold text-neutral-900">Edit Client</h3>
+                <p className="text-xs text-neutral-500 mt-1">Changes to the name will update all related accounts automatically.</p>
+              </div>
+              <button 
+                onClick={() => setEditingClient(null)}
+                disabled={savingEdit}
+                className="p-2 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateClient} className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                    Client Name <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                    <input
+                      required
+                      autoFocus
+                      placeholder="e.g. John Doe"
+                      className="w-full pl-9 pr-4 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all"
+                      value={editingClient.name}
+                      onChange={(e) => setEditingClient({...editingClient, name: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                    Mobile Number <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                    <input
+                      required
+                      placeholder="e.g. 01XXXXXXXXX"
+                      className="w-full pl-9 pr-4 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all"
+                      value={editingClient.mobile_number}
+                      onChange={(e) => setEditingClient({...editingClient, mobile_number: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1.5">Email Address</label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+                    <input
+                      type="email"
+                      placeholder="client@example.com"
+                      className="w-full pl-9 pr-4 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all"
+                      value={editingClient.email}
+                      onChange={(e) => setEditingClient({...editingClient, email: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-1.5">Full Address</label>
+                  <div className="relative">
+                    <MapPin size={16} className="absolute left-3 top-3 text-neutral-400" />
+                    <textarea
+                      rows={3}
+                      placeholder="Enter client's address"
+                      className="w-full pl-9 pr-4 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all resize-none"
+                      value={editingClient.address}
+                      onChange={(e) => setEditingClient({...editingClient, address: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4 flex gap-3 border-t border-neutral-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingClient(null)}
+                  disabled={savingEdit}
+                  className="flex-1 px-4 py-2.5 border border-neutral-200 text-neutral-700 rounded-lg text-sm font-medium hover:bg-neutral-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="flex-[2] flex items-center justify-center gap-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-70"
+                >
+                  {savingEdit ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                  {savingEdit ? 'Updating...' : 'Update Client'}
                 </button>
               </div>
             </form>
