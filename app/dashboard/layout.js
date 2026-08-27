@@ -23,6 +23,8 @@ import {
   ChevronDown,
   ArrowRightLeft,
   AlertCircle,
+  Lock,
+  KeyRound,
 } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
@@ -115,7 +117,14 @@ export default function DashboardLayout({ children }) {
         { name: 'Expense Categories', href: '/dashboard/expense/categories', icon: Tags },
         { name: 'Quick Payment List', href: '/dashboard/quick-payment/list', icon: CreditCard },
         { name: 'Payment Categories', href: '/dashboard/quick-payment/categories', icon: Tags },
-        { name: 'Payments Settings', href: '/dashboard/settings/payments', icon: Settings },
+      ]
+    },
+    {
+      section: 'Settings',
+      items: [
+        { name: 'Payments', href: '/dashboard/settings/payments', icon: CreditCard },
+        { name: 'Change PIN', href: '/dashboard/settings/change-pin', icon: Lock },
+        { name: 'Reset Password', href: '/dashboard/settings/reset-password', icon: KeyRound },
       ]
     }
   ];
