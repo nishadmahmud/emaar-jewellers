@@ -129,6 +129,11 @@ export default function ProfitLossReport() {
 
   const currentProfit = (avgSellPrice - avgPurchasePrice) * totalSalesQty;
 
+  const negativeStockValuation = -1 * stockAvailable * avgSellPrice;
+  const actualProfit = totalSalesQty > totalPurchaseQty 
+    ? currentProfit - negativeStockValuation 
+    : currentProfit;
+
   const totalStockCount = purchaseData.reduce((count, inv) => {
     // Attempting a rough stock sum if quantities are available, else we count invoices.
     // If we don't have individual product quantities, we can sum an assumed property or leave as length.
@@ -521,6 +526,22 @@ export default function ProfitLossReport() {
               <p className="text-neutral-500 text-xs mb-2">-Stock Available × Avg Sell Price</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
                 -{(totalPurchaseQty - totalSalesQty).toFixed(3)} × {Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} = <span className="font-bold text-rose-600">{Number(-1 * stockAvailable * avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+              </code>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-neutral-900 mb-1">6. Actual Profit</h4>
+              <p className="text-neutral-500 text-xs mb-2">
+                {totalSalesQty > totalPurchaseQty ? 'Current Profit - Negative Stock Valuation' : 'Current Profit (Sales Qty ≤ Purchase Qty)'}
+              </p>
+              <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
+                {totalSalesQty > totalPurchaseQty ? (
+                  <>
+                    {Number(currentProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} - {Number(negativeStockValuation).toLocaleString(undefined, { maximumFractionDigits: 0 })} = <span className={`font-bold ${actualProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(actualProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+                  </>
+                ) : (
+                  <span className={`font-bold ${actualProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(actualProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+                )}
               </code>
             </div>
           </div>

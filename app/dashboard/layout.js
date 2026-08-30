@@ -98,6 +98,7 @@ export default function DashboardLayout({ children }) {
         { name: 'Transfer History', href: '/dashboard/transfer-history', icon: History },
         { name: 'Ledger Statement Report', href: '/dashboard/ledger-statement-report', icon: FileText },
         { name: 'Profit Loss Report', href: '/dashboard/profit-loss-report', icon: FileText },
+        { name: 'Daily Profit Loss', href: '/dashboard/daily-profit-loss', icon: FileText },
       ]
     },
     {
