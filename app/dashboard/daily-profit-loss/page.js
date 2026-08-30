@@ -98,27 +98,18 @@ export default function DailyProfitLossReport() {
     }, 0);
   };
 
-  // Normalize any date to "YYYY-MM-DD" in local timezone
-  const toLocalDateStr = (dateInput) => {
-    const d = new Date(dateInput);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const generateDateRange = (start, end) => {
+    if (!start || !end) return [];
     const dates = [];
-    const startD = new Date(start);
-    const endD = new Date(end);
-
-    // Use local date components to avoid timezone shifts
-    let current = new Date(startD.getFullYear(), startD.getMonth(), startD.getDate());
-    const last = new Date(endD.getFullYear(), endD.getMonth(), endD.getDate());
+    let current = new Date(start.substring(0, 10)); // parsed as UTC midnight
+    const last = new Date(end.substring(0, 10));
 
     while (current <= last) {
-      dates.push(toLocalDateStr(current));
-      current.setDate(current.getDate() + 1);
+      const year = current.getUTCFullYear();
+      const month = String(current.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(current.getUTCDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${day}`);
+      current.setUTCDate(current.getUTCDate() + 1);
     }
     return dates;
   };
@@ -126,8 +117,8 @@ export default function DailyProfitLossReport() {
   const dateList = generateDateRange(startDate, endDate);
 
   const dailyData = dateList.map(dateStr => {
-    const daySales = salesData.filter(inv => toLocalDateStr(inv.created_at) === dateStr);
-    const dayPurchases = purchaseData.filter(inv => toLocalDateStr(inv.created_at) === dateStr);
+    const daySales = salesData.filter(inv => inv.created_at?.substring(0, 10) === dateStr);
+    const dayPurchases = purchaseData.filter(inv => inv.created_at?.substring(0, 10) === dateStr);
 
     const totalSalesBdt = aggregateTotal(daySales);
     const totalPurchaseBdt = aggregateTotal(dayPurchases);
@@ -153,7 +144,7 @@ export default function DailyProfitLossReport() {
     const negativeStockValuation = -1 * stockAvailable * avgSellPrice;
     
     const actualProfit = totalSalesQty > totalPurchaseQty 
-      ? currentProfit - negativeStockValuation 
+      ? (currentProfit < 0 ? currentProfit + negativeStockValuation : currentProfit - negativeStockValuation)
       : currentProfit;
 
     return {
