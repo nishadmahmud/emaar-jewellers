@@ -127,12 +127,60 @@ export default function ProfitLossReport() {
   // Formula: APP * Stock
   const currentStockPrice = avgPurchasePrice * stockAvailable;
 
-  const currentProfit = (avgSellPrice - avgPurchasePrice) * totalSalesQty;
+  // --- Per-day profit aggregation (fixes multi-day discrepancy) ---
+  // Generate date range from startDate to endDate
+  const generateDateRange = (start, end) => {
+    if (!start || !end) return [];
+    const dates = [];
+    let current = new Date(start.substring(0, 10));
+    const last = new Date(end.substring(0, 10));
+    while (current <= last) {
+      const year = current.getUTCFullYear();
+      const month = String(current.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(current.getUTCDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${day}`);
+      current.setUTCDate(current.getUTCDate() + 1);
+    }
+    return dates;
+  };
 
-  const negativeStockValuation = -1 * stockAvailable * avgSellPrice;
-  const actualProfit = totalSalesQty > totalPurchaseQty 
-    ? (currentProfit < 0 ? currentProfit + negativeStockValuation : currentProfit - negativeStockValuation)
-    : currentProfit;
+  const dateList = generateDateRange(startDate, endDate);
+
+  // Compute profit per day, then sum — avoids the "average of averages" distortion
+  const dailyProfitData = dateList.map(dateStr => {
+    const daySales = salesData.filter(inv => inv.created_at?.substring(0, 10) === dateStr);
+    const dayPurchases = purchaseData.filter(inv => inv.created_at?.substring(0, 10) === dateStr);
+
+    const daySalesBdt = aggregateTotal(daySales);
+    const dayPurchaseBdt = aggregateTotal(dayPurchases);
+
+    const daySalesQty = daySales.reduce((acc, inv) => {
+      return acc + (inv.sales_details && inv.sales_details.length > 0
+        ? inv.sales_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
+        : 0);
+    }, 0);
+
+    const dayPurchaseQty = dayPurchases.reduce((acc, inv) => {
+      return acc + (inv.purchase_details && inv.purchase_details.length > 0
+        ? inv.purchase_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
+        : 0);
+    }, 0);
+
+    const dayAvgSell = daySalesQty > 0 ? daySalesBdt / daySalesQty : 0;
+    const dayAvgPurchase = dayPurchaseQty > 0 ? dayPurchaseBdt / dayPurchaseQty : 0;
+    const dayStock = dayPurchaseQty - daySalesQty;
+    const dayCurrentProfit = (dayAvgSell - dayAvgPurchase) * daySalesQty;
+
+    const dayNegStockVal = -1 * dayStock * dayAvgSell;
+    const dayActualProfit = daySalesQty > dayPurchaseQty
+      ? (dayCurrentProfit < 0 ? dayCurrentProfit + dayNegStockVal : dayCurrentProfit - dayNegStockVal)
+      : dayCurrentProfit;
+
+    return { currentProfit: dayCurrentProfit, actualProfit: dayActualProfit };
+  });
+
+  const currentProfit = dailyProfitData.reduce((sum, d) => sum + d.currentProfit, 0);
+  const actualProfit = dailyProfitData.reduce((sum, d) => sum + d.actualProfit, 0);
 
   const totalStockCount = purchaseData.reduce((count, inv) => {
     // Attempting a rough stock sum if quantities are available, else we count invoices.
@@ -520,9 +568,9 @@ export default function ProfitLossReport() {
 
             <div>
               <h4 className="font-semibold text-neutral-900 mb-1">3. Current Profit / Loss</h4>
-              <p className="text-neutral-500 text-xs mb-2">(Avg Sell Price - Avg Purchase Price) × Total Sales Qty</p>
+              <p className="text-neutral-500 text-xs mb-2">Sum of each day's: (Day Avg Sell - Day Avg Purchase) × Day Sales Qty</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                ({Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} - {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })}) × {totalSalesQty.toFixed(3)} = <span className={`font-bold ${currentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(currentProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+                Σ per-day profit = <span className={`font-bold ${currentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(currentProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
               </code>
             </div>
 
@@ -535,26 +583,10 @@ export default function ProfitLossReport() {
             </div>
 
             <div>
-              <h4 className="font-semibold text-neutral-900 mb-1">5. Negative Stock Valuation</h4>
-              <p className="text-neutral-500 text-xs mb-2">-Stock Available × Avg Sell Price</p>
+              <h4 className="font-semibold text-neutral-900 mb-1">5. Actual Profit</h4>
+              <p className="text-neutral-500 text-xs mb-2">Sum of each day's actual profit (adjusted for negative stock per day)</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                -{(totalPurchaseQty - totalSalesQty).toFixed(3)} × {Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} = <span className="font-bold text-rose-600">{Number(-1 * stockAvailable * avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
-              </code>
-            </div>
-
-            <div>
-              <h4 className="font-semibold text-neutral-900 mb-1">6. Actual Profit</h4>
-              <p className="text-neutral-500 text-xs mb-2">
-                {totalSalesQty > totalPurchaseQty ? (currentProfit < 0 ? 'Current Profit + Negative Stock Valuation' : 'Current Profit - Negative Stock Valuation') : 'Current Profit (Sales Qty ≤ Purchase Qty)'}
-              </p>
-              <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                {totalSalesQty > totalPurchaseQty ? (
-                  <>
-                    {Number(currentProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} {currentProfit < 0 ? '+' : '-'} {Number(negativeStockValuation).toLocaleString(undefined, { maximumFractionDigits: 0 })} = <span className={`font-bold ${actualProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(actualProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
-                  </>
-                ) : (
-                  <span className={`font-bold ${actualProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(actualProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
-                )}
+                <span className={`font-bold ${actualProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(actualProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
               </code>
             </div>
           </div>
