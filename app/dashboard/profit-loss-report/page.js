@@ -236,7 +236,7 @@ export default function ProfitLossReport() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-4">
         <Card>
           <CardContent className="flex flex-col gap-0.5 sm:gap-1 p-4 sm:p-6">
             <div className="flex items-center gap-1.5 sm:gap-2 text-neutral-500">
@@ -294,8 +294,8 @@ export default function ProfitLossReport() {
           </CardContent>
         </Card>
 
-        {/* Actual Profit/Loss (Mobile Only) */}
-        <Card className="sm:hidden">
+        {/* Actual Profit/Loss */}
+        <Card>
           <CardContent className="flex flex-col gap-0.5 sm:gap-1 p-4 sm:p-6">
             <div className="flex items-center gap-2 text-neutral-500">
               {actualProfit >= 0 ? <TrendingUp size={16} className="text-emerald-500" /> : <TrendingDown size={16} className="text-rose-500" />}
