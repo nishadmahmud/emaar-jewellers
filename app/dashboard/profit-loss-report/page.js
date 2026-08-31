@@ -188,7 +188,7 @@ export default function ProfitLossReport() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
         <Card>
           <CardContent className="flex flex-col gap-0.5 sm:gap-1 p-4 sm:p-6">
             <div className="flex items-center gap-1.5 sm:gap-2 text-neutral-500">
@@ -243,6 +243,19 @@ export default function ProfitLossReport() {
               <span className="text-xs sm:text-sm font-medium">Stock Available</span>
             </div>
             <div className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight sm:tracking-normal">{(totalPurchaseQty - totalSalesQty).toFixed(3)}</div>
+          </CardContent>
+        </Card>
+
+        {/* Actual Profit/Loss (Mobile Only) */}
+        <Card className="sm:hidden">
+          <CardContent className="flex flex-col gap-0.5 sm:gap-1 p-4 sm:p-6">
+            <div className="flex items-center gap-2 text-neutral-500">
+              {actualProfit >= 0 ? <TrendingUp size={16} className="text-emerald-500" /> : <TrendingDown size={16} className="text-rose-500" />}
+              <span className="text-xs sm:text-sm font-medium">Actual Profit/Loss</span>
+            </div>
+            <div className={`text-xl sm:text-2xl font-bold tracking-tight sm:tracking-normal ${actualProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              BDT {actualProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </div>
           </CardContent>
         </Card>
       </div>
