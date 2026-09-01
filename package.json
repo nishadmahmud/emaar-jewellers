@@ -13,6 +13,8 @@
     "axios": "^1.18.1",
     "date-fns": "^4.4.0",
     "file-saver": "^2.0.5",
+    "jspreadsheet-ce": "^5.0.4",
+    "jsuites": "^6.4.3",
     "lucide-react": "^1.26.0",
     "next": "16.2.11",
     "next-auth": "^4.24.15",

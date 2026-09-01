@@ -25,6 +25,7 @@ import {
   AlertCircle,
   Lock,
   KeyRound,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
@@ -118,6 +119,7 @@ export default function DashboardLayout({ children }) {
         { name: 'Expense Categories', href: '/dashboard/expense/categories', icon: Tags },
         { name: 'Quick Payment List', href: '/dashboard/quick-payment/list', icon: CreditCard },
         { name: 'Payment Categories', href: '/dashboard/quick-payment/categories', icon: Tags },
+        { name: 'Spreadsheets', href: '/dashboard/sheet', icon: FileSpreadsheet },
       ]
     },
     {
