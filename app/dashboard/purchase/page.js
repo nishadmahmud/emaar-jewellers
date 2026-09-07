@@ -82,7 +82,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
             name: detail.product_info?.name || detail.product_name || 'Product',
             have_variant: detail.have_variant || 0,
             qty: qtyNum.toString(),
-            netWeightGram: netWeightGram.toFixed(3),
+            netWeightGram: netWeightGram.toFixed(4),
             ratePerVori: ratePerVori.toString(),
             currency: currency,
             aedRate: aedRate,
@@ -375,10 +375,10 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
         const updatedItem = { ...item, [field]: value };
         if (field === 'qty') {
           const vori = parseFloat(value) || 0;
-          updatedItem.netWeightGram = value === '' ? '' : (vori * 116.64).toFixed(3);
+          updatedItem.netWeightGram = value === '' ? '' : (vori * 116.64).toFixed(4);
         } else if (field === 'netWeightGram') {
           const gram = parseFloat(value) || 0;
-          updatedItem.qty = value === '' ? '' : (gram / 116.64).toFixed(3);
+          updatedItem.qty = value === '' ? '' : (gram / 116.64).toFixed(4);
         }
         return updatedItem;
       }
@@ -754,7 +754,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
                           <div className="flex justify-between items-center pt-1 border-t border-neutral-100 text-xs">
                             <span className="text-neutral-500 font-medium">Subtotal:</span>
                             <div className="text-right">
-                              <span className="font-bold text-neutral-900">{item.currency === 'AED' ? 'AED ' : '৳ '}{itemDisplayTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                              <span className="font-bold text-neutral-900">{item.currency === 'AED' ? 'AED ' : '৳ '}{itemDisplayTotal.toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
                             </div>
                           </div>
                         </div>
@@ -786,7 +786,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-500">Cart Items ({cart.length})</span>
                 <div className="text-right">
-                  <span className="font-medium">{displayCurrency === 'AED' ? 'AED ' : '৳ '}{displayGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="font-medium">{displayCurrency === 'AED' ? 'AED ' : '৳ '}{displayGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 4})}</span>
                 </div>
               </div>
               
@@ -796,14 +796,14 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">Net Payable</span>
                   <div className="text-right">
-                    <span className="text-neutral-900 font-semibold">{displayCurrency === 'AED' ? 'AED ' : '৳ '}{displayGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                    <span className="text-neutral-900 font-semibold">{displayCurrency === 'AED' ? 'AED ' : '৳ '}{displayGrandTotal.toLocaleString(undefined, {minimumFractionDigits: 4})}</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center text-sm pt-1">
                   <span className="font-medium text-neutral-500">Due Amount</span>
                   <div className="text-right">
                     <span className={`font-bold ${dueAmountDisplay > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                      {displayCurrency === 'AED' ? 'AED ' : '৳ '}{dueAmountDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                      {displayCurrency === 'AED' ? 'AED ' : '৳ '}{dueAmountDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}
                     </span>
                   </div>
                 </div>

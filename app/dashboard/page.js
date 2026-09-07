@@ -12,8 +12,8 @@ const formatNumber = (num, decimals = 3) => {
   if (num === null || num === undefined) return '';
   if (num === 0) return '0';
   return Number(num).toLocaleString('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: decimals
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4
   });
 };
 
@@ -408,7 +408,7 @@ function StatCard({ title, value, currency, trend, trendText, icon, color, textC
             <ArrowDownRight className="w-3.5 h-3.5 text-rose-600 shrink-0" />
           )}
           <span className={`ml-0.5 font-semibold ${isPositive ? "text-emerald-600" : "text-rose-600"}`}>
-            {Math.abs(trendNumeric).toFixed(0)}%
+            {Math.abs(trendNumeric).toFixed(4)}%
           </span>
           {trendText && (
             <span className="text-neutral-400 ml-1 truncate">{trendText}</span>

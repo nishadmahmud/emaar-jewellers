@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Loader2, UserPlus, Scale, Receipt, Search, CreditCard, Banknote, ChevronDown, Trash2, Plus, Minus } from 'lucide-react';
@@ -248,11 +248,11 @@ export default function SellPage() {
         const updated = { ...item, [field]: value };
         if (field === 'goldVori') {
            const vori = parseFloat(value);
-           updated.goldGram = isNaN(vori) ? '' : (vori * 11.664).toFixed(3);
+           updated.goldGram = isNaN(vori) ? '' : (vori * 11.664).toFixed(4);
         }
         if (field === 'goldGram') {
            const gram = parseFloat(value);
-           updated.goldVori = isNaN(gram) ? '' : (gram / 11.664).toFixed(3);
+           updated.goldVori = isNaN(gram) ? '' : (gram / 11.664).toFixed(4);
         }
         return updated;
       }
@@ -611,7 +611,7 @@ export default function SellPage() {
 
                           <div className="flex justify-between items-center pt-1 border-t border-neutral-100 text-xs">
                             <span className="text-neutral-500 font-medium">Subtotal:</span>
-                            <span className="font-bold text-neutral-900">Óº│ {itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            <span className="font-bold text-neutral-900">Óº│ {itemTotal.toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
                           </div>
                         </div>
                       );
@@ -691,7 +691,7 @@ export default function SellPage() {
                                 />
                               </td>
                               <td className="px-4 py-3 font-medium text-neutral-900">
-                                {getCurrencySymbol()}{itemTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                {getCurrencySymbol()}{itemTotal.toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}
                               </td>
                               <td className="px-4 py-3 text-center">
                                 <button type="button" onClick={() => removeCartItem(item.id)} className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors">
@@ -731,12 +731,12 @@ export default function SellPage() {
                 <span className="text-neutral-500">
                   Cart Items ({cart.length})
                 </span>
-                <span className="font-medium">{getCurrencySymbol()}{subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                <span className="font-medium">{getCurrencySymbol()}{subtotal.toLocaleString(undefined, {minimumFractionDigits: 4})}</span>
               </div>
               
               <div className="pt-4 border-t border-neutral-100 flex justify-between items-center">
                 <span className="text-sm font-medium text-neutral-700">Subtotal</span>
-                <span className="font-medium">{getCurrencySymbol()}{subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                <span className="font-medium">{getCurrencySymbol()}{subtotal.toLocaleString(undefined, {minimumFractionDigits: 4})}</span>
               </div>
               
               <div className="pt-4 border-t border-neutral-100">
@@ -752,7 +752,7 @@ export default function SellPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setFormData({...formData, paidAmount: (grandTotal / 2).toFixed(2)})}
+                      onClick={() => setFormData({...formData, paidAmount: (grandTotal / 2).toFixed(4)})}
                       className="text-[11px] px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-semibold hover:bg-amber-200 transition border border-amber-200"
                     >
                       50%
@@ -773,7 +773,7 @@ export default function SellPage() {
                   <input
                     type="number"
                     value={formData.paidAmount ?? ''}
-                    placeholder={grandTotal.toFixed(2)}
+                    placeholder={grandTotal.toFixed(4)}
                     onChange={(e) => setFormData({...formData, paidAmount: e.target.value})}
                     className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 rounded-r-lg focus:ring-2 focus:ring-black focus:border-black outline-none text-sm font-medium"
                   />
@@ -783,12 +783,12 @@ export default function SellPage() {
               <div className="pt-4 mt-4 border-t border-neutral-200 space-y-2">
                 <div className="flex justify-between items-end">
                   <span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">Grand Total</span>
-                  <span className="text-2xl font-light tracking-tight">{getCurrencySymbol()}{Math.max(0, grandTotal).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span className="text-2xl font-light tracking-tight">{getCurrencySymbol()}{Math.max(0, grandTotal).toLocaleString(undefined, {minimumFractionDigits: 4})}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm pt-1">
                   <span className="font-medium text-neutral-500">Due Amount</span>
                   <span className={`font-bold ${dueAmount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    {getCurrencySymbol()}{dueAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                    {getCurrencySymbol()}{dueAmount.toLocaleString(undefined, {minimumFractionDigits: 4})}
                   </span>
                 </div>
                 <div className="flex items-center justify-between pt-1">

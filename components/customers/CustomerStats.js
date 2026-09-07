@@ -47,8 +47,8 @@ export default function CustomerStats({ data, customerWiseInvoice }) {
     const renderMultiValue = (aedVal, bdtVal, defaultVal) => {
         return (
             <div className="flex flex-col gap-0.5">
-                {showCalculated && aedVal > 0 && <span>AED {aedVal.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
-                {(!showCalculated || bdtVal > 0 || (!aedVal && !bdtVal)) && <span>BDT {(showCalculated ? bdtVal : defaultVal).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+                {showCalculated && aedVal > 0 && <span>AED {aedVal.toLocaleString("en-US", {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>}
+                {(!showCalculated || bdtVal > 0 || (!aedVal && !bdtVal)) && <span>BDT {(showCalculated ? bdtVal : defaultVal).toLocaleString("en-US", {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>}
             </div>
         );
     };

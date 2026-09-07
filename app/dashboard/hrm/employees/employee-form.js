@@ -237,7 +237,7 @@ export default function EmployeeForm({
               value={form.salary_amount}
               onChange={handleChange}
               min="0"
-              step="0.01"
+              step="0.0001"
             />
           </div>
 

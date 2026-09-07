@@ -193,10 +193,10 @@ export default function SaleInvoicePage() {
                           )}
                         </td>
                         <td className="px-4 py-4 text-center text-neutral-600">{item.qty || 1}</td>
-                        <td className="px-4 py-4 text-center text-neutral-600">{(itemQty * 116.64).toFixed(3)}</td>
-                        <td className="px-4 py-4 text-right text-neutral-600">{displayCurrency} {itemRateDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                        <td className="px-4 py-4 text-center text-neutral-600">{(itemQty * 116.64).toFixed(4)}</td>
+                        <td className="px-4 py-4 text-right text-neutral-600">{displayCurrency} {itemRateDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</td>
                         <td className="px-4 py-4 text-right font-medium text-neutral-900">
-                          {displayCurrency} {itemTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                          {displayCurrency} {itemTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}
                         </td>
                       </tr>
                     );
@@ -210,21 +210,21 @@ export default function SaleInvoicePage() {
               <div className="w-full sm:w-[350px] space-y-3 bg-neutral-50 p-6 rounded-xl">
                 <div className="flex justify-between text-sm text-neutral-600">
                   <span>Subtotal</span>
-                  <span>{displayCurrency} {subTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span>{displayCurrency} {subTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</span>
                 </div>
                 {discountDisplay > 0 && (
                   <div className="flex justify-between text-sm text-red-500">
                     <span>Discount</span>
-                    <span>- {displayCurrency} {discountDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                    <span>- {displayCurrency} {discountDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</span>
                   </div>
                 )}
                 <div className="pt-3 border-t border-neutral-200 flex justify-between font-semibold text-base text-black">
                   <span>Total Amount</span>
-                  <span>{displayCurrency} {finalTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                  <span>{displayCurrency} {finalTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</span>
                 </div>
                 <div className="flex justify-between text-sm text-green-600 pt-1 font-semibold">
                   <span>Paid Amount</span>
-                  <span>{displayCurrency} {paidDisplay.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span>{displayCurrency} {paidDisplay.toLocaleString(undefined, { minimumFractionDigits: 4 })}</span>
                 </div>
 
                 {/* Individual Payment Methods Breakdown */}
@@ -252,7 +252,7 @@ export default function SaleInvoicePage() {
                             )}
                           </div>
                           <div className="font-semibold text-emerald-700">
-                            {displayCurrency} {pmAmountDisplay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            {displayCurrency} {pmAmountDisplay.toLocaleString(undefined, { minimumFractionDigits: 4 })}
                           </div>
                         </div>
                       );
@@ -262,7 +262,7 @@ export default function SaleInvoicePage() {
                 {dueDisplay > 0 && (
                   <div className="flex justify-between text-sm font-medium text-red-600 pt-1">
                     <span>Due Amount</span>
-                    <span>{displayCurrency} {dueDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                    <span>{displayCurrency} {dueDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</span>
                   </div>
                 )}
               </div>

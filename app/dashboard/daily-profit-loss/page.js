@@ -253,22 +253,22 @@ export default function DailyProfitLossReport() {
                 dailyData.map((day, idx) => (
                   <tr key={idx} className="hover:bg-neutral-50/50 transition-colors">
                     <td className="px-6 py-4 font-medium text-neutral-900 whitespace-nowrap">{new Date(day.date + 'T00:00:00').toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-center text-neutral-700">{day.totalSalesQty > 0 ? day.totalSalesQty.toFixed(3) : '-'}</td>
+                    <td className="px-6 py-4 text-center text-neutral-700">{day.totalSalesQty > 0 ? day.totalSalesQty.toFixed(4) : '-'}</td>
                     <td className="px-6 py-4 text-right font-medium text-neutral-700">
-                      {day.totalSalesBdt > 0 ? `${Number(day.totalSalesBdt).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT` : '-'}
+                      {day.totalSalesBdt > 0 ? `${Number(day.totalSalesBdt).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT` : '-'}
                     </td>
-                    <td className="px-6 py-4 text-center text-neutral-700">{day.totalPurchaseQty > 0 ? day.totalPurchaseQty.toFixed(3) : '-'}</td>
+                    <td className="px-6 py-4 text-center text-neutral-700">{day.totalPurchaseQty > 0 ? day.totalPurchaseQty.toFixed(4) : '-'}</td>
                     <td className="px-6 py-4 text-right font-medium text-neutral-700">
-                      {day.totalPurchaseBdt > 0 ? `${Number(day.totalPurchaseBdt).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT` : '-'}
+                      {day.totalPurchaseBdt > 0 ? `${Number(day.totalPurchaseBdt).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT` : '-'}
                     </td>
                     <td className="px-6 py-4 text-right font-medium">
                       <span className={day.currentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                        {Number(day.currentProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT
+                        {Number(day.currentProfit).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right font-bold bg-emerald-50/30">
                       <span className={day.actualProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                        {Number(day.actualProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT
+                        {Number(day.actualProfit).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT
                       </span>
                     </td>
                   </tr>
@@ -280,23 +280,23 @@ export default function DailyProfitLossReport() {
                 <tr>
                   <td className="px-6 py-4 font-bold text-neutral-900">Total</td>
                   <td className="px-6 py-4 font-bold text-center text-neutral-900">
-                    {dailyData.reduce((sum, d) => sum + d.totalSalesQty, 0).toFixed(3)}
+                    {dailyData.reduce((sum, d) => sum + d.totalSalesQty, 0).toFixed(4)}
                   </td>
                   <td className="px-6 py-4 font-bold text-right text-neutral-900">
-                    {Number(dailyData.reduce((sum, d) => sum + d.totalSalesBdt, 0)).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT
+                    {Number(dailyData.reduce((sum, d) => sum + d.totalSalesBdt, 0)).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT
                   </td>
                   <td className="px-6 py-4 font-bold text-center text-neutral-900">
-                    {dailyData.reduce((sum, d) => sum + d.totalPurchaseQty, 0).toFixed(3)}
+                    {dailyData.reduce((sum, d) => sum + d.totalPurchaseQty, 0).toFixed(4)}
                   </td>
                   <td className="px-6 py-4 font-bold text-right text-neutral-900">
-                    {Number(dailyData.reduce((sum, d) => sum + d.totalPurchaseBdt, 0)).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT
+                    {Number(dailyData.reduce((sum, d) => sum + d.totalPurchaseBdt, 0)).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT
                   </td>
                   <td className="px-6 py-4 font-bold text-right">
                     {(() => {
                       const totalCurrentProfit = dailyData.reduce((sum, d) => sum + d.currentProfit, 0);
                       return (
                         <span className={totalCurrentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                          {Number(totalCurrentProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT
+                          {Number(totalCurrentProfit).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT
                         </span>
                       );
                     })()}
@@ -306,7 +306,7 @@ export default function DailyProfitLossReport() {
                       const totalActualProfit = dailyData.reduce((sum, d) => sum + d.actualProfit, 0);
                       return (
                         <span className={totalActualProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                          {Number(totalActualProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT
+                          {Number(totalActualProfit).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT
                         </span>
                       );
                     })()}

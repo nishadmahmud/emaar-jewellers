@@ -208,7 +208,7 @@ export default function AddProductPage() {
                 </div>
                 <input
                   type="number"
-                  step="0.01"
+                  step="0.0001"
                   required
                   value={formData.purchase_price}
                   onChange={(e) => setFormData({...formData, purchase_price: e.target.value})}
@@ -226,7 +226,7 @@ export default function AddProductPage() {
                 </div>
                 <input
                   type="number"
-                  step="0.01"
+                  step="0.0001"
                   required
                   value={formData.retails_price}
                   onChange={(e) => setFormData({...formData, retails_price: e.target.value})}

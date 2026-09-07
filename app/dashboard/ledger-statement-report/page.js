@@ -25,8 +25,8 @@ const CardContent = ({ children, className = '' }) => <div className={`p-6 ${cla
 
 const fmt2 = (n) =>
   Number(n ?? 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
   });
 
 function todayStartISO() {

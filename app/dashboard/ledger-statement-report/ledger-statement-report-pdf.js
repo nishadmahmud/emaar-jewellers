@@ -5,14 +5,14 @@ import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/render
 
 const fmt2 = (n) =>
   Number(n ?? 0).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
   })
 
 const formatBal = (n) => {
   const val = Number(n ?? 0);
   const absVal = Math.abs(val);
-  const str = absVal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const str = absVal.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
   if (val === 0) return str;
   // If positive, it's typically DR for customers, but the reference image showed CR reducing with DR.
   // I will just append CR/DR based on standard: positive = CR, negative = DR, or vice-versa. 

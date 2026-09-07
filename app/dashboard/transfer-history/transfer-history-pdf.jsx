@@ -103,8 +103,8 @@ const styles = StyleSheet.create({
 
 const fmt2 = (n) =>
   Number(n ?? 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
   });
 
 function Header({ user, filters, payTypeName }) {

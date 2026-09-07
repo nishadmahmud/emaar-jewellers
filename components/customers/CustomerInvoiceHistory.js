@@ -57,7 +57,7 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                                             </div>
                                             <p className="text-[11px] text-neutral-500 mt-0.5">{formatInvoiceDate(invoice?.invoice_id)}</p>
                                             <p className="text-[11px] text-neutral-700 font-medium mt-0.5">
-                                                Total: {totalDisplay.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})} {currencyLabel}
+                                                Total: {totalDisplay.toLocaleString("en-US", {minimumFractionDigits: 4, maximumFractionDigits: 4})} {currencyLabel}
                                             </p>
                                         </div>
 
@@ -65,7 +65,7 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                                             <div>
                                                 {dueDisplay > 0 ? (
                                                     <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200">
-                                                        Due {currencyLabel} {dueDisplay.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                                        Due {currencyLabel} {dueDisplay.toLocaleString("en-US", {minimumFractionDigits: 4, maximumFractionDigits: 4})}
                                                     </span>
                                                 ) : (
                                                     <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200">
@@ -120,10 +120,10 @@ export default function CustomerInvoiceHistory({ partyWiseInvoice }) {
                                                     {formatInvoiceDate(invoice?.invoice_id)}
                                                 </td>
                                                 <td className="py-3 px-6 text-right tabular-nums font-medium">
-                                                    {totalDisplay.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})} {currencyLabel}
+                                                    {totalDisplay.toLocaleString("en-US", {minimumFractionDigits: 4, maximumFractionDigits: 4})} {currencyLabel}
                                                 </td>
                                                 <td className="py-3 px-6 text-right tabular-nums text-red-600 font-medium">
-                                                    {dueDisplay.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})} {currencyLabel}
+                                                    {dueDisplay.toLocaleString("en-US", {minimumFractionDigits: 4, maximumFractionDigits: 4})} {currencyLabel}
                                                 </td>
                                                 <td className="py-3 px-6 text-center">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

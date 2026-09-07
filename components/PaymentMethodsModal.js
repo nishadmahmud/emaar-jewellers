@@ -453,18 +453,18 @@ export default function PaymentMethodsModal({
             <div className="grid grid-cols-3 gap-2 text-center pt-1">
               <div>
                 <span className="block text-[11px] text-neutral-400 uppercase tracking-wider">Total Payable</span>
-                <span className="font-semibold text-sm text-neutral-200">BDT {total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="font-semibold text-sm text-neutral-200">BDT {total.toLocaleString(undefined, { minimumFractionDigits: 4 })}</span>
               </div>
               <div className="border-x border-neutral-800">
                 <span className="block text-[11px] text-neutral-400 uppercase tracking-wider">Total Paid</span>
-                <span className="font-semibold text-sm text-blue-400">BDT {totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="font-semibold text-sm text-blue-400">BDT {totalPaid.toLocaleString(undefined, { minimumFractionDigits: 4 })}</span>
               </div>
               <div>
                 <span className="block text-[11px] text-neutral-400 uppercase tracking-wider">
                   {totalPaid < total ? 'Due' : 'Change'}
                 </span>
                 <span className={`font-semibold text-sm ${totalPaid < total ? 'text-red-400' : 'text-emerald-400'}`}>
-                  BDT {(totalPaid < total ? dueAmount : changeAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  BDT {(totalPaid < total ? dueAmount : changeAmount).toLocaleString(undefined, { minimumFractionDigits: 4 })}
                 </span>
               </div>
             </div>

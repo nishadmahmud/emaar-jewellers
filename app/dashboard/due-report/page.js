@@ -19,8 +19,8 @@ const formatNumber = (num, decimals = 3) => {
   if (num === null || num === undefined) return '';
   if (num === 0) return '0';
   return Number(num).toLocaleString('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: decimals
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4
   });
 };
 

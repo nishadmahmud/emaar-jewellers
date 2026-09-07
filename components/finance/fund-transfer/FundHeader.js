@@ -81,7 +81,7 @@ export default function FundHeader({ accounts }) {
                     isNegative ? "text-red-600" : "text-emerald-700"
                   }`}
                 >
-                  {amount.toFixed(2)}
+                  {amount.toFixed(4)}
                 </div>
                 <p className="text-[11px] text-slate-500 font-medium">Balance</p>
               </div>

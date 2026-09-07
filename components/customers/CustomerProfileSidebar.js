@@ -87,9 +87,9 @@ export default function CustomerProfileSidebar({ customer, customerWiseInvoice, 
                 <div className="flex justify-between items-start py-2 border-b border-neutral-100/50">
                     <span className="text-neutral-500 text-sm mt-0.5">Total Due</span>
                     <div className="flex flex-col items-end gap-0.5">
-                        {showCalculated && calcAedDue > 0 && <span className="font-bold text-red-600">AED {calcAedDue.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+                        {showCalculated && calcAedDue > 0 && <span className="font-bold text-red-600">AED {calcAedDue.toLocaleString("en-US", {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>}
                         {(!showCalculated || calcBdtDue > 0 || (!calcAedDue && !calcBdtDue)) && (
-                            <span className="font-bold text-red-600">BDT {(showCalculated ? calcBdtDue : defaultDue).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            <span className="font-bold text-red-600">BDT {(showCalculated ? calcBdtDue : defaultDue).toLocaleString("en-US", {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
                         )}
                     </div>
                 </div>
@@ -97,9 +97,9 @@ export default function CustomerProfileSidebar({ customer, customerWiseInvoice, 
                 <div className="flex justify-between items-start py-2">
                     <span className="text-neutral-500 text-sm mt-0.5">Total Purchased</span>
                     <div className="flex flex-col items-end gap-0.5">
-                        {showCalculated && calcAedPurchase > 0 && <span className="font-medium text-neutral-900">AED {calcAedPurchase.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+                        {showCalculated && calcAedPurchase > 0 && <span className="font-medium text-neutral-900">AED {calcAedPurchase.toLocaleString("en-US", {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>}
                         {(!showCalculated || calcBdtPurchase > 0 || (!calcAedPurchase && !calcBdtPurchase)) && (
-                            <span className="font-medium text-neutral-900">BDT {(showCalculated ? calcBdtPurchase : defaultPurchase).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            <span className="font-medium text-neutral-900">BDT {(showCalculated ? calcBdtPurchase : defaultPurchase).toLocaleString("en-US", {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
                         )}
                     </div>
                 </div>

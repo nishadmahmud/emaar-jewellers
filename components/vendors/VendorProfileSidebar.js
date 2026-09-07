@@ -82,9 +82,9 @@ export default function VendorProfileSidebar({ vendor, vendorWiseInvoice, onRefr
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">REMAINING DUE</span>
           <div className="text-right flex flex-col gap-0.5">
-            {showCalculated && calcAedDue > 0 && <span className="text-base leading-tight font-extrabold text-rose-600">AED {calcAedDue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+            {showCalculated && calcAedDue > 0 && <span className="text-base leading-tight font-extrabold text-rose-600">AED {calcAedDue.toLocaleString('en-US', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>}
             {(!showCalculated || calcBdtDue > 0 || (!calcAedDue && !calcBdtDue)) && (
-              <span className="text-base leading-tight font-extrabold text-rose-600">BDT {(showCalculated ? calcBdtDue : totalDue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+              <span className="text-base leading-tight font-extrabold text-rose-600">BDT {(showCalculated ? calcBdtDue : totalDue).toLocaleString('en-US', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
             )}
           </div>
         </div>

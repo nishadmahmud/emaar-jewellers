@@ -243,8 +243,8 @@ export default function ProfitLossReport() {
               <DollarSign size={16} />
               <span className="text-xs sm:text-sm font-medium">Total Sales</span>
             </div>
-            <div className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight sm:tracking-normal">BDT {Number(totalSalesBdt).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-            <div className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 sm:mt-1">Avg: {Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT / Qty</div>
+            <div className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight sm:tracking-normal">BDT {Number(totalSalesBdt).toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
+            <div className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 sm:mt-1">Avg: {Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT / Qty</div>
           </CardContent>
         </Card>
         
@@ -254,8 +254,8 @@ export default function ProfitLossReport() {
               <DollarSign size={16} />
               <span className="text-xs sm:text-sm font-medium">Total Purchase</span>
             </div>
-            <div className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight sm:tracking-normal">BDT {Number(totalPurchaseBdt).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-            <div className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 sm:mt-1">Avg: {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT / Qty</div>
+            <div className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight sm:tracking-normal">BDT {Number(totalPurchaseBdt).toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
+            <div className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 sm:mt-1">Avg: {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT / Qty</div>
           </CardContent>
         </Card>
 
@@ -266,9 +266,9 @@ export default function ProfitLossReport() {
               <span className="text-xs sm:text-sm font-medium">Current Profit/Loss</span>
             </div>
             <div className={`text-xl sm:text-2xl font-bold tracking-tight sm:tracking-normal ${currentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-              BDT {currentProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              BDT {currentProfit.toLocaleString(undefined, { maximumFractionDigits: 4 })}
             </div>
-            <div className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 sm:mt-1">Per Qty: {Number(avgSellPrice - avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</div>
+            <div className="text-[10px] sm:text-xs text-neutral-500 mt-0.5 sm:mt-1">Per Qty: {Number(avgSellPrice - avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</div>
           </CardContent>
         </Card>
 
@@ -279,7 +279,7 @@ export default function ProfitLossReport() {
               <span className="text-sm font-medium">Current Stock Price</span>
             </div>
             <div className="text-2xl font-bold text-neutral-900">
-              BDT {currentStockPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              BDT {currentStockPrice.toLocaleString(undefined, { maximumFractionDigits: 4 })}
             </div>
           </CardContent>
         </Card>
@@ -290,7 +290,7 @@ export default function ProfitLossReport() {
               <Package size={16} />
               <span className="text-xs sm:text-sm font-medium">Stock Available</span>
             </div>
-            <div className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight sm:tracking-normal">{(totalPurchaseQty - totalSalesQty).toFixed(3)}</div>
+            <div className="text-xl sm:text-2xl font-bold text-neutral-900 tracking-tight sm:tracking-normal">{(totalPurchaseQty - totalSalesQty).toFixed(4)}</div>
           </CardContent>
         </Card>
 
@@ -302,7 +302,7 @@ export default function ProfitLossReport() {
               <span className="text-xs sm:text-sm font-medium">Actual Profit/Loss</span>
             </div>
             <div className={`text-xl sm:text-2xl font-bold tracking-tight sm:tracking-normal ${actualProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-              BDT {actualProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              BDT {actualProfit.toLocaleString(undefined, { maximumFractionDigits: 4 })}
             </div>
           </CardContent>
         </Card>
@@ -336,15 +336,15 @@ export default function ProfitLossReport() {
                         <p className="text-[10px] text-neutral-500 mt-0.5">{new Date(inv.created_at).toLocaleDateString()}</p>
                         <div className="mt-1">
                           <span className="inline-block text-[10px] bg-neutral-100 text-neutral-600 font-medium px-1.5 py-0.5 rounded border border-neutral-200">
-                            Qty: {qty !== '-' ? Number(qty).toFixed(3) : '-'}
+                            Qty: {qty !== '-' ? Number(qty).toFixed(4) : '-'}
                           </span>
                         </div>
                       </div>
                       <div className="text-right shrink-0 flex flex-col items-end pl-1">
-                        <p className="font-bold text-xs text-emerald-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</p>
+                        <p className="font-bold text-xs text-emerald-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 4 })} BDT</p>
                         {isAed && (
                           <span className="text-[10px] text-neutral-500 font-medium mt-0.5">
-                            {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} AED
+                            {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 4 })} AED
                           </span>
                         )}
                       </div>
@@ -357,8 +357,8 @@ export default function ProfitLossReport() {
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-xs text-neutral-900">Total:</span>
                     <div className="text-right">
-                      <p className="font-bold text-xs text-emerald-600">{Number(totalSalesBdt).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</p>
-                      <p className="text-[10px] text-neutral-500 mt-0.5 font-medium">Qty: {totalSalesQty > 0 ? totalSalesQty.toFixed(3) : '-'}</p>
+                      <p className="font-bold text-xs text-emerald-600">{Number(totalSalesBdt).toLocaleString(undefined, { minimumFractionDigits: 4 })} BDT</p>
+                      <p className="text-[10px] text-neutral-500 mt-0.5 font-medium">Qty: {totalSalesQty > 0 ? totalSalesQty.toFixed(4) : '-'}</p>
                     </div>
                   </div>
                 </div>
@@ -395,17 +395,17 @@ export default function ProfitLossReport() {
                       <tr key={inv.id} className="hover:bg-neutral-50/50">
                         <td className="px-6 py-4 font-medium text-neutral-900">{inv.invoice_id}</td>
                         <td className="px-6 py-4 text-neutral-500">{new Date(inv.created_at).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 text-center text-neutral-700">{qty !== '-' ? Number(qty).toFixed(3) : '-'}</td>
+                        <td className="px-6 py-4 text-center text-neutral-700">{qty !== '-' ? Number(qty).toFixed(4) : '-'}</td>
                         <td className="px-6 py-4 text-right font-medium">
                           {isAed ? (
                             <div className="flex flex-col items-end">
-                              <span className="text-emerald-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</span>
+                              <span className="text-emerald-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 4 })} BDT</span>
                               <span className="text-[10px] text-black font-medium mt-0.5">
-                                {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} AED (Rate: {conversionRate})
+                                {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 4 })} AED (Rate: {conversionRate})
                               </span>
                             </div>
                           ) : (
-                            <span className="text-emerald-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</span>
+                            <span className="text-emerald-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 4 })} BDT</span>
                           )}
                         </td>
                       </tr>
@@ -416,8 +416,8 @@ export default function ProfitLossReport() {
               <tfoot className="bg-neutral-50 border-t border-neutral-200">
                 <tr>
                   <td colSpan={2} className="px-6 py-4 font-bold text-neutral-900 text-right">Total:</td>
-                  <td className="px-6 py-4 font-bold text-neutral-900 text-center">{totalSalesQty > 0 ? totalSalesQty.toFixed(3) : '-'}</td>
-                  <td className="px-6 py-4 font-bold text-emerald-600 text-right">{Number(totalSalesBdt).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</td>
+                  <td className="px-6 py-4 font-bold text-neutral-900 text-center">{totalSalesQty > 0 ? totalSalesQty.toFixed(4) : '-'}</td>
+                  <td className="px-6 py-4 font-bold text-emerald-600 text-right">{Number(totalSalesBdt).toLocaleString(undefined, { minimumFractionDigits: 4 })} BDT</td>
                 </tr>
               </tfoot>
             </table>
@@ -452,15 +452,15 @@ export default function ProfitLossReport() {
                         <p className="text-[10px] text-neutral-500 mt-0.5">{new Date(inv.created_at).toLocaleDateString()}</p>
                         <div className="mt-1">
                           <span className="inline-block text-[10px] bg-neutral-100 text-neutral-600 font-medium px-1.5 py-0.5 rounded border border-neutral-200">
-                            Qty: {qty !== '-' ? Number(qty).toFixed(3) : '-'}
+                            Qty: {qty !== '-' ? Number(qty).toFixed(4) : '-'}
                           </span>
                         </div>
                       </div>
                       <div className="text-right shrink-0 flex flex-col items-end pl-1">
-                        <p className="font-bold text-xs text-rose-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</p>
+                        <p className="font-bold text-xs text-rose-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 4 })} BDT</p>
                         {isAed && (
                           <span className="text-[10px] text-neutral-500 font-medium mt-0.5">
-                            {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} AED
+                            {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 4 })} AED
                           </span>
                         )}
                       </div>
@@ -473,8 +473,8 @@ export default function ProfitLossReport() {
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-xs text-neutral-900">Total:</span>
                     <div className="text-right">
-                      <p className="font-bold text-xs text-rose-600">{Number(totalPurchaseBdt).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</p>
-                      <p className="text-[10px] text-neutral-500 mt-0.5 font-medium">Qty: {totalPurchaseQty > 0 ? totalPurchaseQty.toFixed(3) : '-'}</p>
+                      <p className="font-bold text-xs text-rose-600">{Number(totalPurchaseBdt).toLocaleString(undefined, { minimumFractionDigits: 4 })} BDT</p>
+                      <p className="text-[10px] text-neutral-500 mt-0.5 font-medium">Qty: {totalPurchaseQty > 0 ? totalPurchaseQty.toFixed(4) : '-'}</p>
                     </div>
                   </div>
                 </div>
@@ -511,17 +511,17 @@ export default function ProfitLossReport() {
                       <tr key={inv.id} className="hover:bg-neutral-50/50">
                         <td className="px-6 py-4 font-medium text-neutral-900">{inv.invoice_id}</td>
                         <td className="px-6 py-4 text-neutral-500">{new Date(inv.created_at).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 text-center text-neutral-700">{qty !== '-' ? Number(qty).toFixed(3) : '-'}</td>
+                        <td className="px-6 py-4 text-center text-neutral-700">{qty !== '-' ? Number(qty).toFixed(4) : '-'}</td>
                         <td className="px-6 py-4 text-right font-medium">
                           {isAed ? (
                             <div className="flex flex-col items-end">
-                              <span className="text-rose-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</span>
+                              <span className="text-rose-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 4 })} BDT</span>
                               <span className="text-[10px] text-black font-medium mt-0.5">
-                                {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })} AED (Rate: {conversionRate})
+                                {Number(originalAmount).toLocaleString(undefined, { minimumFractionDigits: 4 })} AED (Rate: {conversionRate})
                               </span>
                             </div>
                           ) : (
-                            <span className="text-rose-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</span>
+                            <span className="text-rose-600">{Number(bdtAmount).toLocaleString(undefined, { minimumFractionDigits: 4 })} BDT</span>
                           )}
                         </td>
                       </tr>
@@ -532,8 +532,8 @@ export default function ProfitLossReport() {
               <tfoot className="bg-neutral-50 border-t border-neutral-200">
                 <tr>
                   <td colSpan={2} className="px-6 py-4 font-bold text-neutral-900 text-right">Total:</td>
-                  <td className="px-6 py-4 font-bold text-neutral-900 text-center">{totalPurchaseQty > 0 ? totalPurchaseQty.toFixed(3) : '-'}</td>
-                  <td className="px-6 py-4 font-bold text-rose-600 text-right">{Number(totalPurchaseBdt).toLocaleString(undefined, { minimumFractionDigits: 0 })} BDT</td>
+                  <td className="px-6 py-4 font-bold text-neutral-900 text-center">{totalPurchaseQty > 0 ? totalPurchaseQty.toFixed(4) : '-'}</td>
+                  <td className="px-6 py-4 font-bold text-rose-600 text-right">{Number(totalPurchaseBdt).toLocaleString(undefined, { minimumFractionDigits: 4 })} BDT</td>
                 </tr>
               </tfoot>
             </table>
@@ -554,7 +554,7 @@ export default function ProfitLossReport() {
               <h4 className="font-semibold text-neutral-900 mb-1">1. Average Sell Price</h4>
               <p className="text-neutral-500 text-xs mb-2">Total Sales BDT ÷ Total Sales Qty</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                {Number(totalSalesBdt).toLocaleString()} ÷ {totalSalesQty.toFixed(3)} = <span className="font-bold text-neutral-900">{Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+                {Number(totalSalesBdt).toLocaleString()} ÷ {totalSalesQty.toFixed(4)} = <span className="font-bold text-neutral-900">{Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
               </code>
             </div>
             
@@ -562,7 +562,7 @@ export default function ProfitLossReport() {
               <h4 className="font-semibold text-neutral-900 mb-1">2. Average Purchase Price</h4>
               <p className="text-neutral-500 text-xs mb-2">Total Purchase BDT ÷ Total Purchase Qty</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                {Number(totalPurchaseBdt).toLocaleString()} ÷ {totalPurchaseQty.toFixed(3)} = <span className="font-bold text-neutral-900">{Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+                {Number(totalPurchaseBdt).toLocaleString()} ÷ {totalPurchaseQty.toFixed(4)} = <span className="font-bold text-neutral-900">{Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
               </code>
             </div>
 
@@ -570,7 +570,7 @@ export default function ProfitLossReport() {
               <h4 className="font-semibold text-neutral-900 mb-1">3. Current Profit / Loss</h4>
               <p className="text-neutral-500 text-xs mb-2">Sum of each day's: (Day Avg Sell - Day Avg Purchase) × Day Sales Qty</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                Σ per-day profit = <span className={`font-bold ${currentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(currentProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+                Σ per-day profit = <span className={`font-bold ${currentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(currentProfit).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
               </code>
             </div>
 
@@ -578,7 +578,7 @@ export default function ProfitLossReport() {
               <h4 className="font-semibold text-neutral-900 mb-1">4. Current Stock Price</h4>
               <p className="text-neutral-500 text-xs mb-2">Avg Purchase Price × Stock Available</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} × {(totalPurchaseQty - totalSalesQty).toFixed(3)} = <span className="font-bold text-neutral-900">{Number(currentStockPrice).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+                {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} × {(totalPurchaseQty - totalSalesQty).toFixed(4)} = <span className="font-bold text-neutral-900">{Number(currentStockPrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
               </code>
             </div>
 
@@ -586,7 +586,7 @@ export default function ProfitLossReport() {
               <h4 className="font-semibold text-neutral-900 mb-1">5. Actual Profit</h4>
               <p className="text-neutral-500 text-xs mb-2">Sum of each day's actual profit (adjusted for negative stock per day)</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                <span className={`font-bold ${actualProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(actualProfit).toLocaleString(undefined, { maximumFractionDigits: 0 })} BDT</span>
+                <span className={`font-bold ${actualProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(actualProfit).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
               </code>
             </div>
           </div>

@@ -20,7 +20,7 @@ import ReportMobileCard from "@/components/analytics/ReportMobileCard";
 
 const BILLING_MODAL = "billing_modal";
 
-const fmt2 = (n) => Number(n ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt2 = (n) => Number(n ?? 0).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 
 const toISOStartOfDay = (dateString) => dateString ? `${dateString}T00:00:00.000Z` : "";
 const toISOEndOfDay = (dateString) => dateString ? `${dateString}T23:59:59.999Z` : "";

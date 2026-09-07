@@ -5,8 +5,8 @@ import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/render
 
 const fmt2 = (n) =>
   Number(n ?? 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
   })
 
 const styles = StyleSheet.create({

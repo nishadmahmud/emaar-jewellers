@@ -5,7 +5,7 @@ import { Package, Tag } from 'lucide-react';
 
 const formatBDT = (num) => {
   if (num === null || num === undefined) return '0.00';
-  return Number(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return Number(num).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 };
 
 export default function VendorPurchasedProducts({ vendorWiseProduct }) {

@@ -174,10 +174,10 @@ export default function SalesHistoryPage() {
 
                       <div className="text-right shrink-0 flex items-center gap-1 pl-1">
                         <div>
-                          <p className="font-bold text-xs text-neutral-900">{currency} {Number(totalBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}</p>
+                          <p className="font-bold text-xs text-neutral-900">{currency} {Number(totalBdt).toLocaleString(undefined, {minimumFractionDigits: 4})}</p>
                           {dueBdt > 0 ? (
                             <span className="inline-block text-[9px] bg-rose-50 text-rose-700 font-semibold px-1.5 py-0.5 rounded-full border border-rose-200 mt-0.5">
-                              Due {currency} {Number(dueBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
+                              Due {currency} {Number(dueBdt).toLocaleString(undefined, {minimumFractionDigits: 4})}
                             </span>
                           ) : (
                             <span className="inline-block text-[9px] bg-emerald-50 text-emerald-700 font-semibold px-1.5 py-0.5 rounded-full border border-emerald-200 mt-0.5">
@@ -203,7 +203,7 @@ export default function SalesHistoryPage() {
                   <span className="font-bold text-sm text-neutral-900">Page Total:</span>
                   <div className="text-right">
                     <p className="text-xs text-neutral-600">Qty: <span className="font-bold text-neutral-900">{pageTotalQty}</span></p>
-                    <p className="text-xs text-neutral-600">Total: <span className="font-bold text-neutral-900">{Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 2})}</span></p>
+                    <p className="text-xs text-neutral-600">Total: <span className="font-bold text-neutral-900">{Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 4})}</span></p>
                   </div>
                 </div>
               </div>
@@ -252,13 +252,13 @@ export default function SalesHistoryPage() {
                             {qty}
                           </td>
                           <td className="px-6 py-4 text-right text-neutral-900 font-medium">
-                            {currency} {Number(totalBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
+                            {currency} {Number(totalBdt).toLocaleString(undefined, {minimumFractionDigits: 4})}
                           </td>
                           <td className="px-6 py-4 text-right text-green-600">
-                            {currency} {Number(paidBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
+                            {currency} {Number(paidBdt).toLocaleString(undefined, {minimumFractionDigits: 4})}
                           </td>
                           <td className="px-6 py-4 text-right text-red-600">
-                            {currency} {Number(dueBdt).toLocaleString(undefined, {minimumFractionDigits: isAed ? 2 : 0})}
+                            {currency} {Number(dueBdt).toLocaleString(undefined, {minimumFractionDigits: 4})}
                           </td>
                           <td className="px-6 py-4 text-center">
                             <div className="flex items-center justify-center gap-1">
@@ -287,7 +287,7 @@ export default function SalesHistoryPage() {
                       <td colSpan="3" className="px-6 py-4 text-right">Page Total:</td>
                       <td className="px-6 py-4 text-center">{pageTotalQty}</td>
                       <td className="px-6 py-4 text-right">
-                         {Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 2})}
+                         {Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 4})}
                       </td>
                       <td colSpan="3"></td>
                     </tr>

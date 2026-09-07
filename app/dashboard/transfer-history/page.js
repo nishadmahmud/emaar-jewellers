@@ -30,8 +30,8 @@ function todayEndISO() {
 
 const fmt2 = (n) =>
   Number(n ?? 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
   });
 
 export default function TransferHistoryPage() {

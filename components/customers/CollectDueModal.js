@@ -542,7 +542,7 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
         calcBdtDue += dueAmt;
       }
       
-      const dueVal = dueAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const dueVal = dueAmt.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
       
       return {
         id: idVal,
@@ -562,7 +562,7 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
       const displayCurrency = isAed ? 'AED' : 'BDT';
       
       const dueAmt = dueAmtBdt; // Raw value from DB
-      const dueVal = dueAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const dueVal = dueAmt.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
       
       return {
         id: idVal,
@@ -634,9 +634,9 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
                 <div className="bg-rose-50/70 border border-rose-100 rounded-2xl p-4 mb-5 flex items-center justify-between">
                   <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">TOTAL CUSTOMER DUE</span>
                   <div className="text-right flex flex-col gap-0.5">
-                    {hasDueInvoices && calcAedDue > 0 && <span className="text-xl font-extrabold text-rose-600">AED {calcAedDue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>}
+                    {hasDueInvoices && calcAedDue > 0 && <span className="text-xl font-extrabold text-rose-600">AED {calcAedDue.toLocaleString('en-US', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>}
                     {(!hasDueInvoices || calcBdtDue > 0 || (!calcAedDue && !calcBdtDue)) && (
-                      <span className="text-xl font-extrabold text-rose-600">BDT {(hasDueInvoices ? calcBdtDue : totalDue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      <span className="text-xl font-extrabold text-rose-600">BDT {(hasDueInvoices ? calcBdtDue : totalDue).toLocaleString('en-US', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
                     )}
                   </div>
                 </div>

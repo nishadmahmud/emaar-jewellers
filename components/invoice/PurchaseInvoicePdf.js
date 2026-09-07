@@ -187,8 +187,8 @@ const PurchaseInvoicePdf = ({ invoice }) => {
               <View key={i} style={styles.tableRow}>
                 <Text style={styles.colDesc}>{item.product_info?.name || 'Item'}</Text>
                 <Text style={styles.colQty}>{itemQty}</Text>
-                <Text style={styles.colRate}>{itemRateDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
-                <Text style={styles.colTotal}>{itemTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
+                <Text style={styles.colRate}>{itemRateDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</Text>
+                <Text style={styles.colTotal}>{itemTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</Text>
               </View>
             );
           })}
@@ -198,21 +198,21 @@ const PurchaseInvoicePdf = ({ invoice }) => {
           <View style={styles.summaryBox}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryText}>Subtotal</Text>
-              <Text style={styles.summaryText}>{displayCurrency} {subTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
+              <Text style={styles.summaryText}>{displayCurrency} {subTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</Text>
             </View>
             {discountDisplay > 0 && (
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryText}>Discount</Text>
-                <Text style={styles.summaryText}>- {displayCurrency} {discountDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
+                <Text style={styles.summaryText}>- {displayCurrency} {discountDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</Text>
               </View>
             )}
             <View style={styles.summaryTotalRow}>
               <Text style={styles.summaryTotalText}>Total Amount</Text>
-              <Text style={styles.summaryTotalText}>{displayCurrency} {finalTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
+              <Text style={styles.summaryTotalText}>{displayCurrency} {finalTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</Text>
             </View>
             <View style={[styles.summaryRow, { marginTop: 8 }]}>
               <Text style={[styles.summaryText, { fontWeight: 'bold' }]}>Paid Amount</Text>
-              <Text style={[styles.summaryText, { fontWeight: 'bold' }]}>{displayCurrency} {paidDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
+              <Text style={[styles.summaryText, { fontWeight: 'bold' }]}>{displayCurrency} {paidDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</Text>
             </View>
             {multiplePayments.length > 0 && (
               <View style={{ marginTop: 4, paddingTop: 4, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
@@ -235,7 +235,7 @@ const PurchaseInvoicePdf = ({ invoice }) => {
                         {typeName} {detailLabel && detailLabel.toLowerCase() !== typeName.toLowerCase() ? `(${detailLabel})` : ''}
                       </Text>
                       <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#059669', width: '40%', textAlign: 'right' }}>
-                        {displayCurrency} {pmAmountDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        {displayCurrency} {pmAmountDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}
                       </Text>
                     </View>
                   );
@@ -245,7 +245,7 @@ const PurchaseInvoicePdf = ({ invoice }) => {
             {dueDisplay > 0 && (
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryText}>Due Amount</Text>
-                <Text style={styles.summaryText}>{displayCurrency} {dueDisplay.toLocaleString(undefined, {minimumFractionDigits: 2})}</Text>
+                <Text style={styles.summaryText}>{displayCurrency} {dueDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</Text>
               </View>
             )}
           </View>
