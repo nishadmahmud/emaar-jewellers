@@ -71,7 +71,7 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
       setSelectedDate(initialInvoice.created_at ? initialInvoice.created_at.split('T')[0] : new Date().toISOString().split('T')[0]);
 
       if (initialInvoice.sales_details?.length) {
-        const preloadedCart = initialInvoice.sales_details.map((detail) => {
+        const preloadedCart = initialInvoice.sales_details.map((detail, index) => {
           const qtyNum = parseFloat(detail.qty) || 1;
           const priceNum = parseFloat(detail.price) || 0;
           const ratePerVori = priceNum / qtyNum;
@@ -90,6 +90,7 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
 
           return {
             id: detail.product_id,
+            cartItemId: Date.now() + '_' + Math.random().toString(36).slice(2) + '_' + index,
             name: detail.product_info?.name || detail.product_name || 'Product',
             have_variant: detail.have_variant || 0,
             qty: qtyNum.toString(),
@@ -387,26 +388,22 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
   }, []);
 
   const selectProduct = (product) => {
-    const existing = cart.find(item => item.id === product.id);
-    if (existing) {
-      toast.info("Product is already in the list.");
-    } else {
-      setCart([...cart, { 
-        ...product, 
-        qty: '', 
-        goldGram: '',
-        ratePerVori: '',
-        currency: 'BDT',
-        aedRate: '' 
-      }]);
-    }
+    setCart([...cart, { 
+      ...product, 
+      cartItemId: Date.now() + '_' + Math.random().toString(36).slice(2),
+      qty: '', 
+      goldGram: '',
+      ratePerVori: '',
+      currency: 'BDT',
+      aedRate: '' 
+    }]);
     setProductSearch('');
     setIsProductDropdownOpen(false);
   };
   
-  const updateCartItem = (id, field, value) => {
+  const updateCartItem = (cartItemId, field, value) => {
     setCart(cart.map(item => {
-      if (item.id === id) {
+      if (item.cartItemId === cartItemId) {
         const updatedItem = { ...item, [field]: value };
         if (field === 'qty') {
           const vori = parseFloat(value) || 0;
@@ -421,8 +418,8 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
     }));
   };
   
-  const removeCartItem = (id) => {
-    setCart(cart.filter(item => item.id !== id));
+  const removeCartItem = (cartItemId) => {
+    setCart(cart.filter(item => item.cartItemId !== cartItemId));
   };
 
 
