@@ -756,10 +756,10 @@ const discountNum = parseFloat(formData.discount) || 0;
                       const itemDisplayTotal = item.currency === 'AED' && aedRate > 0 ? itemTotalBdt / aedRate : itemTotalBdt;
 
                       return (
-                        <div key={item.id} className="p-3 space-y-2.5">
+                        <div key={item.cartItemId} className="p-3 space-y-2.5">
                           <div className="flex items-center justify-between">
                             <p className="font-semibold text-xs text-neutral-900 truncate pr-2">{item.name}</p>
-                            <button type="button" onClick={() => removeCartItem(item.id)} className="p-1 text-rose-500 hover:text-rose-700 shrink-0">
+                            <button type="button" onClick={() => removeCartItem(item.cartItemId)} className="p-1 text-rose-500 hover:text-rose-700 shrink-0">
                               <Trash2 size={15} />
                             </button>
                           </div>
@@ -772,7 +772,7 @@ const discountNum = parseFloat(formData.discount) || 0;
                                 step="0.001"
                                 placeholder="0"
                                 value={item.qty}
-                                onChange={(e) => updateCartItem(item.id, 'qty', e.target.value)}
+                                onChange={(e) => updateCartItem(item.cartItemId, 'qty', e.target.value)}
                                 className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                               />
                             </div>
@@ -784,7 +784,7 @@ const discountNum = parseFloat(formData.discount) || 0;
                                 step="0.001"
                                 placeholder="0"
                                 value={item.goldGram}
-                                onChange={(e) => updateCartItem(item.id, 'goldGram', e.target.value)}
+                                onChange={(e) => updateCartItem(item.cartItemId, 'goldGram', e.target.value)}
                                 className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                               />
                             </div>
@@ -795,7 +795,7 @@ const discountNum = parseFloat(formData.discount) || 0;
                                 type="number"
                                 placeholder="0"
                                 value={item.ratePerVori}
-                                onChange={(e) => updateCartItem(item.id, 'ratePerVori', e.target.value)}
+                                onChange={(e) => updateCartItem(item.cartItemId, 'ratePerVori', e.target.value)}
                                 className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                               />
                             </div>
@@ -804,7 +804,7 @@ const discountNum = parseFloat(formData.discount) || 0;
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Currency</label>
                               <CurrencyDropdown
                                 value={item.currency || 'BDT'}
-                                onChange={(val) => updateCartItem(item.id, 'currency', val)}
+                                onChange={(val) => updateCartItem(item.cartItemId, 'currency', val)}
                               />
                             </div>
                             
@@ -815,7 +815,7 @@ const discountNum = parseFloat(formData.discount) || 0;
                                   type="number"
                                   placeholder="0"
                                   value={item.aedRate || ''}
-                                  onChange={(e) => updateCartItem(item.id, 'aedRate', e.target.value)}
+                                  onChange={(e) => updateCartItem(item.cartItemId, 'aedRate', e.target.value)}
                                   className="w-full px-2 py-1 bg-white border border-neutral-200 rounded text-xs focus:ring-1 focus:ring-black outline-none font-medium"
                                 />
                               </div>
