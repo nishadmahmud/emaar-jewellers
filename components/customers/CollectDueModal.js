@@ -234,7 +234,7 @@ function SalesDetailsModal({ invoiceId, onClose, token, API_URL }) {
                       <tr key={idx} className="hover:bg-neutral-50">
                         <td className="py-2.5 px-3 text-neutral-900">{name}</td>
                         <td className="py-2.5 px-3 text-center text-neutral-700 font-semibold">{qty}</td>
-                        <td className="py-2.5 px-3 text-right text-neutral-900 font-bold">BDT {rate.toLocaleString()}</td>
+                        <td className="py-2.5 px-3 text-right text-neutral-900 font-bold">BDT {rate.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</td>
                       </tr>
                     );
                   })}
@@ -728,7 +728,7 @@ export default function CollectDueModal({ open, onClose, customerId, customerNam
                       </div>
                       {paymentCurrency === 'AED' && payAmount > 0 && (
                         <div className="text-xs text-neutral-500 mt-1">
-                          Equivalent to BDT {(Number(payAmount) * Number(exchangeRate)).toLocaleString()}
+                          Equivalent to BDT {(Number(payAmount) * Number(exchangeRate)).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
                         </div>
                       )}
                     </div>

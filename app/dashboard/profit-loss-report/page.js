@@ -554,7 +554,7 @@ export default function ProfitLossReport() {
               <h4 className="font-semibold text-neutral-900 mb-1">1. Average Sell Price</h4>
               <p className="text-neutral-500 text-xs mb-2">Total Sales BDT ÷ Total Sales Qty</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                {Number(totalSalesBdt).toLocaleString()} ÷ {totalSalesQty.toFixed(4)} = <span className="font-bold text-neutral-900">{Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
+                {Number(totalSalesBdt).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} ÷ {totalSalesQty.toFixed(4)} = <span className="font-bold text-neutral-900">{Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
               </code>
             </div>
             
@@ -562,7 +562,7 @@ export default function ProfitLossReport() {
               <h4 className="font-semibold text-neutral-900 mb-1">2. Average Purchase Price</h4>
               <p className="text-neutral-500 text-xs mb-2">Total Purchase BDT ÷ Total Purchase Qty</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                {Number(totalPurchaseBdt).toLocaleString()} ÷ {totalPurchaseQty.toFixed(4)} = <span className="font-bold text-neutral-900">{Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
+                {Number(totalPurchaseBdt).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} ÷ {totalPurchaseQty.toFixed(4)} = <span className="font-bold text-neutral-900">{Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
               </code>
             </div>
 

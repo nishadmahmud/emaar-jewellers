@@ -68,8 +68,8 @@ const calculatePayment = (inv) => {
 };
 
 const getDueStatus = (due, currency = "BDT") => {
-  if (due > 0) return { label: `${due.toLocaleString()} ${currency}`, color: "bg-red-100 text-red-800" };
-  if (due < 0) return { label: `${Math.abs(due).toLocaleString()} ${currency}`, color: "bg-blue-100 text-blue-800" };
+  if (due > 0) return { label: `${formatNumber(due)} ${currency}`, color: "bg-red-100 text-red-800" };
+  if (due < 0) return { label: `${formatNumber(Math.abs(due))} ${currency}`, color: "bg-blue-100 text-blue-800" };
   return { label: "Paid", color: "bg-green-100 text-green-800" };
 };
 
@@ -115,15 +115,15 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
 
                 if (isSelling) {
                   const { total, due, changeAmount } = calculatePayment(invoice);
-                  amountDisplay = `${currency} ${total.toLocaleString()}`;
+                  amountDisplay = `${currency} ${formatNumber(total)}`;
                   
                   dueBadge = changeAmount > 0 ? (
                     <span className="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">
-                      Change {currency} {changeAmount.toLocaleString()}
+                      Change {currency} {formatNumber(changeAmount)}
                     </span>
                   ) : due > 0 ? (
                     <span className="text-[10px] bg-rose-50 text-rose-700 font-semibold px-2 py-0.5 rounded-full border border-rose-200">
-                      Due {currency} {due.toLocaleString()}
+                      Due {currency} {formatNumber(due)}
                     </span>
                   ) : (
                     <span className="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">
@@ -133,7 +133,7 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
                 } else {
                   const dueAmount = Number.parseFloat(invoice.sub_total || 0) - Number.parseFloat(invoice.paid_amount || 0);
                   const status = getDueStatus(dueAmount, currency);
-                  amountDisplay = `${currency} ${Number(invoice.sub_total || 0).toLocaleString()}`;
+                  amountDisplay = `${currency} ${formatNumber(invoice.sub_total || 0)}`;
                   dueBadge = (
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${status.color}`}>
                       {status.label}
@@ -187,15 +187,15 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
 
                     if (isSelling) {
                       const { total, due, changeAmount } = calculatePayment(invoice);
-                      amountDisplay = `${currency} ${total.toLocaleString()}`;
+                      amountDisplay = `${currency} ${formatNumber(total)}`;
                       
                       dueBadge = changeAmount > 0 ? (
                         <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold px-2 py-0.5 rounded-full">
-                          Change {currency} {changeAmount.toLocaleString()}
+                          Change {currency} {formatNumber(changeAmount)}
                         </span>
                       ) : due > 0 ? (
                         <span className="text-xs bg-rose-50 text-rose-700 border border-rose-200 font-semibold px-2 py-0.5 rounded-full">
-                          Due {currency} {due.toLocaleString()}
+                          Due {currency} {formatNumber(due)}
                         </span>
                       ) : (
                         <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold px-2 py-0.5 rounded-full">
@@ -205,7 +205,7 @@ const RecentInvoiceTable = ({ title, invoices, type, loading }) => {
                     } else {
                       const dueAmount = Number.parseFloat(invoice.sub_total || 0) - Number.parseFloat(invoice.paid_amount || 0);
                       const status = getDueStatus(dueAmount, currency);
-                      amountDisplay = `${currency} ${Number(invoice.sub_total || 0).toLocaleString()}`;
+                      amountDisplay = `${currency} ${formatNumber(invoice.sub_total || 0)}`;
                       dueBadge = (
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${status.color}`}>
                           {status.label}
