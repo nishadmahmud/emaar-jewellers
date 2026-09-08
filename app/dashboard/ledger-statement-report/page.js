@@ -925,7 +925,7 @@ export default function LedgerStatementReportPage() {
             </div>
           </div>
           <div className="w-full md:w-[50%] md:px-4 border-b-2 md:border-b-0 md:border-r-2 border-neutral-300 flex flex-col justify-center text-center md:text-left pb-4 md:pb-0">
-            <h2 className="text-xl md:text-2xl font-bold uppercase mb-1">{session?.user?.outlet_name || "EMAAR JEWELLERS"}</h2>
+            <h2 className="text-xl md:text-2xl font-bold uppercase mb-1">{session?.user?.outlet_name || "EMAAR TRADING"}</h2>
             <p className="text-neutral-700 text-sm mt-2">{session?.user?.address || "Address Line 1"}</p>
             <div className="mt-2 space-y-0.5">
               <p className="text-neutral-700 text-sm">Mobile: {session?.user?.phone || "-"}</p>
@@ -966,7 +966,7 @@ export default function LedgerStatementReportPage() {
         )}
         
         <div className="mt-8 pt-2 border-t border-neutral-200 text-center text-[10px] text-neutral-500">
-          {session?.user?.outlet_name || "Emaar Jewellers"} ┬® {new Date().getFullYear()}
+          {session?.user?.outlet_name || "Emaar Trading"} ┬® {new Date().getFullYear()}
         </div>
       </div>
     </div>
