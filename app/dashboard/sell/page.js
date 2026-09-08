@@ -362,12 +362,25 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
         .finally(() => setIsProductSearching(false));
       } else if (!productSearch && token && isProductDropdownOpen) {
         // Fetch default products if search is empty
+        const cachedProductsStr = localStorage.getItem('defaultProductsCache');
+        const cacheTimeStr = localStorage.getItem('defaultProductsCacheTime');
+        const cacheExpiry = 30 * 60 * 1000; // 30 minutes
+        const now = Date.now();
+
+        if (cachedProductsStr && cacheTimeStr && (now - parseInt(cacheTimeStr, 10) < cacheExpiry)) {
+          setProductList(JSON.parse(cachedProductsStr));
+          return;
+        }
+
         setIsProductSearching(true);
         axios.get(`${API_URL}/product?page=1&limit=20`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         .then(res => {
-          setProductList(res.data?.data?.data || []);
+          const products = res.data?.data?.data || [];
+          setProductList(products);
+          localStorage.setItem('defaultProductsCache', JSON.stringify(products));
+          localStorage.setItem('defaultProductsCacheTime', now.toString());
         })
         .catch(err => console.error("Product fetch error", err))
         .finally(() => setIsProductSearching(false));
