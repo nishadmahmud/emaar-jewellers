@@ -125,7 +125,9 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
     return rows.map(r => ({
       date: r.date,
       invoice_id: r.invoice_id || r.type || "-",
-      particulars: r.type_name || "Payment",
+      particulars: (r.type || "").toLowerCase() === 'fund transfer' && r.ref && r.reference
+        ? `${r.ref} -> ${r.reference}`
+        : (r.type_name || "Payment"),
       qty: "", 
       debit: r.debit || 0,
       credit: r.credit || 0,
@@ -153,10 +155,13 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
   let totalAedCr = 0;
   let totalBdtDr = 0;
   let totalBdtCr = 0;
+  let totalQty = 0;
 
   const tableRows = combinedEntries.map(entry => {
     const isAed = entry._isAedObj;
     
+    totalQty += (Number(entry.qty) || 0);
+
     if (isAed) {
       currentAedBalance = currentAedBalance + (entry.credit || 0) - (entry.debit || 0);
       totalAedDr += (entry.debit || 0);
@@ -291,7 +296,7 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
              <Text style={styles.cellVoucher}></Text>
              <Text style={styles.cellDate}></Text>
              <Text style={{...styles.cellNarration, textAlign: "center"}}>Sub Total</Text>
-             <Text style={styles.cellQty}></Text>
+             <Text style={styles.cellQty}>{totalQty ? Number(totalQty).toFixed(3).replace(/\.?0+$/, '') : ""}</Text>
              <Text style={styles.cellDr}>{fmt2(totalAedDr)}</Text>
              <Text style={styles.cellCr}>{fmt2(totalAedCr)}</Text>
              <Text style={styles.cellBal}>{formatBal(currentAedBalance)}</Text>

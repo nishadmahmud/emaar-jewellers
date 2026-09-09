@@ -336,20 +336,23 @@ export default function LedgerStatementReportPage() {
   }, [ledgerEntries, openingBalanceAED, openingBalanceBDT]);
 
   const calculateTotals = (entries, opBalance) => {
-    const defaultTotals = { opening_balance: opBalance, closing_balance: opBalance, total_debit: 0, total_credit: 0 };
+    const defaultTotals = { opening_balance: opBalance, closing_balance: opBalance, total_debit: 0, total_credit: 0, total_qty: 0 };
     if (!entries || entries.length === 0) return defaultTotals;
     
     let totalDebit = 0;
     let totalCredit = 0;
+    let totalQty = 0;
     entries.forEach(e => {
-        totalDebit += (e.debit || 0);
-        totalCredit += (e.credit || 0);
+        totalDebit += (Number(e.debit) || 0);
+        totalCredit += (Number(e.credit) || 0);
+        totalQty += (Number(e.qty) || 0);
     });
 
     return {
       opening_balance: opBalance,
       total_debit: totalDebit,
       total_credit: totalCredit,
+      total_qty: totalQty,
       closing_balance: entries[entries.length - 1]?.balance ?? opBalance,
     };
   };
@@ -631,7 +634,11 @@ export default function LedgerStatementReportPage() {
                 </td>
                 <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-neutral-700 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
                   <span className="md:hidden font-bold text-xs uppercase text-neutral-500 mb-1 sm:mb-0">Payment Types</span>
-                  <span className="text-right sm:text-left">{row.type_name || "-"}</span>
+                  <span className="text-right sm:text-left">
+                    {(row.type || "").toLowerCase() === 'fund transfer' && row.ref && row.reference 
+                      ? `${row.ref} -> ${row.reference}` 
+                      : (row.type_name || "-")}
+                  </span>
                 </td>
                 <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-neutral-700 flex justify-between">
                   <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Vch Types</span>
@@ -771,7 +778,10 @@ export default function LedgerStatementReportPage() {
                 <span>Total</span>
               </td>
               <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
-              <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
+              <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums flex justify-between">
+                <span className="md:hidden font-bold uppercase text-neutral-500">Total Qty</span>
+                <span>{totals.total_qty ? Number(totals.total_qty).toFixed(3).replace(/\.?0+$/, '') : "-"}</span>
+              </td>
               <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums flex justify-between">
                 <span className="md:hidden font-bold uppercase text-neutral-500">Total Debit</span>
                 <span>{fmt2(totals.total_debit)}</span>
