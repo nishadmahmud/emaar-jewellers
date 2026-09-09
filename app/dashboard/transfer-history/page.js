@@ -349,7 +349,7 @@ export default function TransferHistoryPage() {
                       }
                 }
                 onChange={(option) => handleFilterChange('payment_type_id', option?.value || 'all')}
-                isSearchable={false}
+                isSearchable={true}
                 styles={{
                   control: (base) => ({
                     ...base,
