@@ -15,7 +15,7 @@ export default function SalesHistoryPage() {
   const [invoices, setInvoices] = useState([]);
   const [totalInvoices, setTotalInvoices] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit] = useState(20);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');

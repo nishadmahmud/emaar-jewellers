@@ -329,10 +329,10 @@ export default function DashboardLayout({ children }) {
 
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-semibold">
-                EJ
+                ET
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-xs font-semibold text-black leading-tight">Emaar Jewellers</p>
+                <p className="text-xs font-semibold text-black leading-tight">Emaar Traders</p>
                 <p className="text-[10px] text-neutral-500 leading-tight">Admin Manager</p>
               </div>
             </div>

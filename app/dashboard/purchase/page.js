@@ -713,7 +713,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">WT (VORI)</label>
                               <input
                                 type="number"
-                                step="0.001"
+                                step="0.0001"
                                 placeholder="0"
                                 value={item.qty}
                                 onChange={(e) => updateCartItem(item.cartItemId, 'qty', e.target.value)}
@@ -724,7 +724,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">WT (GRAM)</label>
                               <input
                                 type="number"
-                                step="0.001"
+                                step="0.0001"
                                 placeholder="0"
                                 value={item.netWeightGram || ''}
                                 onChange={(e) => updateCartItem(item.cartItemId, 'netWeightGram', e.target.value)}

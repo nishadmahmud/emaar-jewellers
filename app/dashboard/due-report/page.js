@@ -201,13 +201,13 @@ function DueReportContent() {
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-200/60 flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Total Amount</p>
-              <p className="text-xl font-bold text-neutral-900 mt-1">BDT {formatNumber(totals.total, 2)}</p>
+              <p className="text-xl font-bold text-neutral-900 mt-1">BDT {formatNumber(totals.total, 4)}</p>
             </div>
           </div>
           <div className="bg-white p-5 rounded-2xl shadow-sm border border-neutral-200/60 flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Paid Amount</p>
-              <p className="text-xl font-bold text-emerald-600 mt-1">BDT {formatNumber(totals.paid, 2)}</p>
+              <p className="text-xl font-bold text-emerald-600 mt-1">BDT {formatNumber(totals.paid, 4)}</p>
             </div>
           </div>
           <div className="bg-white p-5 rounded-2xl shadow-sm border-rose-200 flex items-center justify-between relative overflow-hidden">
@@ -216,7 +216,7 @@ function DueReportContent() {
             </div>
             <div className="relative z-10">
               <p className="text-xs font-semibold text-rose-600/80 uppercase tracking-wider">Total Due</p>
-              <p className="text-2xl font-bold text-rose-600 mt-1">BDT {formatNumber(totals.due, 2)}</p>
+              <p className="text-2xl font-bold text-rose-600 mt-1">BDT {formatNumber(totals.due, 4)}</p>
             </div>
           </div>
         </div>
@@ -268,13 +268,13 @@ function DueReportContent() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-neutral-900">
-                        {formatNumber(row.total_amount, 2)}
+                        {formatNumber(row.total_amount, 4)}
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-emerald-600">
-                        {formatNumber(row.paid_amount, 2)}
+                        {formatNumber(row.paid_amount, 4)}
                       </td>
                       <td className="px-6 py-4 text-right font-bold text-rose-600 bg-rose-50/30">
-                        {formatNumber(row.due, 2)}
+                        {formatNumber(row.due, 4)}
                       </td>
                     </tr>
                   ))}

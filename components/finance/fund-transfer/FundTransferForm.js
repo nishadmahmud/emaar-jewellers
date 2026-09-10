@@ -83,7 +83,7 @@ export default function FundTransferForm({ accounts = [], onSuccess }) {
               label: `${acc.payment_category_name}${acc.account_number ? ` — ${acc.account_number}` : ''}`
             }))}
             value={from}
-            onChange={setFrom}
+            onChange={(val) => { setFrom(val); setTo(""); }}
             placeholder="Select Account..."
           />
         </div>
@@ -91,10 +91,23 @@ export default function FundTransferForm({ accounts = [], onSuccess }) {
         <div className="flex-1 space-y-1.5 min-w-[200px]">
           <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider">To</label>
           <SearchableSelect
-            options={accounts?.map(acc => ({
-              value: acc.id,
-              label: `${acc.payment_category_name}${acc.account_number ? ` — ${acc.account_number}` : ''}`
-            }))}
+            options={(() => {
+              const selectedFromAccount = accounts?.find(a => String(a.id) === String(from));
+              const fromName = (selectedFromAccount?.payment_category_name || "").toUpperCase();
+              const isFromDH = fromName.includes("DH");
+              const isFromBD = fromName.includes("BD");
+              
+              return accounts?.filter(acc => {
+                if (!from) return true;
+                const name = (acc.payment_category_name || "").toUpperCase();
+                if (isFromDH) return name.includes("DH");
+                if (isFromBD) return name.includes("BD");
+                return true;
+              }).map(acc => ({
+                value: acc.id,
+                label: `${acc.payment_category_name}${acc.account_number ? ` — ${acc.account_number}` : ''}`
+              }));
+            })()}
             value={to}
             onChange={setTo}
             placeholder="Select Account..."

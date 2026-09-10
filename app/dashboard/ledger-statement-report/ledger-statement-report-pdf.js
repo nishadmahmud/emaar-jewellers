@@ -296,7 +296,7 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
              <Text style={styles.cellVoucher}></Text>
              <Text style={styles.cellDate}></Text>
              <Text style={{...styles.cellNarration, textAlign: "center"}}>Sub Total</Text>
-             <Text style={styles.cellQty}>{totalQty ? Number(totalQty).toFixed(3).replace(/\.?0+$/, '') : ""}</Text>
+             <Text style={styles.cellQty}>{totalQty ? Number(totalQty).toFixed(4).replace(/\.?0+$/, '') : ""}</Text>
              <Text style={styles.cellDr}>{fmt2(totalAedDr)}</Text>
              <Text style={styles.cellCr}>{fmt2(totalAedCr)}</Text>
              <Text style={styles.cellBal}>{formatBal(currentAedBalance)}</Text>

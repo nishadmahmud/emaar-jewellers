@@ -780,7 +780,7 @@ export default function LedgerStatementReportPage() {
               <td className="hidden md:table-cell border border-neutral-400 p-2"></td>
               <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums flex justify-between">
                 <span className="md:hidden font-bold uppercase text-neutral-500">Total Qty</span>
-                <span>{totals.total_qty ? Number(totals.total_qty).toFixed(3).replace(/\.?0+$/, '') : "-"}</span>
+                <span>{totals.total_qty ? Number(totals.total_qty).toFixed(4).replace(/\.?0+$/, '') : "-"}</span>
               </td>
               <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-right whitespace-nowrap tabular-nums flex justify-between">
                 <span className="md:hidden font-bold uppercase text-neutral-500">Total Debit</span>

@@ -779,7 +779,7 @@ const discountNum = parseFloat(formData.discount) || 0;
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Wt (Vori)</label>
                               <input
                                 type="number"
-                                step="0.001"
+                                step="0.0001"
                                 placeholder="0"
                                 value={item.qty}
                                 onChange={(e) => updateCartItem(item.cartItemId, 'qty', e.target.value)}
@@ -791,7 +791,7 @@ const discountNum = parseFloat(formData.discount) || 0;
                               <label className="block text-[10px] font-medium text-neutral-400 uppercase mb-0.5">Wt (Gram)</label>
                               <input
                                 type="number"
-                                step="0.001"
+                                step="0.0001"
                                 placeholder="0"
                                 value={item.goldGram}
                                 onChange={(e) => updateCartItem(item.cartItemId, 'goldGram', e.target.value)}
