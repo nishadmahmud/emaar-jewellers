@@ -167,7 +167,7 @@ export default function SalesHistoryPage() {
                           <p className="font-semibold text-xs text-neutral-900 truncate">{inv.invoice_id}</p>
                           <p className="text-xs text-neutral-600 truncate">{inv.customer_name || 'Walk-in Customer'}</p>
                           <p className="text-[10px] text-neutral-400 mt-0.5 truncate">
-                            {new Date(inv.created_at).toLocaleDateString()} • Qty: {qty}
+                            {new Date(inv.created_at).toLocaleDateString()} • Qty: {Number(qty).toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}
                           </p>
                         </div>
                       </div>
@@ -202,8 +202,8 @@ export default function SalesHistoryPage() {
                 <div className="px-3 py-3 bg-neutral-50 flex items-center justify-between border-t border-neutral-200">
                   <span className="font-bold text-sm text-neutral-900">Page Total:</span>
                   <div className="text-right">
-                    <p className="text-xs text-neutral-600">Qty: <span className="font-bold text-neutral-900">{pageTotalQty}</span></p>
-                    <p className="text-xs text-neutral-600">Total: <span className="font-bold text-neutral-900">{Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 4})}</span></p>
+                    <p className="text-xs text-neutral-600">Qty: <span className="font-bold text-neutral-900">{Number(pageTotalQty).toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span></p>
+                    <p className="text-xs text-neutral-600">Total: <span className="font-bold text-neutral-900">{Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span></p>
                   </div>
                 </div>
               </div>
@@ -249,7 +249,7 @@ export default function SalesHistoryPage() {
                             {inv.customer_phone && <span className="block text-xs text-neutral-400">{inv.customer_phone}</span>}
                           </td>
                           <td className="px-6 py-4 text-center text-neutral-900 font-medium">
-                            {qty}
+                            {Number(qty).toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}
                           </td>
                           <td className="px-6 py-4 text-right text-neutral-900 font-medium">
                             {currency} {Number(totalBdt).toLocaleString(undefined, {minimumFractionDigits: 4})}
@@ -285,9 +285,9 @@ export default function SalesHistoryPage() {
                   <tfoot className="bg-neutral-50 text-neutral-900 font-bold border-t border-neutral-200">
                     <tr>
                       <td colSpan="3" className="px-6 py-4 text-right">Page Total:</td>
-                      <td className="px-6 py-4 text-center">{pageTotalQty}</td>
+                      <td className="px-6 py-4 text-center">{Number(pageTotalQty).toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}</td>
                       <td className="px-6 py-4 text-right">
-                         {Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 4})}
+                         {Number(pageTotalAmount).toLocaleString(undefined, {minimumFractionDigits: 4, maximumFractionDigits: 4})}
                       </td>
                       <td colSpan="3"></td>
                     </tr>
