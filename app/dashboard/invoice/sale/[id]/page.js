@@ -118,7 +118,7 @@ export default function SaleInvoicePage() {
           </button>
           <PDFDownloadLink
             document={<SaleInvoicePdf invoice={invoice} />}
-            fileName={`Sale-Invoice-${id}.pdf`}
+            fileName={`Sale_Invoice_${(invoice?.customer_name || 'WalkInCustomer').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date(invoice?.created_at || Date.now()).toISOString().split('T')[0]}.pdf`}
             className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-neutral-800 transition-colors text-sm font-medium"
           >
             {({ loading }) => (

@@ -521,12 +521,12 @@ export default function LedgerStatementReportPage() {
           XLSX.utils.book_append_sheet(wb, wsEmpty, "Ledger Statement");
       }
 
-      XLSX.writeFile(wb, `ledger-statement-report-${new Date().toISOString().split("T")[0]}.xlsx`);
+      XLSX.writeFile(wb, `Ledger_Report_${(appliedFilters?.selected_name || 'All').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split("T")[0]}.xlsx`);
     } catch (err) {
       console.error(err);
       toast.error("Error exporting to Excel.");
     }
-  }, [filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT, filteredAED, summaryTotalsAED, accountsAED, grandEndingAED]);
+  }, [filteredBDT, summaryTotalsBDT, accountsBDT, grandEndingBDT, filteredAED, summaryTotalsAED, accountsAED, grandEndingAED, appliedFilters]);
 
   const handlePDFExport = useCallback(async () => {
     try {
@@ -549,7 +549,11 @@ export default function LedgerStatementReportPage() {
       ).toBlob();
 
       const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Ledger_Report_${(appliedFilters?.selected_name || 'All').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split("T")[0]}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
       toast.error("Error generating PDF.");

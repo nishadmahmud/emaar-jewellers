@@ -320,7 +320,7 @@ export default function BalanceSheetPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `balance-sheet-${new Date().toISOString().split('T')[0]}.pdf`;
+      a.download = `Balance_Sheet_Report_${new Date().toISOString().split('T')[0]}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

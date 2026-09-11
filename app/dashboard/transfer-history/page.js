@@ -233,7 +233,7 @@ export default function TransferHistoryPage() {
     XLSX.utils.book_append_sheet(wb, ws, 'Cash Book');
     XLSX.writeFile(
       wb,
-      `transfer-history-${new Date().toISOString().split('T')[0]}.xlsx`
+      `CashBook_Report_${(selectedPayTypeName || 'All_Payments').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`
     );
   };
 
@@ -250,7 +250,7 @@ export default function TransferHistoryPage() {
     ).toBlob();
     saveAs(
       blob,
-      `transfer-history-${new Date().toISOString().split('T')[0]}.pdf`
+      `CashBook_Report_${(selectedPayTypeName || 'All_Payments').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
     );
   };
 
