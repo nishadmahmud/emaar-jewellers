@@ -26,6 +26,7 @@ import {
   Lock,
   KeyRound,
   FileSpreadsheet,
+  PieChart,
 } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
@@ -98,7 +99,7 @@ export default function DashboardLayout({ children }) {
       items: [
         { name: 'Transfer History', href: '/dashboard/transfer-history', icon: History },
         { name: 'Ledger Statement Report', href: '/dashboard/ledger-statement-report', icon: FileText },
-        { name: 'Profit Loss Report', href: '/dashboard/profit-loss-report', icon: FileText },
+        { name: 'Profit Loss Report', href: '/dashboard/profit-loss-report', icon: PieChart },
         { name: 'Daily Profit Loss', href: '/dashboard/daily-profit-loss', icon: FileText },
       ]
     },
