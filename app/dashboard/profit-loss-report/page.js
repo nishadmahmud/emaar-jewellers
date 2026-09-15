@@ -172,9 +172,10 @@ export default function ProfitLossReport() {
     const dayCurrentProfit = (dayAvgSell - dayAvgPurchase) * daySalesQty;
 
     const dayNegStockVal = -1 * dayStock * dayAvgSell;
-    const dayActualProfit = daySalesQty > dayPurchaseQty
-      ? (dayCurrentProfit < 0 ? dayCurrentProfit + dayNegStockVal : dayCurrentProfit - dayNegStockVal)
-      : dayCurrentProfit;
+  const dayActualProfit = daySalesQty > dayPurchaseQty
+  ? ((dayAverageSalesPrice - dayAveragePurchasePrice) * dayPurchaseQty)
+  : dayCurrentProfit;
+
 
     return { currentProfit: dayCurrentProfit, actualProfit: dayActualProfit };
   });
