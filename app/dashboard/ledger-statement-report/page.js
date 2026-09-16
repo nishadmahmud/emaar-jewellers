@@ -646,7 +646,11 @@ export default function LedgerStatementReportPage() {
                 </td>
                 <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-neutral-700 flex justify-between">
                   <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Vch Types</span>
-                  <span>{row.type || "-"}</span>
+                  <span>
+                    {(row.type || "").toLowerCase() === "add balance" && row.particulars
+                      ? `${row.type} [${row.particulars}]`
+                      : (row.type || "-")}
+                  </span>
                 </td>
                 <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-neutral-700 flex justify-between">
                   <span className="md:hidden font-bold text-xs uppercase text-neutral-500">Vch Number</span>
