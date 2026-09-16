@@ -116,6 +116,7 @@ export default function TransferHistoryPage() {
       return {
         date: r?.date || '',
         particulars: r?.particulars || '',
+        reference: r?.reference || '',
         paymentType: r?.type_name || '',
         vchType: r?.type || '',
         vchNumber: r?.invoice_id || '',
@@ -142,6 +143,7 @@ export default function TransferHistoryPage() {
       serial: 0,
       date: (appliedFilters?.start_date || '').slice(0, 10),
       particulars: '',
+      reference: '',
       paymentType: '',
       vchType: 'Opening Balance',
       vchNumber: '',
@@ -169,6 +171,7 @@ export default function TransferHistoryPage() {
     return displayRows.filter((r) => {
       return (
         (r.particulars || '').toLowerCase().includes(q) ||
+        (r.reference || '').toLowerCase().includes(q) ||
         (r.vchNumber || '').toLowerCase().includes(q) ||
         (r.paymentType || '').toLowerCase().includes(q) ||
         (r.vchType || '').toLowerCase().includes(q) ||
@@ -209,6 +212,7 @@ export default function TransferHistoryPage() {
       'Serial No': r.serial,
       'Transaction Date': r.date,
       Particulars: r.particulars,
+      Reference: r.reference,
       'Payment Types': r.paymentType,
       'Vch Types': r.vchType,
       'Vch Number': r.vchNumber,
@@ -220,6 +224,7 @@ export default function TransferHistoryPage() {
       'Serial No': '',
       'Transaction Date': '',
       Particulars: 'Totals',
+      Reference: '',
       'Payment Types': '',
       'Vch Types': '',
       'Vch Number': '',
@@ -409,7 +414,7 @@ export default function TransferHistoryPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
           <input
             type="text"
-            placeholder="Search particulars, vch number..."
+            placeholder="Search particulars, reference, vch number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black text-black"
@@ -468,6 +473,7 @@ export default function TransferHistoryPage() {
                     <th className="px-4 py-3 font-semibold">Sl</th>
                     <th className="px-4 py-3 font-semibold">Date</th>
                     <th className="px-4 py-3 font-semibold">Particulars</th>
+                    <th className="px-4 py-3 font-semibold">Reference</th>
                     <th className="px-4 py-3 font-semibold">Payment Type</th>
                     <th className="px-4 py-3 font-semibold">Vch Type</th>
                     <th className="px-4 py-3 font-semibold">Vch Number</th>
@@ -484,6 +490,7 @@ export default function TransferHistoryPage() {
                     <td className="px-4 py-3 text-neutral-500"></td>
                     <td className="px-4 py-3 text-neutral-500"></td>
                     <td className="px-4 py-3 text-neutral-500"></td>
+                    <td className="px-4 py-3 text-neutral-500"></td>
                     <td className="px-4 py-3 text-right text-red-600 font-medium">0.00</td>
                     <td className="px-4 py-3 text-right text-emerald-600 font-medium">0.00</td>
                     <td className="px-4 py-3 text-right text-black font-semibold">{fmt2(openingRow.balance)}</td>
@@ -494,6 +501,7 @@ export default function TransferHistoryPage() {
                       <td className="px-4 py-3 text-neutral-500">{i + 1}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-neutral-600">{r.date}</td>
                       <td className="px-4 py-3 text-neutral-900 font-medium">{r.particulars || '-'}</td>
+                      <td className="px-4 py-3 text-neutral-600">{r.reference || '-'}</td>
                       <td className="px-4 py-3 text-neutral-600">{r.paymentType || '-'}</td>
                       <td className="px-4 py-3 text-neutral-600">{r.vchType || '-'}</td>
                       <td className="px-4 py-3 text-neutral-600">{r.vchNumber || '-'}</td>
@@ -505,7 +513,7 @@ export default function TransferHistoryPage() {
                   
                   {filteredRows.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-neutral-500">
+                      <td colSpan={10} className="px-4 py-8 text-center text-neutral-500">
                         No transactions found
                       </td>
                     </tr>
@@ -513,7 +521,7 @@ export default function TransferHistoryPage() {
                 </tbody>
                 <tfoot>
                   <tr className="bg-neutral-50 border-t border-neutral-200">
-                    <td colSpan={6} className="px-4 py-3 text-right font-semibold text-neutral-900">
+                    <td colSpan={7} className="px-4 py-3 text-right font-semibold text-neutral-900">
                       Totals
                     </td>
                     <td className="px-4 py-3 text-right font-bold text-red-600">{fmt2(totals.debit)}</td>

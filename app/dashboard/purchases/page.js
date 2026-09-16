@@ -3,11 +3,14 @@
 import React, { useEffect, useState } from 'react';
 const Card = ({ children, className }) => <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 ${className || ''}`}>{children}</div>;
 const CardContent = ({ children, className = '' }) => <div className={className}>{children}</div>;
-import { Search, Loader2, Eye, Pencil, Receipt, ArrowDownToLine, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Search, Loader2, Eye, Pencil, Receipt, ArrowDownToLine, ChevronRight, ChevronLeft, FileText } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { pdf } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
+import PurchaseHistoryPDF from './purchase-history-pdf';
 
 const API_URL = process.env.NEXT_PUBLIC_API;
 
@@ -20,6 +23,7 @@ export default function PurchaseHistoryPage() {
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();
 
@@ -78,6 +82,58 @@ export default function PurchaseHistoryPage() {
     return acc + ((inv.sub_total || 0) - (inv.discount || 0));
   }, 0);
 
+  const handlePDFExport = async () => {
+    const token = session?.accessToken;
+    if (!token) {
+      toast.error('Please sign in to export PDF');
+      return;
+    }
+
+    setIsPdfGenerating(true);
+    try {
+      const exportLimit = Math.max(totalInvoices || 0, 5000);
+      const res = await axios.post(
+        `${API_URL}/search-purchase-invoice?page=1&limit=${exportLimit}`,
+        {
+          keyword: search,
+          nameId: false,
+          emailId: false,
+          phoneId: false,
+          imei: false,
+          start_date: startDate || 0,
+          end_date: endDate || new Date().toISOString(),
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      const exportInvoices = res.data?.success && res.data?.data
+        ? (res.data.data.data || [])
+        : [];
+
+      if (exportInvoices.length === 0) {
+        toast.warning('No invoices to export');
+        return;
+      }
+
+      const blob = await pdf(
+        <PurchaseHistoryPDF
+          invoices={exportInvoices}
+          filters={{ startDate, endDate, search }}
+          user={session?.user}
+        />
+      ).toBlob();
+
+      saveAs(blob, `Purchase_History_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Error generating PDF.');
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -122,6 +178,19 @@ export default function PurchaseHistoryPage() {
               className="block w-full pl-10 pr-3 py-2 border border-neutral-200 rounded-lg text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-shadow"
             />
           </div>
+          <button
+            type="button"
+            onClick={handlePDFExport}
+            disabled={isPdfGenerating || loading || totalInvoices === 0}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border border-neutral-200 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-neutral-50 text-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isPdfGenerating ? (
+              <Loader2 size={14} className="animate-spin text-red-500" />
+            ) : (
+              <FileText size={14} className="text-red-500" />
+            )}
+            {isPdfGenerating ? 'PDF...' : 'Export PDF'}
+          </button>
         </div>
       </div>
 

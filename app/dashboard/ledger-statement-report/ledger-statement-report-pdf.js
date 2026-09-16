@@ -125,8 +125,8 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
     return rows.map(r => ({
       date: r.date,
       invoice_id: r.invoice_id || r.type || "-",
-      particulars: (r.type || "").toLowerCase() === 'fund transfer' && r.ref && r.reference
-        ? `${r.ref} -> ${r.reference}`
+      particulars: (r.type || "").toLowerCase() === "fund transfer" && r.reference
+        ? `${r.type_name || "Payment"} [${r.reference}]`
         : (r.type_name || "Payment"),
       qty: "", 
       debit: r.debit || 0,

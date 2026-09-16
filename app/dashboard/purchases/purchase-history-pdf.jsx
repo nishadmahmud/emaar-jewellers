@@ -9,13 +9,10 @@ import {
   Font,
 } from "@react-pdf/renderer";
 
-// Prevent hyphenation and number wrapping issues
 Font.registerHyphenationCallback((word) => [word]);
 
 const styles = StyleSheet.create({
-  page: { flexDirection: "column", backgroundColor: "#FFFFFF", padding: 16 },
-
-  // Header (left: shop, right: meta)
+  page: { flexDirection: "column", backgroundColor: "#FFFFFF", padding: 16, paddingBottom: 32 },
   headerWrap: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -39,10 +36,8 @@ const styles = StyleSheet.create({
   shopName: { fontSize: 12, fontWeight: "bold", color: "#111827" },
   address: { fontSize: 8, color: "#374151", marginTop: 2 },
   contact: { fontSize: 8, color: "#4B5563", marginTop: 2 },
-
   rightInfo: { width: "38%", alignItems: "flex-end" },
   rightLine: { fontSize: 8, color: "#374151", lineHeight: 1.2 },
-
   title: {
     fontSize: 12,
     textAlign: "center",
@@ -50,8 +45,6 @@ const styles = StyleSheet.create({
     color: "#111827",
     marginTop: 6,
   },
-
-  // Table
   table: {
     display: "table",
     width: "auto",
@@ -80,19 +73,14 @@ const styles = StyleSheet.create({
   head: { fontSize: 8, fontWeight: "bold", color: "#111827" },
   cell: { fontSize: 7, color: "#111827" },
   right: { textAlign: "right" },
-
-  // Column widths tuned to avoid wrapping (sum 100)
-  serialCol: { width: "5%" },
-  dateCol: { width: "9%" },
-  particularsCol: { width: "14%" },
-  referenceCol: { width: "10%" },
-  payTypeCol: { width: "9%" },
-  vchTypeCol: { width: "11%" },
-  vchNoCol: { width: "17%" },
-  debitCol: { width: "8%" },
-  creditCol: { width: "8%" },
-  balanceCol: { width: "9%" },
-
+  center: { textAlign: "center" },
+  invoiceCol: { width: "14%" },
+  dateCol: { width: "12%" },
+  partyCol: { width: "22%" },
+  qtyCol: { width: "12%" },
+  totalCol: { width: "13%" },
+  paidCol: { width: "13%" },
+  dueCol: { width: "14%" },
   pageNum: {
     position: "absolute",
     fontSize: 8,
@@ -102,13 +90,38 @@ const styles = StyleSheet.create({
   },
 });
 
-const fmt2 = (n) =>
+const fmt4 = (n) =>
   Number(n ?? 0).toLocaleString(undefined, {
     minimumFractionDigits: 4,
     maximumFractionDigits: 4,
   });
 
-function Header({ user, filters, payTypeName }) {
+function getCurrency(payMode) {
+  return (payMode || "").includes("(AED @") ? "AED" : "BDT";
+}
+
+function mapInvoice(inv) {
+  const currency = getCurrency(inv.pay_mode);
+  const total = (inv.sub_total || 0) - (inv.discount || 0);
+  const paid = inv.paid_amount || 0;
+  const due = Math.max(total - paid, 0);
+  const qty = Array.isArray(inv.purchase_details)
+    ? inv.purchase_details.reduce((sum, item) => sum + (Number(item.qty) || 0), 0)
+    : 0;
+
+  return {
+    invoiceId: inv.invoice_id || "",
+    date: inv.created_at ? new Date(inv.created_at).toLocaleDateString() : "",
+    party: inv.vendor_name || "Unknown Vendor",
+    qty,
+    total,
+    paid,
+    due,
+    currency,
+  };
+}
+
+function Header({ user, filters }) {
   const u = user || {};
   const inv = u?.invoice_settings || {};
   const shopName =
@@ -123,10 +136,9 @@ function Header({ user, filters, payTypeName }) {
   const genStr = `${gen.toISOString().slice(0, 10)} ${gen
     .toTimeString()
     .slice(0, 8)}`;
-  const startDate = (filters?.start_date || "").toString().slice(0, 10);
-  const endDate = (filters?.end_date || "").toString().slice(0, 10);
-  const order =
-    (filters?.view_order || "asc") === "asc" ? "Ascending" : "Descending";
+  const startDate = (filters?.startDate || "").toString().slice(0, 10);
+  const endDate = (filters?.endDate || "").toString().slice(0, 10);
+  const search = filters?.search || "";
 
   return (
     <>
@@ -149,158 +161,118 @@ function Header({ user, filters, payTypeName }) {
           </View>
         </View>
         <View style={styles.rightInfo}>
-          <Text style={styles.rightLine}>Report: Cash Book</Text>
-          <Text style={styles.rightLine}>Currency: BDT</Text>
+          <Text style={styles.rightLine}>Report: Purchase History</Text>
           <Text style={styles.rightLine}>
             Period: {startDate || "-"} to {endDate || "-"}
           </Text>
-          <Text style={styles.rightLine}>
-            Payment Type: {payTypeName || "All"}
-          </Text>
-          <Text style={styles.rightLine}>Order: {order}</Text>
+          {!!search && (
+            <Text style={styles.rightLine}>Search: {search}</Text>
+          )}
           <Text style={styles.rightLine}>Generated: {genStr}</Text>
         </View>
       </View>
-
-      <Text style={styles.title}>Cash Book Details History</Text>
+      <Text style={styles.title}>Purchase History</Text>
     </>
   );
 }
 
-export default function TransferHistoryPDF({
-  openingRow,
-  rows = [],
-  totals,
+export default function PurchaseHistoryPDF({
+  invoices = [],
   filters,
   user,
-  payTypeName = "All",
 }) {
-  const allRows = [openingRow, ...rows];
+  const rows = invoices.map(mapInvoice);
+  const totalQty = rows.reduce((sum, r) => sum + r.qty, 0);
+  const totalAmount = rows.reduce((sum, r) => sum + r.total, 0);
 
   return (
     <Document>
-      {/* Portrait */}
-      <Page size="A4" orientation="portrait" style={styles.page}>
-        <Header user={user} filters={filters} payTypeName={payTypeName} />
+      <Page size="A4" orientation="landscape" style={styles.page}>
+        <Header user={user} filters={filters} />
 
         <View style={styles.table}>
-          {/* Header */}
-          <View style={styles.row}>
-            <View style={[styles.th, styles.serialCol]}>
-              <Text style={styles.head}>Serial No</Text>
+          <View style={styles.row} wrap={false}>
+            <View style={[styles.th, styles.invoiceCol]}>
+              <Text style={styles.head}>Invoice ID</Text>
             </View>
             <View style={[styles.th, styles.dateCol]}>
-              <Text style={styles.head}>Transaction Date</Text>
+              <Text style={styles.head}>Date</Text>
             </View>
-            <View style={[styles.th, styles.particularsCol]}>
-              <Text style={styles.head}>Particulars</Text>
+            <View style={[styles.th, styles.partyCol]}>
+              <Text style={styles.head}>Vendor</Text>
             </View>
-            <View style={[styles.th, styles.referenceCol]}>
-              <Text style={styles.head}>Reference</Text>
+            <View style={[styles.th, styles.qtyCol]}>
+              <Text style={[styles.head, styles.center]}>Qty</Text>
             </View>
-            <View style={[styles.th, styles.payTypeCol]}>
-              <Text style={styles.head}>Payment Types</Text>
+            <View style={[styles.th, styles.totalCol]}>
+              <Text style={[styles.head, styles.right]}>Total</Text>
             </View>
-            <View style={[styles.th, styles.vchTypeCol]}>
-              <Text style={styles.head}>Vch Types</Text>
+            <View style={[styles.th, styles.paidCol]}>
+              <Text style={[styles.head, styles.right]}>Paid</Text>
             </View>
-            <View style={[styles.th, styles.vchNoCol]}>
-              <Text style={styles.head}>Vch Number</Text>
-            </View>
-            <View style={[styles.th, styles.debitCol]}>
-              <Text style={[styles.head, styles.right]} wrap={false}>
-                Debit (BDT)
-              </Text>
-            </View>
-            <View style={[styles.th, styles.creditCol]}>
-              <Text style={[styles.head, styles.right]} wrap={false}>
-                Credit (BDT)
-              </Text>
-            </View>
-            <View style={[styles.th, styles.balanceCol]}>
-              <Text style={[styles.head, styles.right]} wrap={false}>
-                Balance (BDT)
-              </Text>
+            <View style={[styles.th, styles.dueCol]}>
+              <Text style={[styles.head, styles.right]}>Due</Text>
             </View>
           </View>
 
-          {/* Rows */}
-          {allRows.map((r, i) => (
-            <View style={styles.row} key={`r-${i + 1}`}>
-              <View style={[styles.td, styles.serialCol]}>
-                <Text style={styles.cell}>{r.serial}</Text>
+          {rows.map((r, i) => (
+            <View style={styles.row} key={`r-${i}`} wrap={false}>
+              <View style={[styles.td, styles.invoiceCol]}>
+                <Text style={styles.cell}>{r.invoiceId}</Text>
               </View>
               <View style={[styles.td, styles.dateCol]}>
                 <Text style={styles.cell}>{r.date}</Text>
               </View>
-              <View style={[styles.td, styles.particularsCol]}>
-                <Text style={styles.cell}>{r.particulars || ""}</Text>
+              <View style={[styles.td, styles.partyCol]}>
+                <Text style={styles.cell}>{r.party}</Text>
               </View>
-              <View style={[styles.td, styles.referenceCol]}>
-                <Text style={styles.cell}>{r.reference || ""}</Text>
-              </View>
-              <View style={[styles.td, styles.payTypeCol]}>
-                <Text style={styles.cell}>{r.paymentType || ""}</Text>
-              </View>
-              <View style={[styles.td, styles.vchTypeCol]}>
-                <Text style={styles.cell}>{r.vchType || ""}</Text>
-              </View>
-              <View style={[styles.td, styles.vchNoCol]}>
-                <Text style={styles.cell}>{r.vchNumber || ""}</Text>
-              </View>
-              <View style={[styles.td, styles.debitCol]}>
-                <Text style={[styles.cell, styles.right]} wrap={false}>
-                  {fmt2(r.debit)}
+              <View style={[styles.td, styles.qtyCol]}>
+                <Text style={[styles.cell, styles.center]} wrap={false}>
+                  {fmt4(r.qty)}
                 </Text>
               </View>
-              <View style={[styles.td, styles.creditCol]}>
+              <View style={[styles.td, styles.totalCol]}>
                 <Text style={[styles.cell, styles.right]} wrap={false}>
-                  {fmt2(r.credit)}
+                  {r.currency} {fmt4(r.total)}
                 </Text>
               </View>
-              <View style={[styles.td, styles.balanceCol]}>
+              <View style={[styles.td, styles.paidCol]}>
                 <Text style={[styles.cell, styles.right]} wrap={false}>
-                  {fmt2(r.balance)}
+                  {r.currency} {fmt4(r.paid)}
+                </Text>
+              </View>
+              <View style={[styles.td, styles.dueCol]}>
+                <Text style={[styles.cell, styles.right]} wrap={false}>
+                  {r.currency} {fmt4(r.due)}
                 </Text>
               </View>
             </View>
           ))}
 
-          {/* Totals */}
-          <View style={styles.row}>
-            <View style={[styles.td, styles.serialCol]} />
+          <View style={styles.row} wrap={false}>
+            <View style={[styles.td, styles.invoiceCol]} />
             <View style={[styles.td, styles.dateCol]} />
-            <View style={[styles.td, styles.particularsCol]}>
+            <View style={[styles.td, styles.partyCol]}>
               <Text style={[styles.cell, { fontWeight: "bold" }]}>Totals</Text>
             </View>
-            <View style={[styles.td, styles.referenceCol]} />
-            <View style={[styles.td, styles.payTypeCol]} />
-            <View style={[styles.td, styles.vchTypeCol]} />
-            <View style={[styles.td, styles.vchNoCol]} />
-            <View style={[styles.td, styles.debitCol]}>
+            <View style={[styles.td, styles.qtyCol]}>
+              <Text
+                style={[styles.cell, styles.center, { fontWeight: "bold" }]}
+                wrap={false}
+              >
+                {fmt4(totalQty)}
+              </Text>
+            </View>
+            <View style={[styles.td, styles.totalCol]}>
               <Text
                 style={[styles.cell, styles.right, { fontWeight: "bold" }]}
                 wrap={false}
               >
-                {fmt2(totals?.debit ?? 0)}
+                {fmt4(totalAmount)}
               </Text>
             </View>
-            <View style={[styles.td, styles.creditCol]}>
-              <Text
-                style={[styles.cell, styles.right, { fontWeight: "bold" }]}
-                wrap={false}
-              >
-                {fmt2(totals?.credit ?? 0)}
-              </Text>
-            </View>
-            <View style={[styles.td, styles.balanceCol]}>
-              <Text
-                style={[styles.cell, styles.right, { fontWeight: "bold" }]}
-                wrap={false}
-              >
-                {fmt2(totals?.closing ?? 0)}
-              </Text>
-            </View>
+            <View style={[styles.td, styles.paidCol]} />
+            <View style={[styles.td, styles.dueCol]} />
           </View>
         </View>
 

@@ -138,13 +138,10 @@ export default function DailyProfitLossReport() {
     const avgSellPrice = totalSalesQty > 0 ? totalSalesBdt / totalSalesQty : 0;
     const avgPurchasePrice = totalPurchaseQty > 0 ? totalPurchaseBdt / totalPurchaseQty : 0;
     
-    const stockAvailable = totalPurchaseQty - totalSalesQty;
     const currentProfit = (avgSellPrice - avgPurchasePrice) * totalSalesQty;
-    
-    const negativeStockValuation = -1 * stockAvailable * avgSellPrice;
-    
-    const actualProfit = totalSalesQty > totalPurchaseQty 
-      ? (currentProfit < 0 ? currentProfit + negativeStockValuation : currentProfit - negativeStockValuation)
+
+    const actualProfit = totalSalesQty > totalPurchaseQty
+      ? ((avgSellPrice - avgPurchasePrice) * totalPurchaseQty)
       : currentProfit;
 
     return {
