@@ -176,7 +176,7 @@ export default function BalanceSheetPDF({
           </View>
           <View style={styles.leftSection}>
             <Text style={styles.businessName}>
-              {user?.outlet_name || "EMAAR JEWELLERS"}
+              {user?.outlet_name || "EMAAR TRADERS"}
             </Text>
             <Text style={styles.addressLine}>
               {user?.address || "Address Line 1"}

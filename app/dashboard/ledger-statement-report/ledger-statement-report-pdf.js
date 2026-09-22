@@ -202,11 +202,11 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
              {logo ? (
                  <Image src={logo} style={styles.logoImg} />
              ) : (
-                 <Text style={{fontSize: 18, fontWeight: "bold", color: '#333'}}>EMAAR TRADING</Text>
+                 <Text style={{fontSize: 18, fontWeight: "bold", color: '#333'}}>EMAAR TRADERS</Text>
              )}
           </View>
           <View style={styles.headerRight}>
-            <Text style={styles.businessName}>{user?.outlet_name || "EMAAR TRADING"}</Text>
+            <Text style={styles.businessName}>{user?.outlet_name || "EMAAR TRADERS"}</Text>
             <Text style={styles.headerText}>{user?.address || "Address Line 1"}</Text>
             <Text style={styles.headerText}>Tel : {user?.phone || "-"}</Text>
             {user?.email && <Text style={styles.headerText}>Email : {user.email}</Text>}

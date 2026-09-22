@@ -119,7 +119,7 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
           <h1 className="text-4xl font-light tracking-widest mb-2 text-black">EMAAR</h1>
-          <p className="text-sm tracking-widest text-neutral-500 uppercase">Jewellers</p>
+          <p className="text-sm tracking-widest text-neutral-500 uppercase">Traders</p>
         </div>
 
         <div className="bg-white border border-neutral-200 p-8 rounded-2xl shadow-xl">
@@ -354,7 +354,7 @@ export default function SignupPage() {
         </div>
         
         <p className="text-center text-neutral-500 text-xs mt-8">
-          &copy; {new Date().getFullYear()} Emaar Jewellers. All rights reserved.
+          &copy; {new Date().getFullYear()} Emaar Traders. All rights reserved.
         </p>
       </div>
     </div>

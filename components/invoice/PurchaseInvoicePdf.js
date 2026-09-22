@@ -1,5 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { BRAND_NAME, BRAND_NAME_UPPER, BRAND_ADDRESS } from '@/lib/branding';
 
 const styles = StyleSheet.create({
   page: {
@@ -150,9 +151,9 @@ const PurchaseInvoicePdf = ({ invoice }) => {
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.companyName}>EMAAR JEWELLERS</Text>
+            <Text style={styles.companyName}>{BRAND_NAME_UPPER}</Text>
             <Text style={styles.companyAddress}>
-              Baitul Mukarram National Mosque Market, Dhaka, Bangladesh
+              {BRAND_ADDRESS}
             </Text>
           </View>
           <View>
@@ -252,7 +253,7 @@ const PurchaseInvoicePdf = ({ invoice }) => {
         </View>
 
         <View style={styles.footer}>
-          <Text>Emaar Jewellers - Purchase Receipt</Text>
+          <Text>{BRAND_NAME} - Purchase Receipt</Text>
           <Text style={{ marginTop: 4 }}>This is a system generated document.</Text>
         </View>
       </Page>

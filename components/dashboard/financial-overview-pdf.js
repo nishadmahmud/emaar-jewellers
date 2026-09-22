@@ -8,6 +8,7 @@ import {
   Image,
   Font,
 } from "@react-pdf/renderer";
+import { BRAND_NAME, BRAND_ADDRESS } from "@/lib/branding";
 
 Font.registerHyphenationCallback((word) => [word]);
 
@@ -141,9 +142,9 @@ function Header({ user, genStr }) {
   const u = user || {};
   const inv = u?.invoice_settings || {};
   const shopName =
-    inv?.shop_name || u?.outlet_name || u?.owner_name || "Emaar Jewellers";
+    inv?.shop_name || u?.outlet_name || u?.owner_name || BRAND_NAME;
   const logo = inv?.shop_logo || u?.logo;
-  const address = inv?.shop_address || u?.address || "";
+  const address = BRAND_ADDRESS;
   const phone = inv?.mobile_number || u?.phone || "";
   const email = inv?.email || u?.email || "";
   const web = inv?.web_address || u?.web_address || "";

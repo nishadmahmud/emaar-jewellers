@@ -138,9 +138,9 @@ export default function PurchaseInvoicePage() {
             {/* Store Info & Invoice Meta */}
             <div className="flex flex-col sm:flex-row justify-between items-start border-b border-neutral-100 pb-8 mb-8 gap-6">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-black mb-1">EMAAR JEWELLERS</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-black mb-1">EMAAR TRADERS</h1>
                 <p className="text-sm text-neutral-500 max-w-[250px]">
-                  Baitul Mukarram National Mosque Market, Dhaka, Bangladesh
+                  Dubai
                 </p>
               </div>
               <div className="text-left sm:text-right">
@@ -268,7 +268,7 @@ export default function PurchaseInvoicePage() {
 
             {/* Footer Notes */}
             <div className="mt-16 pt-8 border-t border-neutral-100 text-center text-xs text-neutral-400">
-              <p>Emaar Jewellers - Purchase Receipt</p>
+              <p>Emaar Traders - Purchase Receipt</p>
               <p className="mt-1">This is a system generated document.</p>
             </div>
           </div>

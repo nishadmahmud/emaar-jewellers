@@ -214,7 +214,7 @@ export default function DailyProfitLossReport() {
 
       {/* Print Header */}
       <div className="hidden print:block mb-6">
-        <h1 className="text-2xl font-bold text-black text-center mb-2">EMAAR Jewellers</h1>
+        <h1 className="text-2xl font-bold text-black text-center mb-2">EMAAR TRADERS</h1>
         <h2 className="text-lg font-semibold text-center text-neutral-800">Daily Profit & Loss History</h2>
         <p className="text-sm text-center text-neutral-500 mt-1">
           {new Date(startDate).toLocaleDateString()} to {new Date(endDate).toLocaleDateString()}

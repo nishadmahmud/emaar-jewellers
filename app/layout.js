@@ -11,9 +11,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { BRAND_NAME } from "@/lib/branding";
+
 export const metadata = {
-  title: "Emaar Jewellers POS",
-  description: "Gold Management POS System for Emaar Jewellers",
+  title: `${BRAND_NAME} POS`,
+  description: `Gold Management POS System for ${BRAND_NAME}`,
 };
 
 export const viewport = {
