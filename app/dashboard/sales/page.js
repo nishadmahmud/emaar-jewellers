@@ -38,9 +38,9 @@ export default function SalesHistoryPage() {
           `${API_URL}/search-invoice?page=${currentPage}&limit=${limit}`,
           {
             keyword: search,
-            nameId: false,
+            nameId: true,
             emailId: false,
-            phoneId: false,
+            phoneId: true,
             product: false,
             startDate: startDate || 0,
             endDate: endDate || new Date().toISOString(),
@@ -97,9 +97,9 @@ export default function SalesHistoryPage() {
         `${API_URL}/search-invoice?page=1&limit=${exportLimit}`,
         {
           keyword: search,
-          nameId: false,
+          nameId: true,
           emailId: false,
-          phoneId: false,
+          phoneId: true,
           product: false,
           startDate: startDate || 0,
           endDate: endDate || new Date().toISOString(),

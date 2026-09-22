@@ -38,9 +38,9 @@ export default function PurchaseHistoryPage() {
           `${API_URL}/search-purchase-invoice?page=${currentPage}&limit=${limit}`,
           {
             keyword: search,
-            nameId: false,
+            nameId: true,
             emailId: false,
-            phoneId: false,
+            phoneId: true,
             imei: false,
             start_date: startDate || 0,
             end_date: endDate || new Date().toISOString(),
@@ -96,9 +96,9 @@ export default function PurchaseHistoryPage() {
         `${API_URL}/search-purchase-invoice?page=1&limit=${exportLimit}`,
         {
           keyword: search,
-          nameId: false,
+          nameId: true,
           emailId: false,
-          phoneId: false,
+          phoneId: true,
           imei: false,
           start_date: startDate || 0,
           end_date: endDate || new Date().toISOString(),
