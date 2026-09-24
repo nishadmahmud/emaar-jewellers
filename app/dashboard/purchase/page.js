@@ -69,12 +69,25 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
           let currency = 'BDT';
           let aedRate = '';
           const payModeString = initialInvoice.pay_mode || '';
+          
+          let ratesArray = [];
+          const ratesMatch = payModeString.match(/\|\|\s*RATES:([0-9.,]+)/);
+          if (ratesMatch) {
+            ratesArray = ratesMatch[1].split(',');
+          }
+
           if (payModeString.includes('(AED @')) {
             currency = 'AED';
             const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
             if (aedRateMatch) {
               aedRate = aedRateMatch[1];
             }
+          }
+          
+          let itemAedRate = aedRate;
+          if (ratesArray.length > index && parseFloat(ratesArray[index]) > 0) {
+            itemAedRate = ratesArray[index];
+            currency = 'AED';
           }
 
           return {
@@ -86,7 +99,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
             netWeightGram: netWeightGram.toFixed(4),
             ratePerVori: ratePerVori.toString(),
             currency: currency,
-            aedRate: aedRate,
+            aedRate: itemAedRate,
             detail_id: detail.id || "",
             imei_id: detail.imei_id || ""
           };
@@ -429,7 +442,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
     setLoading(true);
     try {
       const basePayMode = paymentSummaryText || formData.paymentMethodName || 'Cash';
-      const finalPayMode = displayCurrency === 'AED' ? `${basePayMode} (AED @ ${displayAedRate})` : basePayMode;
+      let finalPayMode = displayCurrency === 'AED' ? `${basePayMode} (AED @ ${displayAedRate})` : basePayMode; const itemRatesString = cart.map(item => item.aedRate || 0).join(','); finalPayMode = `${finalPayMode} || RATES:${itemRatesString}`;
 
       const finalPaymentMethods = (savedPaymentMethods && savedPaymentMethods.length > 0)
         ? savedPaymentMethods.map(m => ({

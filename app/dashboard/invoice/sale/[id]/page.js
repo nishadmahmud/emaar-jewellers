@@ -69,6 +69,14 @@ export default function SaleInvoicePage() {
   const salesDetails = invoiceData.sales_details || [];
   
   const payModeString = invoiceData.pay_mode || '';
+  
+  let ratesArray = [];
+  const ratesMatch = payModeString.match(/\|\|\s*RATES:([0-9.,]+)/);
+  if (ratesMatch) {
+    ratesArray = ratesMatch[1].split(',');
+  }
+  const displayPayModeString = payModeString.replace(/\|\|\s*RATES:([0-9.,]+)/, '').trim();
+
   const isAed = payModeString.includes('(AED @');
   const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
   const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
@@ -182,8 +190,19 @@ export default function SaleInvoicePage() {
                     const itemQty = Number(item.qty || 1);
                     const itemTotalBdt = Number(item.price || 0); // item.price is the total BDT for this line
                     const itemRateBdt = itemQty > 0 ? itemTotalBdt / itemQty : 0;
-                    const itemRateDisplay = isAed ? itemRateBdt / invoiceAedRate : itemRateBdt;
-                    const itemTotalDisplay = isAed ? itemTotalBdt / invoiceAedRate : itemTotalBdt;
+                    
+                    let itemCurrency = 'BDT';
+                    let itemAedRate = 1;
+                    if (ratesArray.length > index && parseFloat(ratesArray[index]) > 0) {
+                      itemCurrency = 'AED';
+                      itemAedRate = parseFloat(ratesArray[index]);
+                    } else if (isAed) {
+                      itemCurrency = 'AED';
+                      itemAedRate = invoiceAedRate;
+                    }
+
+                    const itemRateDisplay = itemCurrency === 'AED' ? itemRateBdt / itemAedRate : itemRateBdt;
+                    const itemTotalDisplay = itemCurrency === 'AED' ? itemTotalBdt / itemAedRate : itemTotalBdt;
                     
                     return (
                       <tr key={item.id || index} className="group">
@@ -195,9 +214,9 @@ export default function SaleInvoicePage() {
                         </td>
                         <td className="px-4 py-4 text-center text-neutral-600">{item.qty || 1}</td>
                         <td className="px-4 py-4 text-center text-neutral-600">{(itemQty * 116.64).toFixed(4)}</td>
-                        <td className="px-4 py-4 text-right text-neutral-600">{displayCurrency} {itemRateDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</td>
+                        <td className="px-4 py-4 text-right text-neutral-600">{itemCurrency} {itemRateDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</td>
                         <td className="px-4 py-4 text-right font-medium text-neutral-900">
-                          {displayCurrency} {itemTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}
+                          {itemCurrency} {itemTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}
                         </td>
                       </tr>
                     );
