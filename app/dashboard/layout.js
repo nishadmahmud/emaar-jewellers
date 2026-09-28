@@ -333,7 +333,7 @@ export default function DashboardLayout({ children }) {
                 ET
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-xs font-semibold text-black leading-tight">Emaar Traders</p>
+                <p className="text-xs font-semibold text-black leading-tight">Emaar Trading</p>
                 <p className="text-[10px] text-neutral-500 leading-tight">Admin Manager</p>
               </div>
             </div>
