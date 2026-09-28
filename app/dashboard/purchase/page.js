@@ -67,27 +67,20 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
           const netWeightGram = qtyNum * 116.64;
           
           let currency = 'BDT';
-          let aedRate = '';
+          let itemAedRate = '';
           const payModeString = initialInvoice.pay_mode || '';
-          
-          let ratesArray = [];
-          const ratesMatch = payModeString.match(/\|\|\s*RATES:([0-9.,]+)/);
-          if (ratesMatch) {
-            ratesArray = ratesMatch[1].split(',');
-          }
 
-          if (payModeString.includes('(AED @')) {
+          // Read AED rate directly from product_variant_id on each line item
+          if (parseFloat(detail.product_variant_id) > 0) {
+            currency = 'AED';
+            itemAedRate = detail.product_variant_id.toString();
+          } else if (payModeString.includes('(AED @')) {
+            // Fallback: global AED rate from pay_mode (old invoices)
             currency = 'AED';
             const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
             if (aedRateMatch) {
-              aedRate = aedRateMatch[1];
+              itemAedRate = aedRateMatch[1];
             }
-          }
-          
-          let itemAedRate = aedRate;
-          if (ratesArray.length > index && parseFloat(ratesArray[index]) > 0) {
-            itemAedRate = ratesArray[index];
-            currency = 'AED';
           }
 
           return {
@@ -442,7 +435,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
     setLoading(true);
     try {
       const basePayMode = paymentSummaryText || formData.paymentMethodName || 'Cash';
-      let finalPayMode = displayCurrency === 'AED' ? `${basePayMode} (AED @ ${displayAedRate})` : basePayMode; const itemRatesString = cart.map(item => item.aedRate || 0).join(','); finalPayMode = `${finalPayMode} || RATES:${itemRatesString}`;
+      const finalPayMode = displayCurrency === 'AED' ? `${basePayMode} (AED @ ${displayAedRate})` : basePayMode;
 
       const finalPaymentMethods = (savedPaymentMethods && savedPaymentMethods.length > 0)
         ? savedPaymentMethods.map(m => ({
@@ -484,6 +477,9 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
             have_variant: item.have_variant || 0,
             mode: 1,
             size: 1,
+            currency: item.currency,
+            aed_rate: parseFloat(item.aedRate) || 0,
+            product_variant_id: parseFloat(item.aedRate) || 0,
             detail_id: item.detail_id || "",
             imei_id: item.imei_id || ""
           };
