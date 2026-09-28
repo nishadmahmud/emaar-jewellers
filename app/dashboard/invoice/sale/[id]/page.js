@@ -69,6 +69,14 @@ export default function SaleInvoicePage() {
   const salesDetails = invoiceData.sales_details || [];
   
   const payModeString = invoiceData.pay_mode || '';
+  
+  let ratesArray = [];
+  const ratesMatch = payModeString.match(/\|\|\s*RATES:([0-9.,]+)/);
+  if (ratesMatch) {
+    ratesArray = ratesMatch[1].split(',');
+  }
+  const displayPayModeString = payModeString.replace(/\|\|\s*RATES:([0-9.,]+)/, '').trim();
+
   const isAed = payModeString.includes('(AED @');
   const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
   const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
@@ -183,12 +191,11 @@ export default function SaleInvoicePage() {
                     const itemTotalBdt = Number(item.price || 0); // item.price is the total BDT for this line
                     const itemRateBdt = itemQty > 0 ? itemTotalBdt / itemQty : 0;
                     
-                    // Read AED rate from product_variant_id (new) or fall back to global invoiceAedRate (old invoices)
                     let itemCurrency = 'BDT';
                     let itemAedRate = 1;
-                    if (parseFloat(item.product_variant_id) > 0) {
+                    if (ratesArray.length > index && parseFloat(ratesArray[index]) > 0) {
                       itemCurrency = 'AED';
-                      itemAedRate = parseFloat(item.product_variant_id);
+                      itemAedRate = parseFloat(ratesArray[index]);
                     } else if (isAed) {
                       itemCurrency = 'AED';
                       itemAedRate = invoiceAedRate;
