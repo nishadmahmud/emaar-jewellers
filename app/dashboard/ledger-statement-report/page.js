@@ -31,14 +31,18 @@ const fmt2 = (n) =>
 
 function todayStartISO() {
   const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}T00:00:00.000Z`;
 }
 
 function todayEndISO() {
   const d = new Date();
-  d.setHours(23, 59, 59, 999);
-  return d.toISOString();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}T23:59:59.999Z`;
 }
 
 export default function LedgerStatementReportPage() {
@@ -954,8 +958,8 @@ export default function LedgerStatementReportPage() {
             <div className="text-sm space-y-1">
               <p><span className="font-bold">Ref N┬░:</span> {session?.user?.ref_no || "REP000000"}</p>
               <p><span className="font-bold">Date:</span> {new Date().toLocaleDateString("en-GB")}</p>
-              <p><span className="font-bold">Start Date:</span> {new Date(appliedFilters.start_date).toLocaleDateString("en-GB")}</p>
-              <p><span className="font-bold">End Date:</span> {new Date(appliedFilters.end_date).toLocaleDateString("en-GB")}</p>
+              <p><span className="font-bold">Start Date:</span> {appliedFilters.start_date ? appliedFilters.start_date.slice(0, 10).split('-').reverse().join('/') : ""}</p>
+              <p><span className="font-bold">End Date:</span> {appliedFilters.end_date ? appliedFilters.end_date.slice(0, 10).split('-').reverse().join('/') : ""}</p>
               <p><span className="font-bold">Statement For:</span> {appliedFilters.selected_name || "All"}</p>
             </div>
           </div>

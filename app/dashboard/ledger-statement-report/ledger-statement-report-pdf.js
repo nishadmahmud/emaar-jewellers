@@ -115,8 +115,8 @@ const styles = StyleSheet.create({
 })
 
 export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT, summaryTotalsAED, summaryTotalsBDT, filters, user, accountsAED = [], accountsBDT = [], cashbookAED, cashbookBDT, grandEndingAED = 0, grandEndingBDT = 0 }) {
-  const startDate = new Date(filters.start_date).toLocaleDateString("en-GB")
-  const endDate = new Date(filters.end_date).toLocaleDateString("en-GB")
+  const startDate = filters.start_date ? filters.start_date.slice(0, 10).split('-').reverse().join('/') : ""
+  const endDate = filters.end_date ? filters.end_date.slice(0, 10).split('-').reverse().join('/') : ""
   const logo = logoUrl || null;
 
   // Format cashbook rows to match ledger rows format
