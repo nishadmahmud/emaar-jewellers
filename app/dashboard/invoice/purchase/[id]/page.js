@@ -69,13 +69,6 @@ export default function PurchaseInvoicePage() {
   
   const payModeString = invoiceData.pay_mode || '';
   
-  let ratesArray = [];
-  const ratesMatch = payModeString.match(/\|\|\s*RATES:([0-9.,]+)/);
-  if (ratesMatch) {
-    ratesArray = ratesMatch[1].split(',');
-  }
-  const displayPayModeString = payModeString.replace(/\|\|\s*RATES:([0-9.,]+)/, '').trim();
-
   const isAed = payModeString.includes('(AED @');
   const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
   const invoiceAedRate = isAed && aedRateMatch ? parseFloat(aedRateMatch[1]) : 1;
@@ -190,9 +183,9 @@ export default function PurchaseInvoicePage() {
                     
                     let itemCurrency = 'BDT';
                     let itemAedRate = 1;
-                    if (ratesArray.length > index && parseFloat(ratesArray[index]) > 0) {
+                    if (item.child_variant_id && parseFloat(item.child_variant_id) > 0) {
                       itemCurrency = 'AED';
-                      itemAedRate = parseFloat(ratesArray[index]);
+                      itemAedRate = parseFloat(item.child_variant_id);
                     } else if (isAed) {
                       itemCurrency = 'AED';
                       itemAedRate = invoiceAedRate;

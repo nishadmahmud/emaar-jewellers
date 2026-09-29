@@ -70,12 +70,6 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
           let aedRate = '';
           const payModeString = initialInvoice.pay_mode || '';
           
-          let ratesArray = [];
-          const ratesMatch = payModeString.match(/\|\|\s*RATES:([0-9.,]+)/);
-          if (ratesMatch) {
-            ratesArray = ratesMatch[1].split(',');
-          }
-
           if (payModeString.includes('(AED @')) {
             currency = 'AED';
             const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
@@ -84,9 +78,8 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
             }
           }
           
-          let itemAedRate = aedRate;
-          if (ratesArray.length > index && parseFloat(ratesArray[index]) > 0) {
-            itemAedRate = ratesArray[index];
+          let itemAedRate = detail.child_variant_id ? String(detail.child_variant_id) : aedRate;
+          if (parseFloat(itemAedRate) > 0) {
             currency = 'AED';
           }
 
@@ -442,7 +435,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
     setLoading(true);
     try {
       const basePayMode = paymentSummaryText || formData.paymentMethodName || 'Cash';
-      let finalPayMode = displayCurrency === 'AED' ? `${basePayMode} (AED @ ${displayAedRate})` : basePayMode; const itemRatesString = cart.map(item => item.aedRate || 0).join(','); finalPayMode = `${finalPayMode} || RATES:${itemRatesString}`;
+      const finalPayMode = displayCurrency === 'AED' ? `${basePayMode} (AED @ ${displayAedRate})` : basePayMode;
 
       const finalPaymentMethods = (savedPaymentMethods && savedPaymentMethods.length > 0)
         ? savedPaymentMethods.map(m => ({
@@ -483,7 +476,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
             retails_price: rateNum,
             have_variant: item.have_variant || 0,
             mode: 1,
-            size: 1,
+            size: 1, child_variant_id: item.aedRate ? parseFloat(item.aedRate) : null,
             detail_id: item.detail_id || "",
             imei_id: item.imei_id || ""
           };

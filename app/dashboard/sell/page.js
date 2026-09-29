@@ -81,12 +81,6 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
           let aedRate = '';
           const payModeString = initialInvoice.pay_mode || '';
           
-          let ratesArray = [];
-          const ratesMatch = payModeString.match(/\|\|\s*RATES:([0-9.,]+)/);
-          if (ratesMatch) {
-            ratesArray = ratesMatch[1].split(',');
-          }
-
           if (payModeString.includes('(AED @')) {
             currency = 'AED';
             const aedRateMatch = payModeString.match(/\(AED @ ([\d.]+)\)/);
@@ -95,10 +89,9 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
             }
           }
           
-          let itemAedRate = aedRate;
-          if (ratesArray.length > index && parseFloat(ratesArray[index]) > 0) {
-            itemAedRate = ratesArray[index];
-            currency = 'AED'; // Automatically mark item as AED if it has a rate
+          let itemAedRate = detail.child_variant_id ? String(detail.child_variant_id) : aedRate;
+          if (parseFloat(itemAedRate) > 0) {
+            currency = 'AED';
           }
 
           return {
@@ -496,9 +489,7 @@ const discountNum = parseFloat(formData.discount) || 0;
       const token = session?.accessToken;
 
       const basePayMode = paymentSummaryText || formData.paymentMethodName || 'Cash';
-      let finalPayMode = displayCurrency === 'AED' ? `${basePayMode} (AED @ ${displayAedRate})` : basePayMode;
-      const itemRatesString = cart.map(item => item.aedRate || 0).join(',');
-      finalPayMode = `${finalPayMode} || RATES:${itemRatesString}`;
+      const finalPayMode = displayCurrency === 'AED' ? `${basePayMode} (AED @ ${displayAedRate})` : basePayMode;
 
       const finalPaymentMethods = (savedPaymentMethods && savedPaymentMethods.length > 0)
         ? savedPaymentMethods.map(m => ({
@@ -544,7 +535,7 @@ const discountNum = parseFloat(formData.discount) || 0;
             mode: 1,
             size: 1,
             currency: item.currency,
-            aed_rate: parseFloat(item.aedRate) || 0,
+            aed_rate: parseFloat(item.aedRate) || 0, child_variant_id: item.aedRate ? parseFloat(item.aedRate) : null,
             detail_id: item.detail_id || "",
             imei_id: item.imei_id || ""
           };
