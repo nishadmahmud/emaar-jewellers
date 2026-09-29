@@ -89,7 +89,7 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
             }
           }
           
-          let itemAedRate = detail.child_variant_id ? String(detail.child_variant_id) : aedRate;
+          let itemAedRate = detail.child_product_variant_id ? String(detail.child_product_variant_id) : aedRate;
           if (parseFloat(itemAedRate) > 0) {
             currency = 'AED';
           }
@@ -535,7 +535,7 @@ const discountNum = parseFloat(formData.discount) || 0;
             mode: 1,
             size: 1,
             currency: item.currency,
-            aed_rate: parseFloat(item.aedRate) || 0, child_variant_id: item.aedRate ? parseFloat(item.aedRate) : null,
+            aed_rate: parseFloat(item.aedRate) || 0, child_product_variant_id: item.aedRate ? parseFloat(item.aedRate) : null,
             detail_id: item.detail_id || "",
             imei_id: item.imei_id || ""
           };

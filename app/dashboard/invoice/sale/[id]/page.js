@@ -186,9 +186,9 @@ export default function SaleInvoicePage() {
                     
                     let itemCurrency = 'BDT';
                     let itemAedRate = 1;
-                    if (item.child_variant_id && parseFloat(item.child_variant_id) > 0) {
+                    if (item.child_product_variant_id && parseFloat(item.child_product_variant_id) > 0) {
                       itemCurrency = 'AED';
-                      itemAedRate = parseFloat(item.child_variant_id);
+                      itemAedRate = parseFloat(item.child_product_variant_id);
                     } else if (isAed) {
                       itemCurrency = 'AED';
                       itemAedRate = invoiceAedRate;
