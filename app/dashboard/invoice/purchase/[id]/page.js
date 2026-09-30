@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -139,7 +139,7 @@ export default function PurchaseInvoicePage() {
             {/* Store Info & Invoice Meta */}
             <div className="flex flex-col sm:flex-row justify-between items-start border-b border-neutral-100 pb-8 mb-8 gap-6">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-black mb-1">EMAAR TRADERS</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-black mb-1">EMAAR TRADING</h1>
                 <p className="text-sm text-neutral-500 max-w-[250px]">
                   Dubai
                 </p>
@@ -280,7 +280,7 @@ export default function PurchaseInvoicePage() {
 
             {/* Footer Notes */}
             <div className="mt-16 pt-8 border-t border-neutral-100 text-center text-xs text-neutral-400">
-              <p>Emaar Traders - Purchase Receipt</p>
+              <p>Emaar Trading - Purchase Receipt</p>
               <p className="mt-1">This is a system generated document.</p>
             </div>
           </div>
@@ -290,3 +290,4 @@ export default function PurchaseInvoicePage() {
     </>
   );
 }
+

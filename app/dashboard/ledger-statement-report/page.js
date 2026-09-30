@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -947,7 +947,7 @@ export default function LedgerStatementReportPage() {
             </div>
           </div>
           <div className="w-full md:w-[50%] md:px-4 border-b-2 md:border-b-0 md:border-r-2 border-neutral-300 flex flex-col justify-center text-center md:text-left pb-4 md:pb-0">
-            <h2 className="text-xl md:text-2xl font-bold uppercase mb-1">{session?.user?.outlet_name || "EMAAR TRADERS"}</h2>
+            <h2 className="text-xl md:text-2xl font-bold uppercase mb-1">{session?.user?.outlet_name || "EMAAR TRADING"}</h2>
             <p className="text-neutral-700 text-sm mt-2">{session?.user?.address || "Address Line 1"}</p>
             <div className="mt-2 space-y-0.5">
               <p className="text-neutral-700 text-sm">Mobile: {session?.user?.phone || "-"}</p>
@@ -956,7 +956,7 @@ export default function LedgerStatementReportPage() {
           </div>
           <div className="w-full md:w-[35%] md:pl-4 text-center md:text-right flex flex-col md:items-end justify-center">
             <div className="text-sm space-y-1">
-              <p><span className="font-bold">Ref N┬░:</span> {session?.user?.ref_no || "REP000000"}</p>
+              <p><span className="font-bold">Ref Nâ”¬â–‘:</span> {session?.user?.ref_no || "REP000000"}</p>
               <p><span className="font-bold">Date:</span> {new Date().toLocaleDateString("en-GB")}</p>
               <p><span className="font-bold">Start Date:</span> {appliedFilters.start_date ? appliedFilters.start_date.slice(0, 10).split('-').reverse().join('/') : ""}</p>
               <p><span className="font-bold">End Date:</span> {appliedFilters.end_date ? appliedFilters.end_date.slice(0, 10).split('-').reverse().join('/') : ""}</p>
@@ -988,9 +988,10 @@ export default function LedgerStatementReportPage() {
         )}
         
         <div className="mt-8 pt-2 border-t border-neutral-200 text-center text-[10px] text-neutral-500">
-          {session?.user?.outlet_name || "Emaar Traders"} © {new Date().getFullYear()}
+          {session?.user?.outlet_name || "Emaar Trading"} Â© {new Date().getFullYear()}
         </div>
       </div>
     </div>
   );
 }
+

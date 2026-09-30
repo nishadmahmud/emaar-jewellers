@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -277,7 +277,7 @@ export default function SignupPage() {
                     value={formData.password}
                     onChange={handleChange}
                     className="w-full pl-10 pr-10 py-3 bg-white border border-neutral-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-all text-black placeholder-neutral-400 outline-none"
-                    placeholder="••••••••"
+                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                     required
                   />
                   <button
@@ -305,7 +305,7 @@ export default function SignupPage() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     className="w-full pl-10 pr-10 py-3 bg-white border border-neutral-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition-all text-black placeholder-neutral-400 outline-none"
-                    placeholder="••••••••"
+                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                     required
                   />
                   <button
@@ -354,9 +354,10 @@ export default function SignupPage() {
         </div>
         
         <p className="text-center text-neutral-500 text-xs mt-8">
-          &copy; {new Date().getFullYear()} Emaar Traders. All rights reserved.
+          &copy; {new Date().getFullYear()} Emaar Trading. All rights reserved.
         </p>
       </div>
     </div>
   );
 }
+

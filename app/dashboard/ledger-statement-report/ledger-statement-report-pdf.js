@@ -1,4 +1,4 @@
-/* eslint-disable react/react-in-jsx-scope */
+﻿/* eslint-disable react/react-in-jsx-scope */
 "use client"
 
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer"
@@ -202,11 +202,11 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
              {logo ? (
                  <Image src={logo} style={styles.logoImg} />
              ) : (
-                 <Text style={{fontSize: 18, fontWeight: "bold", color: '#333'}}>EMAAR TRADERS</Text>
+                 <Text style={{fontSize: 18, fontWeight: "bold", color: '#333'}}>EMAAR TRADING</Text>
              )}
           </View>
           <View style={styles.headerRight}>
-            <Text style={styles.businessName}>{user?.outlet_name || "EMAAR TRADERS"}</Text>
+            <Text style={styles.businessName}>{user?.outlet_name || "EMAAR TRADING"}</Text>
             <Text style={styles.headerText}>{user?.address || "Address Line 1"}</Text>
             <Text style={styles.headerText}>Tel : {user?.phone || "-"}</Text>
             {user?.email && <Text style={styles.headerText}>Email : {user.email}</Text>}
@@ -315,3 +315,4 @@ export default function LedgerStatementReportPDF({ logoUrl, ledgerAED, ledgerBDT
     </Document>
   )
 }
+

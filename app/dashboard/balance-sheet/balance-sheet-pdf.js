@@ -1,4 +1,4 @@
-/* eslint-disable react/react-in-jsx-scope */
+﻿/* eslint-disable react/react-in-jsx-scope */
 "use client"
 
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer"
@@ -176,7 +176,7 @@ export default function BalanceSheetPDF({
           </View>
           <View style={styles.leftSection}>
             <Text style={styles.businessName}>
-              {user?.outlet_name || "EMAAR TRADERS"}
+              {user?.outlet_name || "EMAAR TRADING"}
             </Text>
             <Text style={styles.addressLine}>
               {user?.address || "Address Line 1"}
@@ -299,3 +299,4 @@ export default function BalanceSheetPDF({
     </Document>
   )
 }
+
