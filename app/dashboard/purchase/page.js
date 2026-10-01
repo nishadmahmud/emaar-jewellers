@@ -5,6 +5,7 @@ import { ArrowDownToLine, Loader2, Store, Scale, FileText, Download, Search, Cre
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
+import { getGramPerVori } from '@/lib/weight';
 import axios from 'axios';
 
 import PaymentMethodsModal from '@/components/PaymentMethodsModal';
@@ -27,6 +28,7 @@ const CurrencyDropdown = ({ value, onChange }) => {
 
 export default function PurchasePage({ editMode = false, initialInvoice = null }) {
   const { data: session } = useSession();
+  const GRAM_PER_VORI = getGramPerVori(session?.user);
   const token = session?.accessToken;
   const API_URL = process.env.NEXT_PUBLIC_API;
 
@@ -64,7 +66,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
           const qtyNum = parseFloat(detail.qty) || 1;
           const priceNum = parseFloat(detail.price) || parseFloat(detail.purchase_price) || 0;
           const ratePerVori = priceNum / qtyNum;
-          const netWeightGram = qtyNum * 116.64;
+          const netWeightGram = qtyNum * GRAM_PER_VORI;
           
           let currency = 'BDT';
           let aedRate = '';
@@ -391,10 +393,10 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
         const updatedItem = { ...item, [field]: value };
         if (field === 'qty') {
           const vori = parseFloat(value) || 0;
-          updatedItem.netWeightGram = value === '' ? '' : (vori * 116.64).toFixed(4);
+          updatedItem.netWeightGram = value === '' ? '' : (vori * GRAM_PER_VORI).toFixed(4);
         } else if (field === 'netWeightGram') {
           const gram = parseFloat(value) || 0;
-          updatedItem.qty = value === '' ? '' : (gram / 116.64).toFixed(4);
+          updatedItem.qty = value === '' ? '' : (gram / GRAM_PER_VORI).toFixed(4);
         }
         return updatedItem;
       }
@@ -790,7 +792,7 @@ export default function PurchasePage({ editMode = false, initialInvoice = null }
 
         {/* Right Column: Settlement Summary */}
         <div className="w-full lg:w-[460px] shrink-0 min-w-0">
-          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden sticky top-6">
+          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden lg:sticky lg:top-6">
             <div className="p-6 border-b border-neutral-100 bg-neutral-50">
               <div className="flex items-center gap-2 text-neutral-800">
                 <FileText size={18} />

@@ -5,6 +5,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { Loader2, Search, Printer, FileText } from 'lucide-react';
+import { extractAedRate } from '@/lib/currency';
 
 const API_URL = process.env.NEXT_PUBLIC_API;
 const Card = ({ children, className }) => <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 ${className || ''}`}>{children}</div>;
@@ -93,7 +94,8 @@ export default function DailyProfitLossReport() {
       const payModeString = inv.pay_mode || '';
       const isAed = payModeString.includes('(AED @');
       const totalAmount = inv.sub_total - (inv.discount || 0);
-      const bdtAmount = isAed ? totalAmount * 34 : totalAmount;
+      const conversionRate = extractAedRate(inv);
+      const bdtAmount = isAed ? totalAmount * conversionRate : totalAmount;
       return sum + bdtAmount;
     }, 0);
   };
@@ -317,4 +319,5 @@ export default function DailyProfitLossReport() {
     </div>
   );
 }
+
 

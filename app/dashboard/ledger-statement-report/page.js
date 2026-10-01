@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -643,8 +643,8 @@ export default function LedgerStatementReportPage() {
                 <td className="block md:table-cell border-b md:border md:border-neutral-400 p-2 text-neutral-700 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center">
                   <span className="md:hidden font-bold text-xs uppercase text-neutral-500 mb-1 sm:mb-0">Payment Types</span>
                   <span className="text-right sm:text-left">
-                    {(row.type || "").toLowerCase() === "fund transfer" && row.reference
-                      ? `${row.type_name || "-"} [${row.reference}]`
+                    {(row.type || "").toLowerCase() === "fund transfer" && (row.ref || row.reference)
+                      ? `${row.type_name || "-"} [${row.ref || row.reference}]`
                       : (row.type_name || "-")}
                   </span>
                 </td>

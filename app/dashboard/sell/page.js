@@ -5,6 +5,7 @@ import { ShoppingCart, Loader2, UserPlus, Scale, Receipt, Search, CreditCard, Ba
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
+import { getGramPerVori } from '@/lib/weight';
 import axios from 'axios';
 import { AlertTriangle } from 'lucide-react';
 
@@ -36,6 +37,7 @@ const CurrencyDropdown = ({ value, onChange }) => {
 
 export default function SellPage({ editMode = false, initialInvoice = null }) {
   const { data: session } = useSession();
+  const GRAM_PER_VORI = getGramPerVori(session?.user);
   const token = session?.accessToken;
   const API_URL = process.env.NEXT_PUBLIC_API;
 
@@ -75,7 +77,7 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
           const qtyNum = parseFloat(detail.qty) || 1;
           const priceNum = parseFloat(detail.price) || 0;
           const ratePerVori = priceNum / qtyNum;
-          const netWeightGram = qtyNum * 116.64;
+          const netWeightGram = qtyNum * GRAM_PER_VORI;
           
           let currency = 'BDT';
           let aedRate = '';
@@ -426,10 +428,10 @@ export default function SellPage({ editMode = false, initialInvoice = null }) {
         const updatedItem = { ...item, [field]: value };
         if (field === 'qty') {
           const vori = parseFloat(value) || 0;
-          updatedItem.goldGram = value === '' ? '' : (vori * 116.64).toFixed(4);
+          updatedItem.goldGram = value === '' ? '' : (vori * GRAM_PER_VORI).toFixed(4);
         } else if (field === 'goldGram') {
           const gram = parseFloat(value) || 0;
-          updatedItem.qty = value === '' ? '' : (gram / 116.64).toFixed(4);
+          updatedItem.qty = value === '' ? '' : (gram / GRAM_PER_VORI).toFixed(4);
         }
         return updatedItem;
       }
@@ -613,7 +615,7 @@ const discountNum = parseFloat(formData.discount) || 0;
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-20">
         
         {/* Left Column - Product Search (7 cols) */}
-        <div className="lg:col-span-7 space-y-6 sticky top-20 min-w-0">
+        <div className="lg:col-span-7 space-y-6 lg:sticky lg:top-20 min-w-0">
           <form id="sell-form" onSubmit={handleSubmit} className="space-y-6">
             
             {/* Customer Section */}
@@ -860,7 +862,7 @@ const discountNum = parseFloat(formData.discount) || 0;
 
         {/* Right Column: Invoice Summary */}
         <div className="w-full lg:w-[460px] shrink-0">
-          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden sticky top-6">
+          <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden lg:sticky lg:top-6">
             <div className="p-6 border-b border-neutral-100 bg-neutral-50">
               <div className="flex items-center gap-2 text-neutral-800">
                 <Receipt size={18} />

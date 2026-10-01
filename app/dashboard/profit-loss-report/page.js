@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Calculator, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { extractAedRate } from '@/lib/currency';
 
 const API_URL = process.env.NEXT_PUBLIC_API;
 const Card = ({ children, className }) => <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 ${className || ''}`}>{children}</div>;
@@ -99,8 +100,9 @@ export default function ProfitLossReport() {
       
       const totalAmount = inv.sub_total - (inv.discount || 0);
 
-      // if AED, multiply by 34 to show in BDT uniformly
-      const bdtAmount = isAed ? totalAmount * 34 : totalAmount;
+      // if AED, multiply by the dynamic rate to show in BDT uniformly
+      const conversionRate = extractAedRate(inv);
+      const bdtAmount = isAed ? totalAmount * conversionRate : totalAmount;
       return sum + bdtAmount;
     }, 0);
   };
@@ -146,7 +148,7 @@ export default function ProfitLossReport() {
 
   const dateList = generateDateRange(startDate, endDate);
 
-  // Compute profit per day, then sum — avoids the "average of averages" distortion
+  // Compute profit per day, then sum â€” avoids the "average of averages" distortion
   const dailyProfitData = dateList.map(dateStr => {
     const daySales = salesData.filter(inv => inv.created_at?.substring(0, 10) === dateStr);
     const dayPurchases = purchaseData.filter(inv => inv.created_at?.substring(0, 10) === dateStr);
@@ -323,7 +325,7 @@ export default function ProfitLossReport() {
               ) : (
                 salesData.map((inv) => {
                   const isAed = (inv.pay_mode || '').includes('(AED @');
-                  const conversionRate = 34;
+                  const conversionRate = extractAedRate(inv);
                   const originalAmount = inv.sub_total - (inv.discount || 0);
                   const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
                   const qty = inv.sales_details && inv.sales_details.length > 0
@@ -385,7 +387,7 @@ export default function ProfitLossReport() {
                 ) : (
                   salesData.map((inv) => {
                     const isAed = (inv.pay_mode || '').includes('(AED @');
-                    const conversionRate = 34; // Fixed 34 as requested
+                    const conversionRate = extractAedRate(inv);
                     const originalAmount = inv.sub_total - (inv.discount || 0);
                     const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
                     const qty = inv.sales_details && inv.sales_details.length > 0
@@ -439,7 +441,7 @@ export default function ProfitLossReport() {
               ) : (
                 purchaseData.map((inv) => {
                   const isAed = (inv.pay_mode || '').includes('(AED @');
-                  const conversionRate = 34; // Fixed 34 as requested
+                  const conversionRate = extractAedRate(inv);
                   const originalAmount = inv.sub_total - (inv.discount || 0);
                   const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
                   const qty = inv.purchase_details && inv.purchase_details.length > 0
@@ -501,7 +503,7 @@ export default function ProfitLossReport() {
                 ) : (
                   purchaseData.map((inv) => {
                     const isAed = (inv.pay_mode || '').includes('(AED @');
-                    const conversionRate = 34; // Fixed 34 as requested
+                    const conversionRate = extractAedRate(inv);
                     const originalAmount = inv.sub_total - (inv.discount || 0);
                     const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
                     const qty = inv.purchase_details && inv.purchase_details.length > 0
@@ -553,33 +555,33 @@ export default function ProfitLossReport() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
             <div>
               <h4 className="font-semibold text-neutral-900 mb-1">1. Average Sell Price</h4>
-              <p className="text-neutral-500 text-xs mb-2">Total Sales BDT ÷ Total Sales Qty</p>
+              <p className="text-neutral-500 text-xs mb-2">Total Sales BDT Ã· Total Sales Qty</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                {Number(totalSalesBdt).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} ÷ {totalSalesQty.toFixed(4)} = <span className="font-bold text-neutral-900">{Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
+                {Number(totalSalesBdt).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} Ã· {totalSalesQty.toFixed(4)} = <span className="font-bold text-neutral-900">{Number(avgSellPrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
               </code>
             </div>
             
             <div>
               <h4 className="font-semibold text-neutral-900 mb-1">2. Average Purchase Price</h4>
-              <p className="text-neutral-500 text-xs mb-2">Total Purchase BDT ÷ Total Purchase Qty</p>
+              <p className="text-neutral-500 text-xs mb-2">Total Purchase BDT Ã· Total Purchase Qty</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                {Number(totalPurchaseBdt).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} ÷ {totalPurchaseQty.toFixed(4)} = <span className="font-bold text-neutral-900">{Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
+                {Number(totalPurchaseBdt).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} Ã· {totalPurchaseQty.toFixed(4)} = <span className="font-bold text-neutral-900">{Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
               </code>
             </div>
 
             <div>
               <h4 className="font-semibold text-neutral-900 mb-1">3. Current Profit / Loss</h4>
-              <p className="text-neutral-500 text-xs mb-2">Sum of each day's: (Day Avg Sell - Day Avg Purchase) × Day Sales Qty</p>
+              <p className="text-neutral-500 text-xs mb-2">Sum of each day's: (Day Avg Sell - Day Avg Purchase) Ã— Day Sales Qty</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                Σ per-day profit = <span className={`font-bold ${currentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(currentProfit).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
+                Î£ per-day profit = <span className={`font-bold ${currentProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{Number(currentProfit).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
               </code>
             </div>
 
             <div>
               <h4 className="font-semibold text-neutral-900 mb-1">4. Current Stock Price</h4>
-              <p className="text-neutral-500 text-xs mb-2">Avg Purchase Price × Stock Available</p>
+              <p className="text-neutral-500 text-xs mb-2">Avg Purchase Price Ã— Stock Available</p>
               <code className="bg-white px-3 py-2 rounded-md border border-neutral-200 block text-neutral-700 whitespace-pre-wrap">
-                {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} × {(totalPurchaseQty - totalSalesQty).toFixed(4)} = <span className="font-bold text-neutral-900">{Number(currentStockPrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
+                {Number(avgPurchasePrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} Ã— {(totalPurchaseQty - totalSalesQty).toFixed(4)} = <span className="font-bold text-neutral-900">{Number(currentStockPrice).toLocaleString(undefined, { maximumFractionDigits: 4 })} BDT</span>
               </code>
             </div>
 
@@ -597,3 +599,4 @@ export default function ProfitLossReport() {
     </div>
   );
 }
+

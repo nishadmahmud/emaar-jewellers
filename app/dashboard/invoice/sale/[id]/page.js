@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import SaleInvoicePdf from '@/components/invoice/SaleInvoicePdf';
 import { useSession } from 'next-auth/react';
+import { getGramPerVori } from '@/lib/weight';
 import { BRAND_NAME, BRAND_NAME_UPPER, BRAND_ADDRESS } from '@/lib/branding';
 
 const API_URL = process.env.NEXT_PUBLIC_API;
@@ -20,6 +21,7 @@ export default function SaleInvoicePage() {
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
   const { data: session } = useSession();
+  const GRAM_PER_VORI = getGramPerVori(session?.user);
 
   useEffect(() => {
     const token = session?.accessToken;
@@ -206,7 +208,7 @@ export default function SaleInvoicePage() {
                           )}
                         </td>
                         <td className="px-4 py-4 text-center text-neutral-600">{item.qty || 1}</td>
-                        <td className="px-4 py-4 text-center text-neutral-600">{(itemQty * 116.64).toFixed(4)}</td>
+                        <td className="px-4 py-4 text-center text-neutral-600">{(itemQty * GRAM_PER_VORI).toFixed(4)}</td>
                         <td className="px-4 py-4 text-right text-neutral-600">{itemCurrency} {itemRateDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}</td>
                         <td className="px-4 py-4 text-right font-medium text-neutral-900">
                           {itemCurrency} {itemTotalDisplay.toLocaleString(undefined, {minimumFractionDigits: 4})}

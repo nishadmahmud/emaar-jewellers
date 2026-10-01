@@ -1,204 +1,268 @@
-﻿/* eslint-disable react/react-in-jsx-scope */
+/* eslint-disable react/react-in-jsx-scope */
 "use client"
 
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer"
 
 const fmt2 = (n) =>
-  Number(n ?? 0).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+  Number(n ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-const styles = StyleSheet.create({
-  page: { padding: 15, fontSize: 8, fontFamily: "Helvetica", flexDirection: "column" },
-  headerWrapper: {
-    borderBottomWidth: 2,
-    borderBottomColor: "#333",
-    paddingBottom: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  headerLeft: {
-    width: "30%",
-    flexDirection: "column",
-  },
-  headerCenter: {
-    width: "40%",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerRight: {
-    width: "30%",
-    alignItems: "flex-end",
-    flexDirection: "column",
-  },
-  title: { fontSize: 14, fontWeight: "bold", marginBottom: 4 },
-  headerText: { fontSize: 8, marginBottom: 2, color: "#333" },
-  businessName: { fontSize: 14, fontWeight: "bold", marginBottom: 4 },
-  logoImg: {
-    width: 60,
-    height: 60,
-    objectFit: "contain",
-  },
-  columnsWrapper: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    flex: 1,
-  },
-  column: {
-    width: "19.5%",
-    borderWidth: 1,
-    borderColor: "#ccc",
-  },
-  colHeader: {
-    backgroundColor: "#eee",
-    padding: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    fontWeight: "bold",
-    textAlign: "center",
-    fontSize: 9,
-  },
-  row: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    padding: 3,
-  },
-  cellLeft: { flex: 1, fontSize: 7, paddingRight: 2 },
-  cellRight: { fontSize: 7, textAlign: "right", fontWeight: "bold" },
-  footer: { marginTop: 10, paddingTop: 5, borderTopWidth: 1, borderTopColor: "#ccc", fontSize: 8, color: "#999", textAlign: "center" },
+const S = StyleSheet.create({
+  page: { padding: 12, fontSize: 7.5, fontFamily: "Helvetica", flexDirection: "column", backgroundColor: "#fff" },
+
+  // Header
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 2, borderBottomColor: "#1a1a1a", paddingBottom: 8, marginBottom: 10 },
+  headerTitle: { fontSize: 16, fontWeight: "bold", color: "#1a1a1a" },
+  headerSub: { fontSize: 7, color: "#666", marginTop: 2 },
+  headerDate: { fontSize: 11, fontWeight: "bold", color: "#1a1a1a" },
+  headerDateLabel: { fontSize: 7, color: "#666", textAlign: "right" },
+  logoImg: { width: 50, height: 50, objectFit: "contain" },
+
+  // Section label (colored bar like the image)
+  sectionBar: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
+
+  // The 4-column top row
+  topRow: { flexDirection: "row", gap: 4, marginBottom: 8 },
+  col: { flex: 1, borderWidth: 1, borderColor: "#ccc", borderRadius: 3 },
+  colHeader: { padding: 4, fontWeight: "bold", fontSize: 7.5, color: "#fff", textAlign: "center" },
+
+  // Table
+  tableHead: { flexDirection: "row", backgroundColor: "#f0f0f0", borderBottomWidth: 1, borderBottomColor: "#ccc" },
+  tableRow: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#eee" },
+  cellName: { flex: 2, padding: "2 3", fontSize: 6.5 },
+  cellNameSub: { fontSize: 5.5, color: "#888", marginTop: 1 },
+  cellAmt: { flex: 1, padding: "2 3", textAlign: "right", fontSize: 6.5, fontWeight: "bold" },
+  cellRate: { width: 28, padding: "2 3", textAlign: "right", fontSize: 6, color: "#888" },
+  totalRow: { flexDirection: "row", backgroundColor: "#f9f9f9", borderTopWidth: 1, borderTopColor: "#bbb", padding: "3 4" },
+  totalLabel: { flex: 2, fontSize: 7, fontWeight: "bold" },
+  totalAmt: { flex: 1, fontSize: 7, fontWeight: "bold", textAlign: "right" },
+
+  // Bottom row
+  bottomRow: { flexDirection: "row", gap: 4 },
+
+  // P&L row items
+  plRow: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#eee", padding: "2.5 4" },
+  plLabel: { flex: 1, fontSize: 6.5, color: "#444" },
+  plVal: { fontSize: 6.5, fontWeight: "bold", textAlign: "right" },
+
+  // Footer
+  footer: { marginTop: 8, paddingTop: 4, borderTopWidth: 0.5, borderTopColor: "#ccc", fontSize: 6, color: "#aaa", textAlign: "center" },
 })
 
-export default function DayWiseReportPDF({ logoUrl, user, date, sales, purchases, transactions, profitLoss, balanceSheet }) {
+const COLORS = {
+  salesBdt: "#1a7a4a",
+  salesAed: "#1a6b6b",
+  purchBdt: "#9b1c1c",
+  purchAed: "#b45309",
+  txIn: "#1e40af",
+  txOut: "#6b21a8",
+  pl: "#374151",
+  balance: "#1e293b",
+}
+
+function ColHeader({ label, color }) {
+  return <Text style={[S.colHeader, { backgroundColor: color }]}>{label}</Text>
+}
+
+function TableHead({ hasRate }) {
+  return (
+    <View style={S.tableHead}>
+      <Text style={[S.cellName, { fontSize: 6, color: "#666", fontWeight: "bold" }]}>Invoice / Party</Text>
+      <Text style={[S.cellAmt, { fontSize: 6, color: "#666", fontWeight: "bold" }]}>Amount</Text>
+      {hasRate && <Text style={[S.cellRate, { fontSize: 6, color: "#666", fontWeight: "bold" }]}>Rate</Text>}
+    </View>
+  )
+}
+
+export default function DayWiseReportPDF({
+  logoUrl, user, date,
+  salesBdt = [], salesAed = [],
+  purchasesBdt = [], purchasesAed = [],
+  txIn = [], txOut = [],
+  profitLoss = {}, balanceSheet = {}
+}) {
   const displayDate = date ? date.slice(0, 10).split('-').reverse().join('/') : ""
-  const logo = logoUrl || null;
+  const logo = logoUrl || null
+
+  const totalSalesBdt = salesBdt.reduce((s, i) => s + i.amountBdt, 0)
+  const totalSalesAed = salesAed.reduce((s, i) => s + i.amountAed, 0)
+  const totalPurchBdt = purchasesBdt.reduce((s, i) => s + i.amountBdt, 0)
+  const totalPurchAed = purchasesAed.reduce((s, i) => s + i.amountAed, 0)
+  const totalTxIn = txIn.reduce((s, t) => s + t.amount, 0)
+  const totalTxOut = txOut.reduce((s, t) => s + t.amount, 0)
 
   return (
     <Document>
-      <Page size="A4" orientation="landscape" style={styles.page}>
-        
+      <Page size="A4" orientation="landscape" style={S.page}>
+
         {/* Header */}
-        <View style={styles.headerWrapper}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.title}>DAY WISE REPORT</Text>
-            <Text style={styles.headerText}>Date: {displayDate}</Text>
-            <Text style={styles.headerText}>BRANCH: {user?.outlet_name || "N/A"}</Text>
+        <View style={S.header}>
+          <View>
+            <Text style={S.headerTitle}>DAILY STATEMENT</Text>
+            <Text style={S.headerSub}>{user?.outlet_name || "EMAAR TRADING"}</Text>
           </View>
-          <View style={styles.headerCenter}>
-             {logo ? (
-                 <Image src={logo} style={styles.logoImg} />
-             ) : (
-                 <Text style={{fontSize: 18, fontWeight: "bold", color: '#333'}}>EMAAR TRADING</Text>
-             )}
+          <View style={{ alignItems: "center" }}>
+            {logo
+              ? <Image src={logo} style={S.logoImg} />
+              : <Text style={{ fontSize: 14, fontWeight: "bold", color: "#333" }}>EMAAR TRADING</Text>
+            }
           </View>
-          <View style={styles.headerRight}>
-            <Text style={styles.businessName}>{user?.outlet_name || "EMAAR TRADING"}</Text>
-            <Text style={styles.headerText}>{user?.address || "Address Line 1"}</Text>
-            <Text style={styles.headerText}>Tel: {user?.phone || "-"}</Text>
-            {user?.email && <Text style={styles.headerText}>Email: {user.email}</Text>}
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={S.headerDateLabel}>DATE</Text>
+            <Text style={S.headerDate}>{displayDate}</Text>
+            {user?.address && <Text style={{ fontSize: 6, color: "#666", marginTop: 2 }}>{user.address}</Text>}
           </View>
         </View>
 
-        {/* Columns Content */}
-        <View style={styles.columnsWrapper}>
-          
-          {/* Sale History */}
-          <View style={styles.column}>
-            <Text style={styles.colHeader}>Sales History</Text>
-            {sales.length === 0 ? <Text style={{padding: 4, textAlign: 'center', fontSize: 7}}>No sales today</Text> : null}
-            {sales.map((item, idx) => (
-              <View key={idx} style={styles.row}>
-                <Text style={styles.cellLeft}>{item.invoice_id}</Text>
-                <Text style={styles.cellRight}>{fmt2(item.amount)}</Text>
+        {/* TOP ROW: 4 columns */}
+        <View style={S.topRow}>
+
+          {/* Sales BDT */}
+          <View style={S.col}>
+            <ColHeader label="Received BDT (Sales)" color={COLORS.salesBdt} />
+            <TableHead hasRate={false} />
+            {salesBdt.length === 0 && <Text style={{ padding: 4, fontSize: 6, color: "#aaa", textAlign: "center" }}>No BDT sales</Text>}
+            {salesBdt.map((s, i) => (
+              <View key={i} style={S.tableRow}>
+                <View style={S.cellName}>
+                  <Text>{s.invoice_id}</Text>
+                  <Text style={S.cellNameSub}>{s.customer_name}</Text>
+                </View>
+                <Text style={S.cellAmt}>{fmt2(s.amountBdt)}</Text>
               </View>
             ))}
-            {sales.length > 0 && (
-              <View style={{...styles.row, backgroundColor: '#f9f9f9'}}>
-                <Text style={{...styles.cellLeft, fontWeight: 'bold'}}>Total</Text>
-                <Text style={styles.cellRight}>{fmt2(sales.reduce((acc, curr) => acc + curr.amount, 0))}</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Purchase History */}
-          <View style={styles.column}>
-            <Text style={styles.colHeader}>Purchase History</Text>
-            {purchases.length === 0 ? <Text style={{padding: 4, textAlign: 'center', fontSize: 7}}>No purchases today</Text> : null}
-            {purchases.map((item, idx) => (
-              <View key={idx} style={styles.row}>
-                <Text style={styles.cellLeft}>{item.invoice_id}</Text>
-                <Text style={styles.cellRight}>{fmt2(item.amount)}</Text>
-              </View>
-            ))}
-            {purchases.length > 0 && (
-              <View style={{...styles.row, backgroundColor: '#f9f9f9'}}>
-                <Text style={{...styles.cellLeft, fontWeight: 'bold'}}>Total</Text>
-                <Text style={styles.cellRight}>{fmt2(purchases.reduce((acc, curr) => acc + curr.amount, 0))}</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Transaction History */}
-          <View style={styles.column}>
-            <Text style={styles.colHeader}>Transactions (Cashbook)</Text>
-            {transactions.length === 0 ? <Text style={{padding: 4, textAlign: 'center', fontSize: 7}}>No transactions today</Text> : null}
-            {transactions.map((item, idx) => (
-              <View key={idx} style={styles.row}>
-                <Text style={styles.cellLeft}>{item.type_name}</Text>
-                <Text style={{...styles.cellRight, color: item.status?.toLowerCase() === 'credit' ? 'green' : 'red'}}>
-                   {item.status?.toLowerCase() === 'credit' ? '+' : '-'}{fmt2(item.amount)}
-                </Text>
-              </View>
-            ))}
-            {transactions.length > 0 && (
-              <View style={{...styles.row, backgroundColor: '#f9f9f9'}}>
-                <Text style={{...styles.cellLeft, fontWeight: 'bold'}}>Total In</Text>
-                <Text style={{...styles.cellRight, color: 'green'}}>{fmt2(transactions.filter(t => t.status?.toLowerCase() === 'credit').reduce((a, b) => a + b.amount, 0))}</Text>
-              </View>
-            )}
-            {transactions.length > 0 && (
-              <View style={{...styles.row, backgroundColor: '#f9f9f9'}}>
-                <Text style={{...styles.cellLeft, fontWeight: 'bold'}}>Total Out</Text>
-                <Text style={{...styles.cellRight, color: 'red'}}>{fmt2(transactions.filter(t => t.status?.toLowerCase() === 'debit' || t.status?.toLowerCase() === 'out').reduce((a, b) => a + b.amount, 0))}</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Profit Loss */}
-          <View style={styles.column}>
-            <Text style={styles.colHeader}>Profit & Loss</Text>
-            <View style={styles.row}><Text style={styles.cellLeft}>Total Sales</Text><Text style={styles.cellRight}>{fmt2(profitLoss.totalSales)}</Text></View>
-            <View style={styles.row}><Text style={styles.cellLeft}>Total Purchase</Text><Text style={styles.cellRight}>{fmt2(profitLoss.totalPurchase)}</Text></View>
-            <View style={styles.row}><Text style={styles.cellLeft}>Avg Sell Price</Text><Text style={styles.cellRight}>{fmt2(profitLoss.avgSellPrice)}</Text></View>
-            <View style={styles.row}><Text style={styles.cellLeft}>Avg Purch Price</Text><Text style={styles.cellRight}>{fmt2(profitLoss.avgPurchasePrice)}</Text></View>
-            <View style={{...styles.row, backgroundColor: '#f9f9f9'}}>
-              <Text style={{...styles.cellLeft, fontWeight: 'bold'}}>Est. Profit</Text>
-              <Text style={styles.cellRight}>{fmt2(profitLoss.currentProfit)}</Text>
+            <View style={S.totalRow}>
+              <Text style={S.totalLabel}>TOTAL RECEIVED</Text>
+              <Text style={[S.totalAmt, { color: COLORS.salesBdt }]}>{fmt2(totalSalesBdt)}</Text>
             </View>
+          </View>
+
+          {/* Sales AED */}
+          <View style={S.col}>
+            <ColHeader label="Received AED (Sales)" color={COLORS.salesAed} />
+            <TableHead hasRate={true} />
+            {salesAed.length === 0 && <Text style={{ padding: 4, fontSize: 6, color: "#aaa", textAlign: "center" }}>No AED sales</Text>}
+            {salesAed.map((s, i) => (
+              <View key={i} style={S.tableRow}>
+                <View style={S.cellName}>
+                  <Text>{s.invoice_id}</Text>
+                  <Text style={S.cellNameSub}>{s.customer_name}</Text>
+                </View>
+                <Text style={S.cellAmt}>{fmt2(s.amountAed)}</Text>
+                <Text style={S.cellRate}>{s.aedRate}</Text>
+              </View>
+            ))}
+            <View style={S.totalRow}>
+              <Text style={S.totalLabel}>TOTAL RECEIVED</Text>
+              <Text style={[S.totalAmt, { color: COLORS.salesAed }]}>AED {fmt2(totalSalesAed)}</Text>
+            </View>
+          </View>
+
+          {/* Purchases BDT */}
+          <View style={S.col}>
+            <ColHeader label="Payment BDT (Purchases)" color={COLORS.purchBdt} />
+            <TableHead hasRate={false} />
+            {purchasesBdt.length === 0 && <Text style={{ padding: 4, fontSize: 6, color: "#aaa", textAlign: "center" }}>No BDT purchases</Text>}
+            {purchasesBdt.map((p, i) => (
+              <View key={i} style={S.tableRow}>
+                <View style={S.cellName}>
+                  <Text>{p.invoice_id}</Text>
+                  <Text style={S.cellNameSub}>{p.vendor_name}</Text>
+                </View>
+                <Text style={S.cellAmt}>{fmt2(p.amountBdt)}</Text>
+              </View>
+            ))}
+            <View style={S.totalRow}>
+              <Text style={S.totalLabel}>TOTAL PAYMENT</Text>
+              <Text style={[S.totalAmt, { color: COLORS.purchBdt }]}>{fmt2(totalPurchBdt)}</Text>
+            </View>
+          </View>
+
+          {/* Purchases AED */}
+          <View style={S.col}>
+            <ColHeader label="Payment AED (Purchases)" color={COLORS.purchAed} />
+            <TableHead hasRate={true} />
+            {purchasesAed.length === 0 && <Text style={{ padding: 4, fontSize: 6, color: "#aaa", textAlign: "center" }}>No AED purchases</Text>}
+            {purchasesAed.map((p, i) => (
+              <View key={i} style={S.tableRow}>
+                <View style={S.cellName}>
+                  <Text>{p.invoice_id}</Text>
+                  <Text style={S.cellNameSub}>{p.vendor_name}</Text>
+                </View>
+                <Text style={S.cellAmt}>{fmt2(p.amountAed)}</Text>
+                <Text style={S.cellRate}>{p.aedRate}</Text>
+              </View>
+            ))}
+            <View style={S.totalRow}>
+              <Text style={S.totalLabel}>TOTAL PAYMENT</Text>
+              <Text style={[S.totalAmt, { color: COLORS.purchAed }]}>AED {fmt2(totalPurchAed)}</Text>
+            </View>
+          </View>
+
+        </View>
+
+        {/* BOTTOM ROW: Tx In | Tx Out | P&L | Balance Sheet */}
+        <View style={S.bottomRow}>
+
+          {/* Transactions In */}
+          <View style={S.col}>
+            <ColHeader label="Transactions — Money In" color={COLORS.txIn} />
+            {txIn.length === 0 && <Text style={{ padding: 4, fontSize: 6, color: "#aaa", textAlign: "center" }}>No inflow</Text>}
+            {txIn.map((t, i) => (
+              <View key={i} style={S.tableRow}>
+                <Text style={[S.cellName, { flex: 2 }]}>{t.type_name}</Text>
+                <Text style={[S.cellAmt, { color: "green" }]}>+{fmt2(t.amount)}</Text>
+              </View>
+            ))}
+            <View style={S.totalRow}>
+              <Text style={S.totalLabel}>TOTAL IN</Text>
+              <Text style={[S.totalAmt, { color: COLORS.txIn }]}>{fmt2(totalTxIn)}</Text>
+            </View>
+          </View>
+
+          {/* Transactions Out */}
+          <View style={S.col}>
+            <ColHeader label="Transactions — Money Out" color={COLORS.txOut} />
+            {txOut.length === 0 && <Text style={{ padding: 4, fontSize: 6, color: "#aaa", textAlign: "center" }}>No outflow</Text>}
+            {txOut.map((t, i) => (
+              <View key={i} style={S.tableRow}>
+                <Text style={[S.cellName, { flex: 2 }]}>{t.type_name}</Text>
+                <Text style={[S.cellAmt, { color: "red" }]}>-{fmt2(t.amount)}</Text>
+              </View>
+            ))}
+            <View style={S.totalRow}>
+              <Text style={S.totalLabel}>TOTAL OUT</Text>
+              <Text style={[S.totalAmt, { color: COLORS.txOut }]}>{fmt2(totalTxOut)}</Text>
+            </View>
+          </View>
+
+          {/* Profit & Loss */}
+          <View style={S.col}>
+            <ColHeader label="Profit &amp; Loss Summary" color={COLORS.pl} />
+            <View style={S.plRow}><Text style={S.plLabel}>Sales (BDT only)</Text><Text style={S.plVal}>{fmt2(salesBdt.reduce((s, i) => s + i.amountBdt, 0))}</Text></View>
+            <View style={S.plRow}><Text style={S.plLabel}>Sales (AED → BDT)</Text><Text style={S.plVal}>{fmt2(salesAed.reduce((s, i) => s + i.amountBdt, 0))}</Text></View>
+            <View style={[S.plRow, { backgroundColor: "#f0fdf4" }]}><Text style={[S.plLabel, { fontWeight: "bold" }]}>Total Sales (BDT)</Text><Text style={[S.plVal, { color: "green" }]}>{fmt2(profitLoss.totalSalesBdt ?? 0)}</Text></View>
+            <View style={S.plRow}><Text style={S.plLabel}>Purchase (BDT only)</Text><Text style={S.plVal}>{fmt2(purchasesBdt.reduce((s, i) => s + i.amountBdt, 0))}</Text></View>
+            <View style={S.plRow}><Text style={S.plLabel}>Purchase (AED → BDT)</Text><Text style={S.plVal}>{fmt2(purchasesAed.reduce((s, i) => s + i.amountBdt, 0))}</Text></View>
+            <View style={[S.plRow, { backgroundColor: "#fff1f2" }]}><Text style={[S.plLabel, { fontWeight: "bold" }]}>Total Purchase (BDT)</Text><Text style={[S.plVal, { color: "red" }]}>{fmt2(profitLoss.totalPurchaseBdt ?? 0)}</Text></View>
+            <View style={S.totalRow}><Text style={S.totalLabel}>NET PROFIT</Text><Text style={[S.totalAmt, { color: (profitLoss.netProfit ?? 0) >= 0 ? "green" : "red" }]}>{fmt2(profitLoss.netProfit ?? 0)}</Text></View>
           </View>
 
           {/* Balance Sheet */}
-          <View style={styles.column}>
-            <Text style={styles.colHeader}>Balance Sheet Summary</Text>
-            <View style={styles.row}><Text style={styles.cellLeft}>Stock Value</Text><Text style={styles.cellRight}>{fmt2(balanceSheet.stockBalance)}</Text></View>
-            <View style={styles.row}><Text style={styles.cellLeft}>Party Balances (BDT)</Text><Text style={styles.cellRight}>{fmt2(balanceSheet.sumBDT)}</Text></View>
-            <View style={styles.row}><Text style={styles.cellLeft}>Party Balances (AED)</Text><Text style={styles.cellRight}>{fmt2(balanceSheet.sumAED)}</Text></View>
-            <View style={styles.row}><Text style={styles.cellLeft}>AED Rate</Text><Text style={styles.cellRight}>{fmt2(balanceSheet.aedRate)}</Text></View>
-            <View style={{...styles.row, backgroundColor: '#f9f9f9'}}>
-              <Text style={{...styles.cellLeft, fontWeight: 'bold'}}>Grand Asset Total</Text>
-              <Text style={styles.cellRight}>{fmt2(balanceSheet.totalAssetBalance)}</Text>
-            </View>
+          <View style={S.col}>
+            <ColHeader label="Balance Sheet" color={COLORS.balance} />
+            <View style={S.plRow}><Text style={S.plLabel}>Party Balances (BDT)</Text><Text style={S.plVal}>{fmt2(balanceSheet.sumBDT ?? 0)}</Text></View>
+            <View style={S.plRow}><Text style={S.plLabel}>Party Balances (AED)</Text><Text style={S.plVal}>AED {fmt2(balanceSheet.sumAED ?? 0)}</Text></View>
+            <View style={S.plRow}><Text style={S.plLabel}>AED→BDT (Rate:{balanceSheet.aedRate ?? 34})</Text><Text style={S.plVal}>{fmt2((balanceSheet.sumAED ?? 0) * (balanceSheet.aedRate ?? 34))}</Text></View>
+            <View style={S.plRow}><Text style={S.plLabel}>Stock Value</Text><Text style={S.plVal}>{fmt2(balanceSheet.stockBalance ?? 0)}</Text></View>
+            <View style={S.totalRow}><Text style={S.totalLabel}>GRAND ASSET TOTAL</Text><Text style={[S.totalAmt, { color: COLORS.balance }]}>{fmt2(balanceSheet.totalAssetBalance ?? 0)}</Text></View>
           </View>
-          
+
         </View>
 
-        <View style={styles.footer}>
-          <Text>Printed On: {new Date().toLocaleString()}</Text>
+        <View style={S.footer}>
+          <Text>Printed On: {new Date().toLocaleString()} | Emaar Trading</Text>
         </View>
       </Page>
     </Document>
   )
 }
-
