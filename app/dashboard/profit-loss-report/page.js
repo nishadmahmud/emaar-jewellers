@@ -102,7 +102,8 @@ export default function ProfitLossReport() {
 
       // if AED, multiply by the dynamic rate to show in BDT uniformly
       const conversionRate = extractAedRate(inv);
-      const bdtAmount = isAed ? totalAmount * conversionRate : totalAmount;
+      // const bdtAmount = isAed ? totalAmount * conversionRate : totalAmount;
+      const bdtAmount = isAed ? totalAmount * 34 : totalAmount;
       return sum + bdtAmount;
     }, 0);
   };
