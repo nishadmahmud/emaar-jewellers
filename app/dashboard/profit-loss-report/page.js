@@ -507,7 +507,8 @@ export default function ProfitLossReport() {
                 ) : (
                   purchaseData.map((inv) => {
                     const isAed = (inv.pay_mode || '').includes('(AED @');
-                    const conversionRate = extractAedRate(inv);
+                    // const conversionRate = extractAedRate(inv);
+                    const conversionRate = 34;
                     const originalAmount = inv.sub_total - (inv.discount || 0);
                     const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
                     const qty = inv.purchase_details && inv.purchase_details.length > 0
