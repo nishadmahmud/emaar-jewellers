@@ -94,7 +94,8 @@ export default function DailyProfitLossReport() {
       const payModeString = inv.pay_mode || '';
       const isAed = payModeString.includes('(AED @');
       const totalAmount = inv.sub_total - (inv.discount || 0);
-      const conversionRate = extractAedRate(inv);
+      // const conversionRate = extractAedRate(inv);
+      const conversionRate = 34;
       const bdtAmount = isAed ? totalAmount * conversionRate : totalAmount;
       return sum + bdtAmount;
     }, 0);
