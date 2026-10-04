@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { Loader2, TrendingUp, TrendingDown, DollarSign, Package, Calculator, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { extractAedRate } from '@/lib/currency';
+import { getDhakaDateString, getDhakaDateTimeStart, getDhakaDateTimeEnd } from '@/lib/dateUtils';
 
 const API_URL = process.env.NEXT_PUBLIC_API;
 const Card = ({ children, className }) => <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 ${className || ''}`}>{children}</div>;
@@ -22,20 +23,8 @@ export default function ProfitLossReport() {
   const { data: session } = useSession();
   const router = useRouter();
 
-  const todayStart = () => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  };
-
-  const todayEnd = () => {
-    const d = new Date();
-    d.setHours(23, 59, 59, 999);
-    return d.toISOString();
-  };
-
-  const [startDate, setStartDate] = useState(todayStart());
-  const [endDate, setEndDate] = useState(todayEnd());
+  const [startDate, setStartDate] = useState(getDhakaDateString());
+  const [endDate, setEndDate] = useState(getDhakaDateString());
 
   const fetchReportData = async () => {
     const token = session?.accessToken;
@@ -53,8 +42,8 @@ export default function ProfitLossReport() {
           emailId: false,
           phoneId: false,
           product: false,
-          startDate: startDate,
-          endDate: endDate,
+          startDate: getDhakaDateTimeStart(startDate),
+          endDate: getDhakaDateTimeEnd(endDate),
           dueOnly: false,
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -69,8 +58,8 @@ export default function ProfitLossReport() {
           emailId: false,
           phoneId: false,
           imei: false,
-          start_date: startDate,
-          end_date: endDate,
+          start_date: getDhakaDateTimeStart(startDate),
+          end_date: getDhakaDateTimeEnd(endDate),
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -101,9 +90,9 @@ export default function ProfitLossReport() {
       const totalAmount = inv.sub_total - (inv.discount || 0);
 
       // if AED, multiply by the dynamic rate to show in BDT uniformly
-      const conversionRate = extractAedRate(inv);
-      // const bdtAmount = isAed ? totalAmount * conversionRate : totalAmount;
-      const bdtAmount = isAed ? totalAmount * 34 : totalAmount;
+      const conversionRate = extractAedRate(inv, session?.user);
+      const bdtAmount = isAed ? totalAmount * conversionRate : totalAmount;
+      
       return sum + bdtAmount;
     }, 0);
   };
@@ -214,7 +203,7 @@ export default function ProfitLossReport() {
             <input
               type="date"
               value={startDate ? startDate.slice(0, 10) : ''}
-              onChange={(e) => setStartDate(e.target.value ? `${e.target.value}T00:00:00.000Z` : "")}
+              onChange={(e) => setStartDate(e.target.value)}
               className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
             />
           </div>
@@ -223,7 +212,7 @@ export default function ProfitLossReport() {
             <input
               type="date"
               value={endDate ? endDate.slice(0, 10) : ''}
-              onChange={(e) => setEndDate(e.target.value ? `${e.target.value}T23:59:59.999Z` : "")}
+              onChange={(e) => setEndDate(e.target.value)}
               className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
             />
           </div>
@@ -326,8 +315,8 @@ export default function ProfitLossReport() {
               ) : (
                 salesData.map((inv) => {
                   const isAed = (inv.pay_mode || '').includes('(AED @');
-                  // const conversionRate = extractAedRate(inv);
-                   const conversionRate =34;
+                  const conversionRate = extractAedRate(inv, session?.user);
+                   
                   const originalAmount = inv.sub_total - (inv.discount || 0);
                   const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
                   const qty = inv.sales_details && inv.sales_details.length > 0
@@ -389,8 +378,8 @@ export default function ProfitLossReport() {
                 ) : (
                   salesData.map((inv) => {
                     const isAed = (inv.pay_mode || '').includes('(AED @');
-                    // const conversionRate = extractAedRate(inv);
-                    const conversionRate = 34;
+                    const conversionRate = extractAedRate(inv, session?.user);
+                    
                     const originalAmount = inv.sub_total - (inv.discount || 0);
                     const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
                     const qty = inv.sales_details && inv.sales_details.length > 0
@@ -444,8 +433,8 @@ export default function ProfitLossReport() {
               ) : (
                 purchaseData.map((inv) => {
                   const isAed = (inv.pay_mode || '').includes('(AED @');
-                  // const conversionRate = extractAedRate(inv);
-                   const conversionRate = 34;
+                  const conversionRate = extractAedRate(inv, session?.user);
+                   
                   const originalAmount = inv.sub_total - (inv.discount || 0);
                   const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
                   const qty = inv.purchase_details && inv.purchase_details.length > 0
@@ -507,8 +496,8 @@ export default function ProfitLossReport() {
                 ) : (
                   purchaseData.map((inv) => {
                     const isAed = (inv.pay_mode || '').includes('(AED @');
-                    // const conversionRate = extractAedRate(inv);
-                    const conversionRate = 34;
+                    const conversionRate = extractAedRate(inv, session?.user);
+                    
                     const originalAmount = inv.sub_total - (inv.discount || 0);
                     const bdtAmount = isAed ? originalAmount * conversionRate : originalAmount;
                     const qty = inv.purchase_details && inv.purchase_details.length > 0

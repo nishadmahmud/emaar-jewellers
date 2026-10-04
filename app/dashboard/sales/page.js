@@ -52,7 +52,9 @@ export default function SalesHistoryPage() {
         );
 
         if (res.data?.success && res.data?.data) {
-          setInvoices(res.data.data.data || []);
+          let fetchedData = res.data.data.data || [];
+          fetchedData.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+          setInvoices(fetchedData);
           setTotalInvoices(res.data.data.total || 0);
         } else {
           setInvoices([]);
@@ -110,9 +112,11 @@ export default function SalesHistoryPage() {
         }
       );
 
-      const exportInvoices = res.data?.success && res.data?.data
+      let exportInvoices = res.data?.success && res.data?.data
         ? (res.data.data.data || [])
         : [];
+        
+      exportInvoices.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
       if (exportInvoices.length === 0) {
         toast.warning('No invoices to export');

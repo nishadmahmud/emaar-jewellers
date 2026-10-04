@@ -9,10 +9,7 @@ import { pdf } from '@react-pdf/renderer';
 import DayWiseReportPDF from './day-wise-report-pdf';
 import { extractAedRate } from '@/lib/currency';
 
-function getLocalDateString() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
+import { getDhakaDateString, getDhakaDateTimeStart, getDhakaDateTimeEnd } from '@/lib/dateUtils';
 
 const fmt2 = (n) =>
   Number(n ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -22,7 +19,7 @@ export default function DayWiseReportPage() {
   const token = session?.accessToken;
   const API_URL = process.env.NEXT_PUBLIC_API;
 
-  const [date, setDate] = useState(getLocalDateString());
+  const [date, setDate] = useState(getDhakaDateString());
   const [isGenerating, setIsGenerating] = useState(false);
   const [progressMsg, setProgressMsg] = useState('');
 
@@ -43,8 +40,8 @@ export default function DayWiseReportPage() {
       const baseHeaders = { headers: { Authorization: `Bearer ${token}` } };
 
       const [salesInvoices, purchaseInvoices, accountsRaw] = await Promise.all([
-        axios.post(`${API_URL}/search-invoice?page=1&limit=10000`, { keyword: '', nameId: false, emailId: false, phoneId: false, product: false, startDate: `${date}T00:00:00.000Z`, endDate: `${date}T23:59:59.999Z`, dueOnly: false }, baseHeaders).then(r => r.data?.data?.data || []),
-        axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=10000`, { keyword: '', nameId: false, emailId: false, phoneId: false, imei: false, start_date: `${date}T00:00:00.000Z`, end_date: `${date}T23:59:59.999Z` }, baseHeaders).then(r => r.data?.data?.data || []),
+        axios.post(`${API_URL}/search-invoice?page=1&limit=10000`, { keyword: '', nameId: false, emailId: false, phoneId: false, product: false, startDate: getDhakaDateTimeStart(date), endDate: getDhakaDateTimeEnd(date), dueOnly: false }, baseHeaders).then(r => r.data?.data?.data || []),
+        axios.post(`${API_URL}/search-purchase-invoice?page=1&limit=10000`, { keyword: '', nameId: false, emailId: false, phoneId: false, imei: false, start_date: getDhakaDateTimeStart(date), end_date: getDhakaDateTimeEnd(date) }, baseHeaders).then(r => r.data?.data?.data || []),
         axios.get(`${API_URL}/payment-type-category-list?t=${Date.now()}`, baseHeaders).then(r => r.data?.data?.data || r.data?.data || r.data || []),
       ]);
 
@@ -52,7 +49,7 @@ export default function DayWiseReportPage() {
       salesInvoices.forEach(inv => {
         const isAed = (inv.pay_mode || '').includes('(AED @');
         const amount = (inv.sub_total || 0) - (inv.discount || 0);
-        const rate = extractAedRate(inv);
+        const rate = extractAedRate(inv, session?.user);
         const entry = { invoice_id: inv.invoice_id, name: inv.customer_name || 'Walk-in', isAed, amountBdt: isAed ? amount * rate : amount, amountAed: isAed ? amount : 0, aedRate: rate };
         if (isAed) aed.push(entry); else bdt.push(entry);
       });
@@ -62,7 +59,7 @@ export default function DayWiseReportPage() {
       purchaseInvoices.forEach(inv => {
         const isAed = (inv.pay_mode || '').includes('(AED @');
         const amount = (inv.sub_total || 0) - (inv.discount || 0);
-        const rate = extractAedRate(inv);
+        const rate = extractAedRate(inv, session?.user);
         const entry = { invoice_id: inv.invoice_id, name: inv.vendor_name || 'Unknown Vendor', isAed, amountBdt: isAed ? amount * rate : amount, amountAed: isAed ? amount : 0, aedRate: rate };
         if (isAed) paed.push(entry); else pbdt.push(entry);
       });
@@ -83,14 +80,14 @@ export default function DayWiseReportPage() {
 
       setProgressMsg('Fetching transactions and balances...');
       const cbResults = await Promise.all(
-        flatAccounts.map(acc => axios.post(`${API_URL}/cash-book-report`, { start_date: `${date}T00:00:00.000Z`, end_date: `${date}T23:59:59.999Z`, view_order: 'asc', payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) }, baseHeaders).then(r => ({ acc, data: r.data })).catch(() => ({ acc, data: null })))
+        flatAccounts.map(acc => axios.post(`${API_URL}/cash-book-report`, { start_date: getDhakaDateTimeStart(date), end_date: getDhakaDateTimeEnd(date), view_order: 'asc', payment_type_id: Number(acc.payment_type_id || acc.actual_payment_type_id || acc.id) }, baseHeaders).then(r => ({ acc, data: r.data })).catch(() => ({ acc, data: null })))
       );
 
       const inList = [], outList = [];
       cbResults.forEach(res => {
         if (res.data?.data) res.data.data.filter(r => r.date === date).forEach(r => {
           const entry = { type_name: r.type_name || r.type || '—', amount: Number(r.payment_amount || 0) };
-          (r.status || '').toLowerCase() === 'credit' ? inList.push(entry) : outList.push(entry);
+          (r.status || '').toLowerCase() === 'debit' ? inList.push(entry) : outList.push(entry);
         });
       });
       setTxIn(inList); setTxOut(outList);

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { Loader2, Search, Printer, FileText } from 'lucide-react';
 import { extractAedRate } from '@/lib/currency';
+import { getDhakaDateString, getDhakaDateTimeStart, getDhakaDateTimeEnd } from '@/lib/dateUtils';
 
 const API_URL = process.env.NEXT_PUBLIC_API;
 const Card = ({ children, className }) => <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 ${className || ''}`}>{children}</div>;
@@ -19,20 +20,8 @@ export default function DailyProfitLossReport() {
   const [initialLoading, setInitialLoading] = useState(true);
   const { data: session } = useSession();
 
-  const todayStart = () => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  };
-
-  const todayEnd = () => {
-    const d = new Date();
-    d.setHours(23, 59, 59, 999);
-    return d.toISOString();
-  };
-
-  const [startDate, setStartDate] = useState(todayStart());
-  const [endDate, setEndDate] = useState(todayEnd());
+  const [startDate, setStartDate] = useState(getDhakaDateString());
+  const [endDate, setEndDate] = useState(getDhakaDateString());
 
   const fetchReportData = async () => {
     const token = session?.accessToken;
@@ -50,8 +39,8 @@ export default function DailyProfitLossReport() {
           emailId: false,
           phoneId: false,
           product: false,
-          startDate: startDate,
-          endDate: endDate,
+          startDate: getDhakaDateTimeStart(startDate),
+          endDate: getDhakaDateTimeEnd(endDate),
           dueOnly: false,
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -66,8 +55,8 @@ export default function DailyProfitLossReport() {
           emailId: false,
           phoneId: false,
           imei: false,
-          start_date: startDate,
-          end_date: endDate,
+          start_date: getDhakaDateTimeStart(startDate),
+          end_date: getDhakaDateTimeEnd(endDate),
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -94,8 +83,7 @@ export default function DailyProfitLossReport() {
       const payModeString = inv.pay_mode || '';
       const isAed = payModeString.includes('(AED @');
       const totalAmount = inv.sub_total - (inv.discount || 0);
-      // const conversionRate = extractAedRate(inv);
-      const conversionRate = 34;
+      const conversionRate = extractAedRate(inv, session?.user);
       const bdtAmount = isAed ? totalAmount * conversionRate : totalAmount;
       return sum + bdtAmount;
     }, 0);
@@ -182,7 +170,7 @@ export default function DailyProfitLossReport() {
             <input
               type="date"
               value={startDate ? startDate.slice(0, 10) : ''}
-              onChange={(e) => setStartDate(e.target.value ? `${e.target.value}T00:00:00.000Z` : "")}
+              onChange={(e) => setStartDate(e.target.value)}
               className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
             />
           </div>
@@ -191,7 +179,7 @@ export default function DailyProfitLossReport() {
             <input
               type="date"
               value={endDate ? endDate.slice(0, 10) : ''}
-              onChange={(e) => setEndDate(e.target.value ? `${e.target.value}T23:59:59.999Z` : "")}
+              onChange={(e) => setEndDate(e.target.value)}
               className="w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
             />
           </div>
